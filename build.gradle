@@ -1,0 +1,24 @@
+/*
+ * Hypermedia JaCaMo build file
+ * 
+ */
+
+apply plugin: 'java'
+
+version '0.1'
+group   'org.jacamo'
+
+repositories {
+    mavenCentral()
+    // artifact repository for JaCaMo-related project
+    maven { url "https://raw.github.com/jacamo-lang/mvn-repo/master" }
+    // local libraries
+    flatDir { dirs 'lib' }
+}
+
+dependencies {
+    compile group: 'org.jacamo', name: 'jacamo', version: '0.9'
+    compile group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
+    compile fileTree(dir: 'lib/ldfu', include: '*.jar')
+}
+
