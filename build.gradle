@@ -22,3 +22,9 @@ dependencies {
     compile fileTree(dir: 'lib/ldfu', include: '*.jar')
 }
 
+task runLdfuSpider (type: JavaExec, dependsOn: 'classes') {
+    workingDir 'examples/ldfu-spider'
+    main = 'jacamo.infra.JaCaMoLauncher'
+    args 'ldfu_spider.jcm'
+    classpath sourceSets.main.runtimeClasspath
+}

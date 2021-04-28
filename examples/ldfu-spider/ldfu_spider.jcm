@@ -1,0 +1,16 @@
+mas ldfu_mas {
+
+    // Agent acquiring RDF triples with the ldfu_spider artifact
+    agent ldfu_agent {
+          beliefs: entryPoint("https://www.wikidata.org/entity/Q2814098")
+          goals: start
+          join: ldfu_workspace
+          focus: ldfu_workspace.ldfu_spider
+    }
+
+    // creates a Linked-Data-Fu spider, that will crawl RDF resources as specified in the Linked Data program "get.n3"
+    workspace ldfu_workspace  {
+          artifact ldfu_spider : hypermedia.LinkedDataFuSpider("get.n3")
+    }
+
+}
