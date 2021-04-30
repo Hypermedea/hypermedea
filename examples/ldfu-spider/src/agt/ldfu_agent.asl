@@ -13,3 +13,5 @@
     .count(rdf(_, _, _), Count) ;
     .print("found ", Count, " triples.");
   .
+
+{ include("$jacamoJar/templates/common-cartago.asl") }
