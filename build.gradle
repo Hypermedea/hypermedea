@@ -28,3 +28,10 @@ task runLdfuSpider (type: JavaExec, dependsOn: 'classes') {
     args 'ldfu_spider.jcm'
     classpath sourceSets.main.runtimeClasspath
 }
+
+task runLeubot (type: JavaExec, dependsOn: 'classes') {
+    workingDir 'examples/leubot'
+    main = 'jacamo.infra.JaCaMoLauncher'
+    args 'leubot.jcm'
+    classpath sourceSets.main.runtimeClasspath
+}
