@@ -1,0 +1,67 @@
+mas ldfu_mas {
+
+    /*
+    agent test_agent_simple_crawl {
+        goals: crawlPlan
+               create_artifact_ldfu
+               testUnit
+        beliefs: entryPointCrawl("https://www.wikidata.org/entity/Q2814098",false,"IRI1")
+    }
+
+
+    agent test_agent_simple_register {
+        goals: registerPlan("simpleOntology",false)
+               create_artifact_ldfu
+               testUnit
+        beliefs: entryPointRegister("https://www.w3.org/ns/sosa/",false,"IRI1")
+    }
+
+
+    agent test_agent_merged_register {
+        goals: registerPlan("mergedOntology",false)
+               create_artifact_ldfu
+               testUnit
+        beliefs: entryPointRegister("https://www.w3.org/ns/sosa/",false,"IRI1")
+                 entryPointRegister("https://www.w3.org/ns/ssn/",false,"IRI2")
+    }*/
+
+
+    agent test_agent_inferred_register {
+        goals: registerPlan("inferredOntology",true)
+               create_artifact_ldfu
+               testUnit
+        beliefs: entryPointRegister("ttl/test2.ttl",true,"IRI1")
+    }/*
+    */
+
+    /*
+    agent test_agent_consistency_satisfiability {
+        goals: registerPlan("inferredOntology",true)
+               create_artifact_ldfu
+               testUnit
+        beliefs: entryPointRegister("ttl/test2.ttl",true,"IRI1")
+    }
+
+    agent test_agent_consistency_satisfiability_v2 {
+        goals: registerPlan("inferredOntology",true)
+               create_artifact_ldfu
+               testUnit
+        beliefs: entryPointRegister("ttl/insatisfiable_ontology.ttl",true,"IRI1")
+    }
+    */
+
+    /*
+    agent test_agent_unregister {
+        goals: registerPlan("mergedOntology",true)
+               create_artifact_ldfu
+               testUnit("IRI2") //unregister the second file
+        beliefs: entryPointRegister("https://www.w3.org/ns/sosa/",false,"IRI1")
+                 entryPointRegister("https://www.w3.org/ns/ssn/",false,"IRI2")
+    }
+    */
+
+    /*
+    workspace ldfu_workspace  {
+        artifact ldfu_spider : hypermedia.LinkedDataFuSpider("get.n3")
+    }*/
+}

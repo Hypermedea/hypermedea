@@ -1,0 +1,13 @@
+mas ldfu_mas {
+    agent agent_simple_crawl {
+    }
+
+    agent agent_simple_register {
+    }
+
+    agent agent_multiple_register {
+    }
+
+    agent agent_inferred_register {
+    }
+}
