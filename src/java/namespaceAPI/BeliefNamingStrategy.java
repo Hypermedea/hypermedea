@@ -1,38 +1,26 @@
 package namespaceAPI;
 
-import classes.Axiom_Jason;
-import edu.kit.aifb.datafu.*;
-import edu.kit.aifb.datafu.consumer.impl.BindingConsumerCollection;
-import edu.kit.aifb.datafu.engine.EvaluateProgram;
-import edu.kit.aifb.datafu.io.origins.FileOrigin;
-import edu.kit.aifb.datafu.io.origins.InternalOrigin;
-import edu.kit.aifb.datafu.io.origins.RequestOrigin;
-import edu.kit.aifb.datafu.io.sinks.BindingConsumerSink;
-import edu.kit.aifb.datafu.parser.ProgramConsumerImpl;
-import edu.kit.aifb.datafu.parser.QueryConsumerImpl;
-import edu.kit.aifb.datafu.parser.notation3.Notation3Parser;
-import edu.kit.aifb.datafu.parser.notation3.ParseException;
-import edu.kit.aifb.datafu.parser.sparql.SparqlParser;
-import edu.kit.aifb.datafu.planning.EvaluateProgramConfig;
-import edu.kit.aifb.datafu.planning.EvaluateProgramGenerator;
+import classes.AxiomJason;
 import ontologyAPI.AxiomExtractor;
-import org.apache.jena.query.*;
-import org.apache.jena.query.Query;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.RDFNode;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.yars.nx.Node;
+import tools.CSVTools;
 import tools.IRITools;
 
 import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
+/**
+ * A class to have multiple naming strategies for the AxiomJason objects to add a name based on the full name
+ *
+ * There are 4 strategies in total:
+ * 1) Looking if the concerned class has a rdf:label for which the name of the predicate of the label
+ * 2) Looking if the concerned class has a preferredNamespaceUri/preferredNamespacePrefix in which case
+ * the name is the adjacent string of the namespace
+ * 3) Looking for known prefix in a data base
+ * 4) default method where the uri (full name) is sliced through one of the following character "/",":","#"
+ * starting from the right and uses the suffix as a name
+ */
 public class BeliefNamingStrategy {
     public HashMap<String,String> mappedLabels;
     public HashMap<String,String> mappedPreferredNamespaces;
@@ -42,9 +30,7 @@ public class BeliefNamingStrategy {
         return mappedKnownNamespaces;
     }
 
-    public void setMappedKnownNamespaces(HashMap<String, String> mappedKnownNamespaces) {
-        this.mappedKnownNamespaces = mappedKnownNamespaces;
-    }
+    public void setMappedKnownNamespaces(HashMap<String, String> mappedKnownNamespaces) { this.mappedKnownNamespaces = mappedKnownNamespaces; }
 
     public HashMap<String, String> getMappedLabels() {
         return mappedLabels;
@@ -58,9 +44,7 @@ public class BeliefNamingStrategy {
         return mappedPreferredNamespaces;
     }
 
-    public void setMappedPreferredNamespaces(HashMap<String, String> mappedPreferredNamespaces) {
-        this.mappedPreferredNamespaces = mappedPreferredNamespaces;
-    }
+    public void setMappedPreferredNamespaces(HashMap<String, String> mappedPreferredNamespaces) { this.mappedPreferredNamespaces = mappedPreferredNamespaces; }
 
     public BeliefNamingStrategy() {
         mappedLabels = new HashMap<>();
@@ -72,90 +56,18 @@ public class BeliefNamingStrategy {
         mappedLabels = AxiomExtractor.extractLabels(owlClassSet, owlOntology);
     }
 
-    public void computeMappedPreferredNamespaces(String programFile, String uri){
-        String queryString = "PREFIX vann: <http://purl.org/vocab/vann/> \n" +
-                "CONSTRUCT {?s vann:preferredNamespaceUri ?o .}  \n" +
-                "where \n" +
-                "{ ?s vann:preferredNamespaceUri ?o . }";
-
-
-        // set logging level to warning
-        Logger log = Logger.getLogger("edu.kit.aifb.datafu");
-        log.setLevel(Level.WARNING);
-        LogManager.getLogManager().addLogger(log);
-
-        try {
-            InputStream is = new FileInputStream(programFile);
-            Origin base = new FileOrigin(new File(programFile), FileOrigin.Mode.READ, null);
-            Notation3Parser n3Parser = new Notation3Parser(is);
-            ProgramConsumerImpl programConsumer = new ProgramConsumerImpl(base);
-
-            n3Parser.parse(programConsumer, base);
-            is.close();
-
-            Program program = programConsumer.getProgram(base);
-
-            QueryConsumerImpl queryConsumer = new QueryConsumerImpl(base);
-            SparqlParser sparqlParser = new SparqlParser(new StringReader(queryString));
-            sparqlParser.parse(queryConsumer, new InternalOrigin(""));
-
-            ConstructQuery query = queryConsumer.getConstructQueries().iterator().next();
-
-            BindingConsumerCollection triples = new BindingConsumerCollection();
-            program.registerConstructQuery(query, new BindingConsumerSink(triples));
-
-            EvaluateProgramConfig config = new EvaluateProgramConfig();
-            //config.setThreadingModel(EvaluateProgramConfig.ThreadingModel.SERIAL);
-            EvaluateProgram eval = new EvaluateProgramGenerator(program, config).getEvaluateProgram();
-            eval.start();
-
-            //Todo : Replacing String uri by merged ontology and make the program take that parameter as entrypoint
-            //ep.getBaseConsumer().consume(new Binding(new Nodes(new Resource("http://example.org/foo"), RDF.TYPE, RDFS.RESOURCE));
-            eval.getInputOriginConsumer().consume(new RequestOrigin(new URI(uri), Request.Method.GET));
-
-            eval.awaitIdleAndFinish();
-            eval.shutdown();
-
-            System.out.println(triples.getCollection().size());
-
-            for (Binding binding : triples.getCollection()) {
-                Node[] st = binding.getNodes().getNodeArray();
-                mappedKnownNamespaces.put(st[0].getLabel().toString(), st[2].getLabel().toString());
-                //System.out.println(st[0].getLabel().toString() + " ::: " + st[1].getLabel().toString()+ " ::: "+st[2].getLabel().toString());
-                //defineObsProperty("rdf", st[0].getLabel(), st[1].getLabel(), st[2].getLabel());
-            }
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (edu.kit.aifb.datafu.parser.sparql.ParseException e) {
-            e.printStackTrace();
-        }
-
-        /*
-        Query query = QueryFactory.create(queryString) ;
-        try (QueryExecution qexec = QueryExecutionFactory.create(query, model)) {
-            ResultSet results = qexec.execSelect();
-            for (; results.hasNext(); ) {
-                QuerySolution soln = results.nextSolution() ;
-                RDFNode x1 = soln.get("s");
-                RDFNode x3 = soln.get("o");
-                mappedKnownNamespaces.put(x1.toString(), x3.toString());
-            }
-        }*/
+    public void computeMappedPreferredNamespaces(Set<OWLClass> owlClassSet, OWLOntology owlOntology){
+        mappedPreferredNamespaces = AxiomExtractor.extractPreferredNamespaces(owlClassSet,owlOntology);
     }
 
     public void computeMappedKnownNamespaces(){
+        mappedKnownNamespaces = CSVTools.readCSVToHashMap("res/known_namespaces/csv/table.csv");
+    }
+
+    public void computeMappedKnownNamespacesByXML(){
         Properties p = new Properties();
         try {
-            FileInputStream f = new FileInputStream("res/known_namespaces/table.xml");
+            FileInputStream f = new FileInputStream("res/known_namespaces/xml/table.xml");
             p.loadFromXML(f);
 
             Enumeration<?> enumeration = p.propertyNames();
@@ -176,7 +88,7 @@ public class BeliefNamingStrategy {
         }
     }
 
-    public void generateNameBelief(Axiom_Jason axiom, boolean doLabelStrategy, boolean doPreferenceNamespaceStrategy, boolean doKnownPrefixStrategy){
+    public void generateNameBelief(AxiomJason axiom, boolean doLabelStrategy, boolean doPreferenceNamespaceStrategy, boolean doKnownPrefixStrategy){
         boolean hasBeenSet = false;
         if (doLabelStrategy) {
             hasBeenSet = executeLabelStrategy(axiom);
@@ -184,6 +96,7 @@ public class BeliefNamingStrategy {
 
         if (!hasBeenSet & doPreferenceNamespaceStrategy){
             hasBeenSet = executePreferenceNamespaceStrategy(axiom);
+            //System.out.println(hasBeenSet + " : " + axiom);
         }
 
         if (!hasBeenSet & doKnownPrefixStrategy){
@@ -196,7 +109,7 @@ public class BeliefNamingStrategy {
         //System.out.println(axiom);
     }
 
-    private boolean executeLabelStrategy(Axiom_Jason axiom) {
+    private boolean executeLabelStrategy(AxiomJason axiom) {
         //System.out.println(axiom.getPredicateFullName());
         if (mappedLabels.containsKey(axiom.getPredicateFullName())){
             //System.out.println(mappedLabels.containsKey(axiom.getPredicateFullName()));
@@ -213,24 +126,12 @@ public class BeliefNamingStrategy {
         }
     }
 
-    private boolean executePreferenceNamespaceStrategy(Axiom_Jason axiom) {
-        for (String prefix : mappedPreferredNamespaces.keySet()){
-            if (axiom.getPredicateFullName().startsWith(prefix)) {
-                String suffix = IRITools.getNameByMatchingPrefix(axiom.getPredicateFullName(),prefix);
+    private boolean executePreferenceNamespaceStrategy(AxiomJason axiom) {
+        if (mappedPreferredNamespaces.containsKey(axiom.getPredicateFullName())){
+            //System.out.println(axiom.getPredicateFullName() + " : " + mappedPreferredNamespaces.get(axiom.getPredicateFullName()));
+            if (axiom.getPredicateFullName().startsWith(mappedPreferredNamespaces.get(axiom.getPredicateFullName()))) {
+                String suffix = IRITools.getNameByMatchingPrefix(axiom.getPredicateFullName(),mappedPreferredNamespaces.get(axiom.getPredicateFullName()));
                 axiom.setPredicateName(IRITools.firstCharToLowerCase(suffix));
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean executeKnownPrefixStrategy(Axiom_Jason axiom) {
-        if (mappedKnownNamespaces.containsKey(axiom.getPredicateFullName())){
-            //System.out.println(mappedLabels.containsKey(axiom.getPredicateFullName()));
-            if (axiom.getPredicateFullName().contains(mappedKnownNamespaces.get(axiom.getPredicateFullName()))) {
-                //System.out.println(mappedLabels.containsKey(axiom.getPredicateFullName()));
-                axiom.setPredicateName(IRITools.firstCharToLowerCase(mappedKnownNamespaces.get(axiom.getPredicateFullName())));
-                //System.out.println("used2");
                 return true;
             } else {
                 return false;
@@ -240,7 +141,22 @@ public class BeliefNamingStrategy {
         }
     }
 
-    private void executeDefaultStrategy(Axiom_Jason axiom) {
+    private boolean executeKnownPrefixStrategy(AxiomJason axiom) {
+        if (mappedKnownNamespaces.containsKey(axiom.getPredicateFullName())){
+            //System.out.println(mappedLabels.containsKey(axiom.getPredicateFullName()));
+            if (axiom.getPredicateFullName().startsWith(mappedKnownNamespaces.get(axiom.getPredicateFullName()))) {
+                String suffix = IRITools.getNameByMatchingPrefix(axiom.getPredicateFullName(),mappedKnownNamespaces.get(axiom.getPredicateFullName()));
+                axiom.setPredicateName(IRITools.firstCharToLowerCase(suffix));
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    private void executeDefaultStrategy(AxiomJason axiom) {
         axiom.setPredicateName(IRITools.getSuffixIri(axiom.getPredicateFullName(),true));
     }
 }

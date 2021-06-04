@@ -35,7 +35,7 @@ public class SatisfiableResponse {
 
     @Override
     public String toString() {
-        String s = "InconsistentAxioms : ";
+        String s = "Unsatisfiable Axioms : ";
 
         for (OWLClass o : inconsistentAxioms){
             s += "\n"+o.toString();

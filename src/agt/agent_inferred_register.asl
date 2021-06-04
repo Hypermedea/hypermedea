@@ -18,14 +18,14 @@ registerPlan takes two parameters, one to name the merged ontology (just put wha
 to specify if we consider inferred axioms (true if the case, false otherwise)
 */
 
-entryPointRegister("ttl/test2.ttl",true,"ont1").
+entryPointRegister("ttl/example_onotology.ttl",true,"ont1").
 
 
 !start.
 
 +!start : true <-
     !create_artifact_ldfu;
-    !registerPlan("inferred_register",true);
+    !registerPlan(true);
     .print("Hello World");
     .
 

@@ -5,15 +5,12 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
 public class OntologyExtractionManager {
     public static OWLOntology extractOntology(String uri, boolean local) throws OWLOntologyCreationException {
-        // Get hold of an ontology manager
         OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-
         OWLOntology owlOntology = null;
         if (local){
             try {
@@ -35,7 +32,8 @@ public class OntologyExtractionManager {
         return owlOntology;
     }
 
-    public static OWLOntology extractOntologyFromSetIRI(HashMap<String, OntologyIRIHolder> listIRIOntology, String mergedOntologyIRI) {
+    public static OWLOntology extractOntologyFromSetIRI(HashMap<String, OntologyIRIHolder> listIRIOntology) {
+        String mergedOntologyIRI = "mergedOntology";
         OWLOntologyManager owlOntologyManager = OWLManager.createOWLOntologyManager();
         OWLOntology mergedOntology = null;
         HashSet<OWLAxiom> owlAxiomSet = new HashSet<>();
@@ -67,5 +65,10 @@ public class OntologyExtractionManager {
             e.printStackTrace();
         }
         return mergedOntology;
+    }
+
+    public static OWLOntology copyOntology(OWLOntology owlOntology) throws OWLOntologyCreationException {
+        OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+        return manager.createOntology(owlOntology.getAxioms());
     }
 }

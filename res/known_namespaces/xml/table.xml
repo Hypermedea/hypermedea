@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<entry key="http://example.org/">"ex"</entry>
+<entry key="http://example.com/">"ex"</entry>
+<entry key="http://xmlns.com/foaf/0.1/">"foaf"</entry>
+</properties>

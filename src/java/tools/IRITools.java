@@ -95,6 +95,15 @@ public class IRITools {
         return s;
     }
 
+
+    public static String removeQuotationMarks(String s){
+        char[] c = s.toCharArray();
+        if (c[0] == '\"' & c[c.length-1] == '\"'){
+            s = s.substring(1,s.length()-1);
+        }
+        return s;
+    }
+
     public static String getNameByMatchingPrefix(String namespace, String prefix){
         if (namespace.startsWith(prefix)){
             return namespace.substring(prefix.length(),namespace.length());

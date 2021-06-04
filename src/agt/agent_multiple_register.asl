@@ -25,7 +25,7 @@ entryPointRegister("https://www.w3.org/ns/ssn/",false,"ont2").
 
 +!start : true <-
     !create_artifact_ldfu;
-    !registerPlan("multiple_register",true);
+    !registerPlan(true);
     .print("Hello World");
     .
 

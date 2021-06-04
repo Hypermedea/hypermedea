@@ -12,10 +12,10 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 import cartago.*;
-import classes.Axiom_Jason;
+import classes.AxiomJason;
 import classes.OntologyIRIHolder;
 import classes.SatisfiableResponse;
-import classes.TestAnnotation;
+import classes.Triplet;
 import edu.kit.aifb.datafu.*;
 import edu.kit.aifb.datafu.consumer.impl.BindingConsumerCollection;
 import edu.kit.aifb.datafu.engine.EvaluateProgram;
@@ -34,10 +34,11 @@ import namespaceAPI.BeliefNamingStrategy;
 import ontologyAPI.AxiomExtractor;
 import ontologyAPI.InferredAxiomExtractor;
 import ontologyAPI.OntologyExtractionManager;
-import org.apache.jena.rdf.model.Model;
-import org.mapdb.Atomic;
+import org.apache.jena.base.Sys;
+import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.yars.nx.Node;
+import tools.IRITools;
 
 import static jason.asSyntax.ASSyntax.createStructure;
 
@@ -47,6 +48,7 @@ import static jason.asSyntax.ASSyntax.createStructure;
  * <p>
  * Contributors:
  * - Victor Charpenay (author), Mines Saint-Étienne
+ * - Noé SAFFAF, Mines Saint-Étienne
  */
 public class LinkedDataFuSpider extends Artifact {
 
@@ -59,9 +61,8 @@ public class LinkedDataFuSpider extends Artifact {
 	//private
 
 	//Register Save
-	private HashSet<Axiom_Jason> setAxiomJason;
+	private HashSet<AxiomJason> setAxiomJason;
 	private ArrayList<ObsProperty> listObsProperties;
-	private String lastMergedOntologyName;
 	private boolean lastInferredBool;
 	private boolean hasMadeRegister;
 
@@ -76,6 +77,10 @@ public class LinkedDataFuSpider extends Artifact {
 		LogManager.getLogManager().addLogger(log);
 	}
 
+	/**
+	 * Initiate the artifact by passing a programFile for the ldfu engine
+	 * @param programFile
+	 */
 	public void init(String programFile) {
 		try {
 			InputStream is = new FileInputStream(programFile);
@@ -110,6 +115,9 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 	}
 
+	/**
+	 * Initiate parameters and prepare the belief naming strategy by computing all known namespaces
+	 */
 	private void initParameters(){
 		listObsProperties = new ArrayList<>();
 		ontologyIRIHolders = new HashMap<>();
@@ -119,8 +127,14 @@ public class LinkedDataFuSpider extends Artifact {
 		beliefNamingStrategy.computeMappedKnownNamespaces();
 	}
 
+	/**
+	 * External action to add an ontology file to a pending list for the register action
+	 * @param iri The iri of the ontology resource file (a relative path if the option local is activated)
+	 * @param local a boolean option to declare whether the ontology file is to be looked locally or not, (true for local, false instead)
+	 * @param key A user-defined key to keep in track of a register ontology
+	 */
 	@OPERATION
-	public void addIRIMapping(String iri, boolean local, String key){
+	public void addIRIPendingRegister(String iri, boolean local, String key){
 		if (ontologyIRIHolders.containsKey(key)){
 			System.out.println("Key has already been affected");
 		} else {
@@ -132,8 +146,12 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 	}
 
+	/**
+	 * External action to remove an ontology file by key
+	 * @param key The ontology's key to be removed from the pending list
+	 */
 	@OPERATION
-	public void removeIRIMapping(String key){
+	public void removeIRIPendingRegister(String key){
 		if (ontologyIRIHolders.containsKey(key)){
 			ontologyIRIHolders.remove(key);
 		} else {
@@ -141,54 +159,32 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 	}
 
+	/**
+	 * External action to remove all ontologies from the pending list
+	 */
 	@OPERATION
-	public void removeAllIRIMapping(){
+	public void removeAllIRIPendingRegister(){
 		ontologyIRIHolders.clear();
 	}
 
+	/**
+	 * Deprecated, better use a verification from the agent space
+	 */
 	@OPERATION
 	public void isPresent(String st1, String st2, String st3, OpFeedbackParam<Boolean> result) {
 		result.set(hasObsPropertyByTemplate("rdf", st1, st2, st3));
 	}
 
+	/**
+	 * External action to register all the ontologies in the pending list, merge them into one merged ontology and create unary/binary beliefs (observable properties)
+	 * of class declarations object property declarations, data property declarations, owl annotations, and class insertions (instances of indivual) from the ontologies
+	 * files. It is possible to have inferred axioms.
+	 * @param inferred Option to have inferred axioms of the merged ontology
+	 */
 	@OPERATION
-	public void unregisterIRIbyKey(String key){
-		if (hasMadeRegister){
-			removeIRIMapping(key);
-			OWLOntology revisedOwlOntology = OntologyExtractionManager.extractOntologyFromSetIRI(ontologyIRIHolders, lastMergedOntologyName);
-			HashSet<Axiom_Jason> setRevisedAxiomJason = AxiomExtractor.extractPredicate(AxiomExtractor.extractAxioms(revisedOwlOntology));
-			if (lastInferredBool) {
-				InferredAxiomExtractor inferredAxiomExtractor = new InferredAxiomExtractor(revisedOwlOntology);
-				inferredAxiomExtractor.precomputeInferredAxioms();
-				setRevisedAxiomJason.addAll(inferredAxiomExtractor.getInferredTypes());
-				setRevisedAxiomJason.addAll(inferredAxiomExtractor.getInferredSuperclasses());
-				setRevisedAxiomJason.addAll(inferredAxiomExtractor.getInferredObjectProperties());
-				setRevisedAxiomJason.addAll(inferredAxiomExtractor.getInferredDataProperties());
-			}
-			HashSet<Axiom_Jason> deltaAxiomSet = this.setAxiomJason;
-			deltaAxiomSet.removeAll(setRevisedAxiomJason);
-
-
-			//System.out.println("delta size : " +  deltaAxiomSet.size());
-			for (Axiom_Jason axiomSet :  deltaAxiomSet) {
-				if (axiomSet.getPredicateContent().size() == 1) {
-					//System.out.println(axiomSet.getPredicateName() + " ::: " + axiomSet.getPredicateContent().get(0));
-					removeObsPropertyByTemplate(axiomSet.getPredicateName(), axiomSet.getPredicateContent().get(0));
-
-				} else if (axiomSet.getPredicateContent().size() == 2) {
-					removeObsPropertyByTemplate(axiomSet.getPredicateName(), axiomSet.getPredicateContent().get(0), axiomSet.getPredicateContent().get(1));
-				}
-			}
-
-		} else {
-			System.out.println("No register has been made");
-		}
-	}
-
-	@OPERATION
-	public void register(String mergedOntologyIRI, boolean inferred) {
-		HashSet<Axiom_Jason> setAxiomJason;
-		OWLOntology owlOntology = OntologyExtractionManager.extractOntologyFromSetIRI(ontologyIRIHolders, mergedOntologyIRI);
+	public void register(boolean inferred) {
+		HashSet<AxiomJason> setAxiomJason;
+		OWLOntology owlOntology = OntologyExtractionManager.extractOntologyFromSetIRI(ontologyIRIHolders);
 
 		if (owlOntology == null){
 			return;
@@ -199,7 +195,6 @@ public class LinkedDataFuSpider extends Artifact {
 
 		setAxiomJason = AxiomExtractor.extractPredicate(owlAxiomSet);
 		lastInferredBool = inferred;
-		lastMergedOntologyName = mergedOntologyIRI;
 		hasMadeRegister = true;
 
 		//Case We want to have inferred axioms
@@ -214,10 +209,9 @@ public class LinkedDataFuSpider extends Artifact {
 
 		//We check ontology for data used for a strategy to name beliefs
 		beliefNamingStrategy.computeMappedLabels(owlClassSet, owlOntology);
+		beliefNamingStrategy.computeMappedPreferredNamespaces(owlClassSet, owlOntology);
 
-		//TODO : A décommenter quand debug
-		//beliefNamingStrategy.computeMappedPreferredNamespaces("get.n3",null);
-		for (Axiom_Jason axiom : setAxiomJason){
+		for (AxiomJason axiom : setAxiomJason){
 			beliefNamingStrategy.generateNameBelief(axiom,true,true,true);
 		}
 
@@ -226,15 +220,15 @@ public class LinkedDataFuSpider extends Artifact {
 
 
 
-		for (Axiom_Jason axiom : setAxiomJason ) {
+		for (AxiomJason axiom : setAxiomJason ) {
 			if (axiom.getPredicateContent().size() == 1) {
 				//System.out.println("checkEmpty : "+ axiom.getPredicateName());
 				ObsProperty obsProperty = defineObsProperty(axiom.getPredicateName(), axiom.getPredicateContent().get(0));
-				Structure s = createStructure("namespace", new Atom(axiom.getPredicateFullName()));
+				Structure s = createStructure("predicate_uri", new Atom(axiom.getPredicateFullName()));
 				obsProperty.addAnnot(s);
 			} else if (axiom.getPredicateContent().size() == 2) {
-				ObsProperty obsProperty = defineObsProperty(axiom.getPredicateName(), axiom.getPredicateContent().get(0));
-				Structure s = createStructure("namespace", new Atom(axiom.getPredicateFullName()));
+				ObsProperty obsProperty = defineObsProperty(axiom.getPredicateName(), axiom.getPredicateContent().get(0), axiom.getPredicateContent().get(1));
+				Structure s = createStructure("predicate_uri", new Atom(axiom.getPredicateFullName()));
 				obsProperty.addAnnot(s);
 			}
 		}
@@ -242,6 +236,63 @@ public class LinkedDataFuSpider extends Artifact {
 		this.owlOntology = owlOntology;
 	}
 
+	/**
+	 * External action to unregister an ontology by key, it recalculate all axioms with the removed ontology and compare it to the previous ones, and removes
+	 * from the observable ontology database the delta difference
+	 * @param key The ontology's key to be removed from the merged ontology with is related observable properties
+	 */
+	@OPERATION
+	public void unregisterIRIbyKey(String key){
+		if (hasMadeRegister){
+			removeIRIPendingRegister(key);
+			OWLOntology revisedOwlOntology = OntologyExtractionManager.extractOntologyFromSetIRI(ontologyIRIHolders);
+			HashSet<AxiomJason> setRevisedAxiomJason = AxiomExtractor.extractPredicate(AxiomExtractor.extractAxioms(revisedOwlOntology));
+			if (lastInferredBool) {
+				InferredAxiomExtractor inferredAxiomExtractor = new InferredAxiomExtractor(revisedOwlOntology);
+				inferredAxiomExtractor.precomputeInferredAxioms();
+				setRevisedAxiomJason.addAll(inferredAxiomExtractor.getInferredTypes());
+				setRevisedAxiomJason.addAll(inferredAxiomExtractor.getInferredSuperclasses());
+				setRevisedAxiomJason.addAll(inferredAxiomExtractor.getInferredObjectProperties());
+				setRevisedAxiomJason.addAll(inferredAxiomExtractor.getInferredDataProperties());
+			}
+			HashSet<AxiomJason> deltaAxiomSet = this.setAxiomJason;
+			deltaAxiomSet.removeAll(setRevisedAxiomJason);
+
+
+			//System.out.println("delta size : " +  deltaAxiomSet.size());
+			int numberDeleted = 0;
+			for (AxiomJason axiomSet :  deltaAxiomSet) {
+				if (axiomSet.getPredicateContent().size() == 1) {
+					// TODO : There is a weird bug here, we try to remove wrong predicate like "definition", to check after
+					//System.out.println(axiomSet.getPredicateName() + " ::: " + axiomSet.getPredicateContent().get(0));
+
+					if (hasObsPropertyByTemplate(axiomSet.getPredicateName(), axiomSet.getPredicateContent().get(0)))
+					{
+						removeObsPropertyByTemplate(axiomSet.getPredicateName(), axiomSet.getPredicateContent().get(0));
+						numberDeleted++;
+					}
+
+
+				} else if (axiomSet.getPredicateContent().size() == 2) {
+					// TODO : Same
+					//System.out.println(axiomSet.getPredicateName() + " ::: " + axiomSet.getPredicateContent().get(0) + " ::: " + axiomSet.getPredicateContent().get(1));
+					if (hasObsPropertyByTemplate(axiomSet.getPredicateName(), axiomSet.getPredicateContent().get(0), axiomSet.getPredicateContent().get(1))){
+						removeObsPropertyByTemplate(axiomSet.getPredicateName(), axiomSet.getPredicateContent().get(0), axiomSet.getPredicateContent().get(1));
+						numberDeleted++;
+					}
+				}
+			}
+			System.out.println("Number of ObsProperties deleted : "+numberDeleted);
+		} else {
+			System.out.println("No register has been made");
+		}
+	}
+
+	/**
+	 * Eternal Action to check if the ontology is Consistent (has NamedIndividual instance of an unsatisfiable class)
+	 * @param b A boolean parameter to unify with the response of the External action
+	 * @param report A string parameter to unify with the message report of the External action
+	 */
 	@OPERATION
 	public void isConsistent(OpFeedbackParam<Boolean> b, OpFeedbackParam<String> report){
 		if (owlOntology == null){
@@ -259,6 +310,12 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 	}
 
+	/**
+	 * Eternal Action to check if the ontology is Satisfiable
+	 * @param displayClasses An option to feed the report message with all the unsatisfiable classes
+	 * @param b A boolean parameter to unify with the response of the External action
+	 * @param report A string parameter to unify with the message report of the External action
+	 */
 	@OPERATION
 	public void isSatisfiable(boolean displayClasses, OpFeedbackParam<Boolean> b, OpFeedbackParam<String> report){
 		if (owlOntology == null){
@@ -282,6 +339,14 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 
+	/**
+	 * Deprecated
+	 * @param st1
+	 * @param st2
+	 * @param st3
+	 * @param index
+	 * @param st4
+	 */
 	@OPERATION
 	public void update(String st1, String st2, String st3, int index, String st4) {
 		ObsProperty op = getObsPropertyByTemplate("rdf", st1, st2, st3);
@@ -289,15 +354,17 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
-	 * executes the Linked Data program and notifies agent with collected triples.
+	 * External action to execute the Linked Data program and notifies agent with collected triples and their unary
+	 * binary axioms according to the already registered ontologies. Can accept local file and can have the inferred
+	 * axioms (Class assertion only) of the unary/binary beliefs
+	 * @param originURI The entrypoint for the data graph file to crawl, can be a local path if the option local is activated
+	 * @param local A boolean option to declare whether the data graph file is to be looked locally or not, (true for local, false instead)
+	 * @param inferred A boolean option to chose if inferred axioms should also be considered
 	 */
 	@OPERATION
-	public void crawl(String originURI, boolean local) {
+	public void crawl(String originURI, boolean local, boolean inferred) {
 
-		if (local) {
-			// TODO case for local, not implemented yet
-			return;
-		}
+		ArrayList<Triplet> triplets = new ArrayList<Triplet>();
 
 		if (program == null) return;
 
@@ -307,14 +374,25 @@ public class LinkedDataFuSpider extends Artifact {
 		eval.start();
 
 		try {
-			eval.getInputOriginConsumer().consume(new RequestOrigin(new URI(originURI), Request.Method.GET));
+			if (local){
+				eval.getInputOriginConsumer().consume(new FileOrigin(new File(originURI), FileOrigin.Mode.READ, null));
+			} else {
+				eval.getInputOriginConsumer().consume(new RequestOrigin(new URI(originURI), Request.Method.GET));
+			}
 
 			eval.awaitIdleAndFinish();
 			eval.shutdown();
 
+			String subject;
+			String predicate;
+			String object;
 			for (Binding binding : triples.getCollection()) {
 				Node[] st = binding.getNodes().getNodeArray();
-				defineObsProperty("rdf", st[0].getLabel(), st[1].getLabel(), st[2].getLabel());
+				subject = st[0].getLabel();
+				predicate = st[1].getLabel();
+				object = st[2].getLabel();
+				defineObsProperty("rdf", subject, predicate, object);
+				triplets.add(new Triplet(subject, predicate, object));
 			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -323,5 +401,35 @@ public class LinkedDataFuSpider extends Artifact {
 			// TODO throw it to make operation fail?
 			e.printStackTrace();
 		}
+
+		if (!hasMadeRegister) {
+			return;
+		}
+
+		try {
+			OntologyExtractionManager.copyOntology(owlOntology);
+			HashSet<AxiomJason> setAxiomJasonCrawl = AxiomExtractor.extractAxiomFromTriplet(triplets, owlOntology, inferred, OWLManager.createOWLOntologyManager());
+			//System.out.println(setAxiomJasonCrawl.size());
+			for (AxiomJason axiom : setAxiomJasonCrawl){
+				beliefNamingStrategy.generateNameBelief(axiom,true,true,true);
+				if (axiom.getPredicateContent().size() == 1) {
+					//System.out.println("checkEmpty : "+ axiom.getPredicateName());
+					ObsProperty obsProperty = defineObsProperty(axiom.getPredicateName(), axiom.getPredicateContent().get(0));
+					Structure s = createStructure("predicate_uri", new Atom(axiom.getPredicateFullName()));
+					obsProperty.addAnnot(s);
+				} else if (axiom.getPredicateContent().size() == 2) {
+					ObsProperty obsProperty = defineObsProperty(axiom.getPredicateName(), axiom.getPredicateContent().get(0), axiom.getPredicateContent().get(1));
+					Structure s = createStructure("predicate_uri", new Atom(axiom.getPredicateFullName()));
+					obsProperty.addAnnot(s);
+				}
+			}
+
+
+			//Add the crawl axiom to the general set, but this may not be desired, might remove it
+			this.setAxiomJason.addAll(setAxiomJasonCrawl);
+		} catch (OWLOntologyCreationException e){
+			e.printStackTrace();
+		}
+
 	}
 }

@@ -10,4 +10,7 @@ mas ldfu_mas {
 
     agent agent_inferred_register {
     }
+
+    agent agent_crawl_with_register {
+    }
 }

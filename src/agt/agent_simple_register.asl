@@ -25,7 +25,7 @@ entryPointRegister("https://www.w3.org/ns/sosa/",false,"ont1").
 
 +!start : true <-
     !create_artifact_ldfu;
-    !registerPlan("simple_register",false);
+    !registerPlan(false);
     .print("Hello World");
     .
 

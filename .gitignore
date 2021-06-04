@@ -1,0 +1,56 @@
+# Gradle
+# ------
+.gradle
+build/
+log/
+/log
+/*/build
+/*/*/build
+/*/*/*/build
+/*/*/*/*/build
+/*/docs/src/samples/**/build
+/*/docs/src/snippets/**/build
+/*/internal-android-performance-testing/build-android-libs
+test-splits/
+
+# IDEA
+# ----
+!/.idea
+/.idea/*
+!/.idea/codeStyles
+!/.idea/inspectionProfiles
+!/.idea/icon.png
+!/.idea/icon_dark.png
+*/**/.idea
+*/**/.shelf
+.shelf
+/*.iml
+/*/*.iml
+/*/*/*.iml
+/*/*/*/*.iml
+/*/*/*/*/*.iml
+/out
+/*/out
+/*/*/out
+/*/*/*/out
+/*/*/*/*/out
+/.teamcity/target
+/gradle.ipr
+/gradle.iws
+
+/gradlew
+/gradlew.bat
+/logging.properties
+
+/src/agt/experimental_crawl.asl
+/src/agt/test_agent_consistency_satisfiability.asl
+/src/agt/test_agent_consistency_satisfiability_v2.asl
+/src/agt/test_agent_crawl_with_register.asl
+/src/agt/test_agent_inferred_register.asl
+/src/agt/test_agent_merged_register.asl
+/src/agt/test_agent_simple_crawl.asl
+/src/agt/test_agent_simple_register.asl
+/src/agt/test_agent_unregister.asl
+
+/src/test/
+/jcm/test/

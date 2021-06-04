@@ -20,7 +20,7 @@ entryPointCrawl("https://www.wikidata.org/entity/Q2814098",false,"ont1").
 
 +!start : true <-
     !create_artifact_ldfu;
-    !crawlPlan;
+    !crawlPlan(false);
     !count;
     .print("Hello World");
     .

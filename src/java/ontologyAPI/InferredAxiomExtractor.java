@@ -1,6 +1,6 @@
 package ontologyAPI;
 
-import classes.Axiom_Jason;
+import classes.AxiomJason;
 import classes.ComparableArrayList;
 import classes.SatisfiableResponse;
 import org.semanticweb.HermiT.Reasoner.ReasonerFactory;
@@ -8,7 +8,6 @@ import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.reasoner.InferenceType;
 import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
-import tools.BeliefsSyntaxTools;
 import tools.IRITools;
 
 import java.util.HashSet;
@@ -45,8 +44,6 @@ public class InferredAxiomExtractor {
             } else {
                 return new SatisfiableResponse(false, null);
             }
-
-
             /*
             // get root of unstaisfiableClasses, and get their explanations
             BlackBoxExplanation bb = new BlackBoxExplanation(owlOntology, reasonerFactory, reasoner);
@@ -59,8 +56,8 @@ public class InferredAxiomExtractor {
         }
     }
 
-    public HashSet<Axiom_Jason> getInferredSuperclasses(){
-        HashSet<Axiom_Jason> axiomSet = new HashSet<Axiom_Jason>();
+    public HashSet<AxiomJason> getInferredSuperclasses(){
+        HashSet<AxiomJason> axiomSet = new HashSet<AxiomJason>();
         for (OWLClass c : owlOntology.getClassesInSignature()) {
             // the boolean argument specifies direct subclasses
             NodeSet<OWLClass> superClasses = reasoner.getSuperClasses(c,false);
@@ -68,9 +65,9 @@ public class InferredAxiomExtractor {
                 //System.out.println(c.toString() +" :: " +superClass.toString());
                 if (!superClass.toString().contains("owl:Thing") && !superClass.toString().contains("owl#Thing")){
                     ComparableArrayList<String> content = new ComparableArrayList<String>();
-                    content.add(c.toString());
-                    content.add(superClass.toString());
-                    Axiom_Jason axiom = new Axiom_Jason(content, "<http://www.w3.org/2000/01/rdf-schema#SubClassOf>");
+                    content.add(IRITools.removeWrapperUri(IRITools.removeWrapperUri(c.toString())));
+                    content.add(IRITools.removeWrapperUri(IRITools.removeWrapperUri(superClass.toString())));
+                    AxiomJason axiom = new AxiomJason(content, "http://www.w3.org/2000/01/rdf-schema#SubClassOf");
                     if (!axiomSet.contains(axiom)){
                         axiomSet.add(axiom);
                     }
@@ -80,17 +77,17 @@ public class InferredAxiomExtractor {
         return axiomSet;
     }
 
-    public HashSet<Axiom_Jason> getInferredTypes(){
-        HashSet<Axiom_Jason> axiomSet = new HashSet<Axiom_Jason>();
+    public HashSet<AxiomJason> getInferredTypes(){
+        HashSet<AxiomJason> axiomSet = new HashSet<AxiomJason>();
         for (OWLNamedIndividual n : owlOntology.getIndividualsInSignature()) {
             NodeSet<OWLClass> classTypeSet = reasoner.getTypes(n, false);
             // the boolean argument specifies direct subclasses
             for (OWLClass owlClass : classTypeSet.getFlattened()) {
                 if (!owlClass.toString().contains("owl:Thing") && !owlClass.toString().contains("owl#Thing")) {
                     ComparableArrayList<String> content = new ComparableArrayList<String>();
-                    content.add(n.toString());
-                    String axiomFullName = owlClass.toString();
-                    Axiom_Jason axiom = new Axiom_Jason( content, axiomFullName);
+                    content.add(IRITools.removeWrapperUri(n.toString()));
+                    String axiomFullName = IRITools.removeWrapperUri(owlClass.toString());
+                    AxiomJason axiom = new AxiomJason( content, axiomFullName);
                     if (!axiomSet.contains(axiom)){
                         axiomSet.add(axiom);
                     }
@@ -100,17 +97,17 @@ public class InferredAxiomExtractor {
         return axiomSet;
     }
 
-    public HashSet<Axiom_Jason> getInferredObjectProperties() {
-        HashSet<Axiom_Jason> axiomSet = new HashSet<Axiom_Jason>();
+    public HashSet<AxiomJason> getInferredObjectProperties() {
+        HashSet<AxiomJason> axiomSet = new HashSet<AxiomJason>();
         for (OWLObjectProperty o : owlOntology.getObjectPropertiesInSignature()) {
             // the boolean argument specifies direct subclasses
             NodeSet<OWLObjectPropertyExpression> superObjectProperties = reasoner.getSuperObjectProperties(o, false);
             for (OWLObjectPropertyExpression superObjectProperty : superObjectProperties.getFlattened()) {
                 if (!superObjectProperty.toString().contains("owl:topObjectProperty") && !superObjectProperty.toString().contains("owl#topObjectProperty")) {
                     ComparableArrayList<String> content = new ComparableArrayList<String>();
-                    content.add(o.toString());
-                    content.add(superObjectProperty.toString());
-                    Axiom_Jason axiom = new Axiom_Jason(content,"<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>");
+                    content.add(IRITools.removeWrapperUri(o.toString()));
+                    content.add(IRITools.removeWrapperUri(superObjectProperty.toString()));
+                    AxiomJason axiom = new AxiomJason(content,"http://www.w3.org/2000/01/rdf-schema#subPropertyOf");
                     if (!axiomSet.contains(axiom)){
                         axiomSet.add(axiom);
                     }
@@ -120,17 +117,17 @@ public class InferredAxiomExtractor {
         return axiomSet;
     }
 
-    public HashSet<Axiom_Jason> getInferredDataProperties() {
-        HashSet<Axiom_Jason> axiomSet = new HashSet<Axiom_Jason>();
+    public HashSet<AxiomJason> getInferredDataProperties() {
+        HashSet<AxiomJason> axiomSet = new HashSet<AxiomJason>();
         for (OWLDataProperty d : owlOntology.getDataPropertiesInSignature()) {
             // the boolean argument specifies direct subclasses
             NodeSet<OWLDataProperty> superDataProperties = reasoner.getSuperDataProperties(d,false);
             for (OWLDataProperty superDataProperty : superDataProperties.getFlattened()) {
                 if (!superDataProperty.toString().contains("owl:topDataProperty") && !superDataProperty.toString().contains("owl#topDataProperty")) {
                     ComparableArrayList<String> content = new ComparableArrayList<String>();
-                    content.add(d.toString());
-                    content.add(superDataProperty.toString());
-                    Axiom_Jason axiom = new Axiom_Jason(content,"<http://www.w3.org/2000/01/rdf-schema#subPropertyOf>");
+                    content.add(IRITools.removeWrapperUri(d.toString()));
+                    content.add(IRITools.removeWrapperUri(superDataProperty.toString()));
+                    AxiomJason axiom = new AxiomJason(content,"http://www.w3.org/2000/01/rdf-schema#subPropertyOf");
                     if (!axiomSet.contains(axiom)){
                         axiomSet.add(axiom);
                     }

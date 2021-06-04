@@ -2,6 +2,9 @@ package classes;
 
 import java.util.Objects;
 
+/**
+ * A class to keep in track of all the ontologies in the pending list
+ */
 public class OntologyIRIHolder {
     public static final String distant = "Distant";
     public static final String local = "Local";

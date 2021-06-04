@@ -7,12 +7,12 @@
      focus(ART_ID);
      .
 
-+!registerPlan(NAME_MERGED_ONTOLOGY,INFERRED_BOOL) : true <-
++!registerPlan(INFERRED_BOOL) : true <-
     .wait(1000);
 	for (entryPointRegister(IRI, LOCAL_ONTOLOGY_BOOL,KEY)){
-       	addIRIMapping(IRI,LOCAL_ONTOLOGY_BOOL,KEY);
+       	addIRIPendingRegister(IRI,LOCAL_ONTOLOGY_BOOL,KEY);
  	}
-    register(NAME_MERGED_ONTOLOGY,INFERRED_BOOL);
+    register(INFERRED_BOOL);
 	.
 
 +!unregisterPlan(KEY) : true <-
@@ -22,11 +22,11 @@
 
 
 
-+!crawlPlan : true <-
++!crawlPlan(INFERRED_BOOL) : true <-
     .wait(1000);
 	for (entryPointCrawl(IRI, LOCAL_ONTOLOGY_BOOL, KEY)){
 		// crawl RDF triples according to the LD program registered by ldfu_artifact (get.n3)
-    	crawl(IRI, LOCAL_ONTOLOGY_BOOL);
+    	crawl(IRI, LOCAL_ONTOLOGY_BOOL, INFERRED_BOOL);
     	// count triples and display result
     	!count;
     	//.wait(1000);

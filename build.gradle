@@ -74,6 +74,19 @@ task runLeubot (type: JavaExec, dependsOn: 'classes') {
     classpath sourceSets.main.runtimeClasspath
 }
 
+task runLdfuSpiderTest (type: JavaExec, dependsOn: 'classes') {
+    //workingDir 'jcm'
+    main = 'jacamo.infra.JaCaMoLauncher'
+    args 'jcm/test/ldfu_spider_test.jcm'
+    classpath sourceSets.main.runtimeClasspath
+}
+
+task runExperimentalTest (type: JavaExec, dependsOn: 'classes') {
+    //workingDir 'jcm'
+    main = 'jacamo.infra.JaCaMoLauncher'
+    args 'jcm/test/experimental_test.jcm'
+    classpath sourceSets.main.runtimeClasspath
+}
 
 clean {
     delete 'bin'
