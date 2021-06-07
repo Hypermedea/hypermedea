@@ -13,9 +13,9 @@ reset_action(Thing, Action) :- thing(Thing) & base(Base) & .concat(Base, "reset"
     <-
     // To also execute the requests, remove the second init parameter (dryRun flag).
     // When dryRun is set to true, the requests are printed (but not executed).
-    //makeArtifact(Name, "tools.ThingArtifact", [Thing, false], ArtId);
+    //makeArtifact(Name, "hypermedia.ThingArtifact", [Thing, false], ArtId);
     //.println("PAY ATTENTION: I am in dryRun=True mode");
-    makeArtifact("leubot", "tools.ThingArtifact", [Thing, false], ArtId);
+    makeArtifact("leubot", "hypermedia.ThingArtifact", [Thing, false], ArtId);
     focus(ArtId);
 
     // Set API key is a call of the operation setAPIKey on the ThingArtifact

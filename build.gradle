@@ -4,7 +4,7 @@
  */
 
 plugins {
-    id 'java-library'
+    id 'java'
     id 'maven-publish'
 }
 
@@ -14,9 +14,9 @@ group   'org.jacamo'
 repositories {
     mavenCentral()
     // artifact repository for JaCaMo-related project
-    maven { url "https://raw.github.com/jacamo-lang/mvn-repo/master" }
+    maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
     // artifact repository for Linked-Data-Fu
-    maven { url "https://paul.ti.rw.fau.de/maven/repository/" }
+    maven { url 'https://paul.ti.rw.fau.de/maven/repository/' }
 }
 
 dependencies {
@@ -25,11 +25,15 @@ dependencies {
     compile group: 'edu.kit.aifb.linkeddatafu', name: 'linked-data-fu-standalone', version: '0.9.12'
 }
 
-task runLdfuSpider (type: JavaExec, dependsOn: 'classes') {
-    workingDir 'examples/ldfu-spider'
-    main = 'jacamo.infra.JaCaMoLauncher'
-    args 'ldfu_spider.jcm'
-    classpath sourceSets.main.runtimeClasspath
+publishing {
+    publications {
+        lib(MavenPublication) {
+            from components.java
+        }
+    }
+
+    // TODO add Maven Central repo with auth
+    // see https://docs.gradle.org/4.4.1/userguide/publishing_maven.html
 }
 
 task runLeubot (type: JavaExec, dependsOn: 'classes') {
