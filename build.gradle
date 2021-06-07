@@ -3,7 +3,10 @@
  * 
  */
 
-apply plugin: 'java'
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
 
 version '0.1'
 group   'org.jacamo'
@@ -12,14 +15,14 @@ repositories {
     mavenCentral()
     // artifact repository for JaCaMo-related project
     maven { url "https://raw.github.com/jacamo-lang/mvn-repo/master" }
-    // local libraries
-    flatDir { dirs 'lib' }
+    // artifact repository for Linked-Data-Fu
+    maven { url "https://paul.ti.rw.fau.de/maven/repository/" }
 }
 
 dependencies {
     compile group: 'org.jacamo', name: 'jacamo', version: '0.9'
     compile group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
-    compile fileTree(dir: 'lib/ldfu', include: '*.jar')
+    compile group: 'edu.kit.aifb.linkeddatafu', name: 'linked-data-fu-standalone', version: '0.9.12'
 }
 
 task runLdfuSpider (type: JavaExec, dependsOn: 'classes') {
