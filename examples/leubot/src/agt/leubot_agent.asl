@@ -4,7 +4,7 @@ reset_action(Thing, Action) :- thing(Thing) & base(Base) & .concat(Base, "reset"
     true
     <-
     .print("Leubot agent started.");
-    !!run(Name);
+    !!run("leubot");
   .
 
 +!run(Name) :
@@ -22,13 +22,13 @@ reset_action(Thing, Action) :- thing(Thing) & base(Base) & .concat(Base, "reset"
     setAPIKey(Token)[artifact_name(Name)];
 
     // goal of potting Items using the thing
-    !reset(Thing);
+    !reset(Thing, Name);
 
     // then, you can invoke other actions, such as "gripper", "wristle/angle", ...
   .
 
 // Plan for invoking the action affordance reset
-+!reset(Thing) :
++!reset(Thing, Name) :
     thing(Thing)
     <-
     ?reset_action(Thing, ActionName);
