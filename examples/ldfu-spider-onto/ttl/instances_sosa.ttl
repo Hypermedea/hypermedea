@@ -1,0 +1,16 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xs:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <http://www.myexample.org/> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+
+
+ex:ExamplePlatform1 rdf:type sosa:Platform ;
+                         rdfs:label "ExamplePlatform1" .
+
+ex:ExampleSensor1 rdf:type sosa:Sensor ;
+                      sosa:isHostedBy ex:ExamplePlateform1 .
+
+ex:ExampleSensor2 rdf:type sosa:Sensor ;
+                      sosa:isHostedBy ex:ExamplePlateform2 ;
+                      rdfs:label "ExampleSensor2" .

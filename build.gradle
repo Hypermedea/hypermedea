@@ -23,6 +23,8 @@ dependencies {
     compile group: 'org.jacamo', name: 'jacamo', version: '0.9'
     compile group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
     compile group: 'edu.kit.aifb.linkeddatafu', name: 'linked-data-fu-standalone', version: '0.9.12'
+    compile group: 'net.sourceforge.owlapi', name: 'owlapi-apibinding', version: '5.1.17'
+    compile group: 'com.hermit-reasoner', name: 'org.semanticweb.hermit', version: '1.3.8.1'
 }
 
 publishing {
