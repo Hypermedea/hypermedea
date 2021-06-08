@@ -1,4 +1,4 @@
-reset_action(Thing, Action) :- thing(Thing) & base(Base) & .concat(Base, "reset", Action) .
+reset_action(Thing, Action, "reset") :- thing(Thing) & base(Base) & .concat(Base, "reset", Action) .
 
 +!start :
     true
@@ -31,7 +31,7 @@ reset_action(Thing, Action) :- thing(Thing) & base(Base) & .concat(Base, "reset"
 +!reset(Thing, Name) :
     thing(Thing)
     <-
-    ?reset_action(Thing, ActionName);
+    ?reset_action(Thing, ActionId, ActionName);
     .println("---> ",Thing," invoke operation ",ActionName);
     invokeAction(ActionName,[])[artifact_name(Name)];
     .println("---> ",Thing," operation invoked ",ActionName);
