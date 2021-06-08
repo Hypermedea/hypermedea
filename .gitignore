@@ -38,9 +38,9 @@ test-splits/
 /gradle.ipr
 /gradle.iws
 
-/gradlew
-/gradlew.bat
-/logging.properties
+gradlew
+gradlew.bat
+logging.properties
 
 /src/agt/experimental_crawl.asl
 /src/agt/test_agent_consistency_satisfiability.asl
@@ -54,3 +54,5 @@ test-splits/
 
 /src/test/
 /jcm/test/
+
+*.gitignore
