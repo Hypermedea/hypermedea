@@ -1,10 +1,13 @@
-reset_action(Thing, Action) :- thing(Thing) & base(Base) & .concat(Base, "reset", Action) .
+reset_action(Thing, Action, "reset") :- thing(Thing) & base(Base) & .concat(Base, "reset", Action) .
+move_to_action(Thing, Action, "moveTo") :- thing(Thing) & base(Base) & .concat(Base, "moveTo", Action) .
+grasp_action(Thing, Action, "grasp") :- thing(Thing) & base(Base) & .concat(Base, "grasp", Action) .
+release_action(Thing, Action, "release") :- thing(Thing) & base(Base) & .concat(Base, "release", Action) .
 
 +!start :
     true
     <-
     .print("Leubot agent started.");
-    !!run(Name);
+    !!run("leubot");
   .
 
 +!run(Name) :
@@ -22,20 +25,66 @@ reset_action(Thing, Action) :- thing(Thing) & base(Base) & .concat(Base, "reset"
     setAPIKey(Token)[artifact_name(Name)];
 
     // goal of potting Items using the thing
-    !reset(Thing);
+    !reset(Thing, Name);
+    !interval;
 
-    // then, you can invoke other actions, such as "gripper", "wristle/angle", ...
+    // then, you can invoke other actions: "moveTo", "grasp", "release"
+    !move_to(Thing, Name, [12, 10, 10]);
+    !interval;
+
+    !grasp(Thing, Name);
+    !interval;
+
+    !release(Thing, Name);
+    !interval;
+
+    !reset(Thing, Name);
+    .println("Leubot is back to its initial position")
+
   .
 
 // Plan for invoking the action affordance reset
-+!reset(Thing) :
++!reset(Thing, Name) :
     thing(Thing)
     <-
-    ?reset_action(Thing, ActionName);
+    ?reset_action(Thing, ActionId, ActionName);
     .println("---> ",Thing," invoke operation ",ActionName);
     invokeAction(ActionName,[])[artifact_name(Name)];
     .println("---> ",Thing," operation invoked ",ActionName);
   .
+
+// Plan for invoking the action affordance moveTo
++!move_to(Thing, Name, Coordinates) :
+    thing(Thing)
+    <-
+    ?move_to_action(Thing, ActionId, ActionName);
+    .println("---> ",Thing," invoke operation ",ActionName);
+    invokeAction(ActionName, ["x", "y", "z"], Coordinates)[artifact_name(Name)];
+    .println("---> ",Thing," operation invoked ",ActionName);
+  .
+
+// Plan for invoking the action affordance grasp
++!grasp(Thing, Name) :
+    thing(Thing)
+    <-
+    ?grasp_action(Thing, ActionId, ActionName);
+    .println("---> ",Thing," invoke operation ",ActionName);
+    invokeAction(ActionName,[])[artifact_name(Name)];
+    .println("---> ",Thing," operation invoked ",ActionName);
+  .
+
+// Plan for invoking the action affordance release
++!release(Thing, Name) :
+    thing(Thing)
+    <-
+    ?release_action(Thing, ActionId, ActionName);
+    .println("---> ",Thing," invoke operation ",ActionName);
+    invokeAction(ActionName,[])[artifact_name(Name)];
+    .println("---> ",Thing," operation invoked ",ActionName);
+  .
+
+// Time interval for safe interactions
++!interval : true <- .wait(3000).
 
 { include("$jacamoJar/templates/common-cartago.asl") }
 { include("$jacamoJar/templates/common-moise.asl") }
