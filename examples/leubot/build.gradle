@@ -1,0 +1,61 @@
+/**
+ * Example project using the ThingArtifact class to ease interaction with WoT devices desribed by Thing Descriptions.
+ *
+ */
+
+defaultTasks 'run'
+
+apply plugin: 'java'
+
+version '0.1'
+group   'org.jacamo'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    // artifact repository for JaCaMo-related project
+    maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
+    // artifact repository for Linked-Data-Fu
+    maven { url 'https://paul.ti.rw.fau.de/maven/repository/' }
+
+    // only used for testing new versions of hypermedia-jacamo
+    // TODO replace with publications on Maven Central
+    mavenLocal()
+}
+
+dependencies {
+    compile group: 'org.jacamo', name: 'hypermedia-jacamo', version: '0.1'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/env'
+            srcDir 'src/agt'
+            srcDir 'src/org'
+            srcDir 'src/java'
+        }
+        resources {
+            srcDir 'src/resources'
+        }
+    }
+}
+
+task run (type: JavaExec, dependsOn: 'classes') {
+    group ' JaCaMo'
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
+    main 'jacamo.infra.JaCaMoLauncher'
+    args 'leubot.jcm'
+    classpath sourceSets.main.runtimeClasspath
+}
+
+clean {
+    delete 'bin'
+    delete 'build'
+    delete 'log'
+}
