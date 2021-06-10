@@ -1,4 +1,6 @@
-# Hypermedia JaCaMo
+![Hypermedia Programming Framework](img/banner.png)
+
+# Hypermedea
 
 ## Getting started
 
