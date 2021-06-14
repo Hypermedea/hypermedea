@@ -1,57 +1,35 @@
-
-/**
- * Example project using the Linked-Data-Fu spider artifact to retrieve RDF graphs on the Web.
+/*
+ * Hypermedia JaCaMo build file
  *
  */
-apply plugin: 'java'
-apply plugin: 'eclipse'
 
-version '1.0'
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+version '0.1'
 group   'org.jacamo'
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
-    maven { url "https://raw.github.com/jacamo-lang/mvn-repo/master" }
-    maven { url "https://mvnrepository.com/artifact/net.sourceforge.owlapi/owlapi-apibinding"}
-    maven { url "https://mvnrepository.com/artifact/org.apache.jena/apache-jena"}
-    flatDir {
-        dirs 'lib'
-    }
-}
-
-sourceSets {
-    main {
-        java {
-            srcDir 'src/env'
-            srcDir 'src/agt'
-            srcDir 'src/org'
-            srcDir 'src/java'
-        }
-        resources {
-            srcDir 'src/resources'
-        }
-    }
+    // artifact repository for JaCaMo-related project
+    maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
+    // artifact repository for Linked-Data-Fu
+    maven { url 'https://paul.ti.rw.fau.de/maven/repository/' }
 }
 
 dependencies {
-    compile group: "org.apache.jena", name: "apache-jena", version: "3.1.0"
-    compile group: 'com.hermit-reasoner', name: 'org.semanticweb.hermit', version: '1.3.8.1'
     compile group: 'org.jacamo', name: 'jacamo', version: '0.9'
-    compile 'org.jacamo:jacamo-rest:0.6-SNAPSHOT'
     compile group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
+    compile group: 'edu.kit.aifb.linkeddatafu', name: 'linked-data-fu-standalone', version: '0.9.12'
     compile group: 'net.sourceforge.owlapi', name: 'owlapi-apibinding', version: '5.1.17'
-    compile fileTree(dir: 'lib/ldfu', include: '*.jar')
+    compile group: 'com.hermit-reasoner', name: 'org.semanticweb.hermit', version: '1.3.8.1'
 }
 
 sourceSets {
     main {
         java {
-            srcDir 'src/env'
-            srcDir 'src/agt'
-            srcDir 'src/org'
             srcDir 'src/java'
         }
         resources {
@@ -60,34 +38,77 @@ sourceSets {
     }
 }
 
+
+publishing {
+    publications {
+        lib(MavenPublication) {
+            from components.java
+        }
+    }
+
+    // TODO add Maven Central repo with auth
+    // see https://docs.gradle.org/4.4.1/userguide/publishing_maven.html
+}
+
+
+// Examples
 task runLdfuSpider (type: JavaExec, dependsOn: 'classes') {
-    //workingDir 'jcm'
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
     main = 'jacamo.infra.JaCaMoLauncher'
-    args 'jcm/example/ldfu_spider.jcm'
+    args 'ldfu_spider_onto.jcm'
+    workingDir 'examples/ldfu-spider-onto/'
     classpath sourceSets.main.runtimeClasspath
 }
 
 task runLeubot (type: JavaExec, dependsOn: 'classes') {
-    //workingDir 'jcm'
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
     main = 'jacamo.infra.JaCaMoLauncher'
-    args 'jcm/example/leubot.jcm'
+    args 'examples/leubot/leubot.jcm'
     classpath sourceSets.main.runtimeClasspath
 }
 
+// Tests
 task runLdfuSpiderTest (type: JavaExec, dependsOn: 'classes') {
-    //workingDir 'jcm'
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
     main = 'jacamo.infra.JaCaMoLauncher'
-    args 'jcm/test/ldfu_spider_test.jcm'
+    args 'ldfu_spider_onto_test.jcm'
+    workingDir = 'test/ldfu-spider-onto/'
+    classpath sourceSets.main.runtimeClasspath
+}
+
+
+task runLdfuSpiderEvaluationTest (type: JavaExec, dependsOn: 'classes') {
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
+    main = 'jacamo.infra.JaCaMoLauncher'
+    args 'ldfu_spider_onto_execution_time_test.jcm'
+    workingDir = 'test/ldfu-spider-onto/'
     classpath sourceSets.main.runtimeClasspath
 }
 
 task runExperimentalTest (type: JavaExec, dependsOn: 'classes') {
-    //workingDir 'jcm'
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
     main = 'jacamo.infra.JaCaMoLauncher'
-    args 'jcm/test/experimental_test.jcm'
+    args 'experimental_test.jcm'
+    workingDir = 'test/ldfu-spider-onto/'
     classpath sourceSets.main.runtimeClasspath
 }
 
+// Clean up
 clean {
     delete 'bin'
     delete 'build'

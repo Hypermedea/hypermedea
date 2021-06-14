@@ -1,0 +1,79 @@
+mas ldfu_mas {
+    /*
+    agent test_agent_simple_crawl {
+        goals: testUnit
+        beliefs: entryPointCrawl("https://www.w3.org/ns/sosa/")
+    }
+    //entryPointCrawl("https://www.wikidata.org/entity/Q2814098")
+
+
+    agent test_agent_simple_register {
+        goals: testUnit
+        beliefs: entryPointRegister("https://www.w3.org/ns/sosa/")
+    }
+
+    agent test_agent_merged_register {
+        goals: testUnit
+        beliefs: entryPointRegister("https://www.w3.org/ns/sosa/")
+                 entryPointRegister("https://www.w3.org/ns/ssn/")
+    }
+
+    agent test_agent_inferred_register {
+        goals: testUnit
+        beliefs: entryPointRegister("ttl/example_ontology.ttl")
+    }
+
+    agent test_agent_consistency_satisfiability {
+        goals: testUnit
+        beliefs: entryPointRegister("ttl/example_ontology.ttl")
+    }
+
+
+    agent test_agent_consistency_satisfiability_v2 {
+        goals: testUnit
+        beliefs: entryPointRegister("ttl/insatisfiable_ontology.ttl")
+    }
+
+    agent test_agent_unregister {
+        goals: testUnit
+        beliefs: entryPointRegister("https://www.w3.org/ns/sosa/")
+                 entryPointRegister("https://www.w3.org/ns/ssn/")
+    }*/
+
+    agent test_agent_crawl_with_register {
+        goals: testUnit
+        beliefs: entryPointCrawl("ttl/instances_sosa.ttl")
+                 entryPointRegister("https://www.w3.org/ns/sosa/")
+    }
+
+
+
+    /*
+    agent test_agent_get {
+        goals: testUnit
+        beliefs: entryPointGet("https://www.w3.org/ns/sosa/",false)
+    }
+    //entryPointGet("ttl/sosa.ttl",true)
+
+
+    agent test_agent_put {
+        goals: testUnit
+    }
+
+
+    agent test_agent_post {
+        goals: testUnit
+    }
+
+
+    agent test_agent_delete {
+        goals: testUnit
+    }*/
+
+    /*
+    workspace ldfu_workspace  {
+        artifact ldfu_spider : hypermedia.LinkedDataFuSpider("get.n3",false)
+    }*/
+
+    asl-path: src/agt/base, src/agt/testAgt
+}

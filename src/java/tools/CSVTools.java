@@ -1,29 +1,28 @@
 package tools;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
+/**
+ * @author Noé Saffaf
+ */
 public class CSVTools {
-    public static HashMap<String, String> readCSVToHashMap(String file){
-        HashMap<String,String> map = new HashMap();
-        try {
-            File myObj = new File(file);
-            Scanner myReader = new Scanner(myObj);
-            while (myReader.hasNextLine()) {
-                String data = myReader.nextLine();
-                String[] s = data.split(",");
-                if (s.length == 2){
-                    //System.out.println(s[0]+":" + " ::: "+ IRITools.removeQuotationMarks(s[1]));
-                    map.put(s[0]+":",IRITools.removeQuotationMarks(s[1]));
-                }
+
+    public static Map<String, String> readCSV(String resource) {
+        Map<String, String> map = new HashMap();
+        InputStream in = CSVTools.class.getClassLoader().getResourceAsStream(resource);
+        Scanner myReader = new Scanner(in);
+        while (myReader.hasNextLine()) {
+            String data = myReader.nextLine();
+            String[] s = data.split(",");
+            if (s.length == 2) {
+                map.put(s[0] + ":", IRITools.removeQuotationMarks(s[1]));
             }
-            myReader.close();
-        } catch (FileNotFoundException e) {
-            System.out.println("File not found.");
-            e.printStackTrace();
         }
+        myReader.close();
         return map;
     }
+
 }

@@ -1,0 +1,7 @@
+mas ldfu_mas {
+    agent experimental_crawl {
+        goals: testUnit
+    }
+
+    asl-path: src/agt/base, src/agt/expAgt
+}

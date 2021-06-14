@@ -1,0 +1,77 @@
+/**
+ * Example project using the Linked-Data-Fu spider artifact to retrieve RDF graphs on the Web.
+ *
+ */
+
+apply plugin: 'java'
+
+version '0.1'
+group   'org.jacamo'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven { url "https://raw.github.com/jacamo-lang/mvn-repo/master" }
+    maven { url 'https://paul.ti.rw.fau.de/maven/repository/' }
+
+    mavenLocal()
+}
+
+dependencies {
+    compile group: 'org.jacamo', name: 'hypermedia-jacamo', version: '0.1'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/env'
+            srcDir 'src/agt'
+            srcDir 'src/org'
+            srcDir 'src/java'
+        }
+        resources {
+            srcDir 'src/resources'
+        }
+    }
+}
+
+task runLdfuSpiderTest (type: JavaExec, dependsOn: 'onto.classes') {
+    group 'JaCaMo'
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
+    main = 'jacamo.infra.JaCaMoLauncher'
+    args 'jcm/test/ldfu_spider_onto_test.jcm'
+    classpath sourceSets.main.runtimeClasspath
+}
+
+task runLdfuSpiderExecutionTimeTest (type: JavaExec, dependsOn: 'onto.classes') {
+    group 'JaCaMo'
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
+    main = 'jacamo.infra.JaCaMoLauncher'
+    args 'jcm/test/ldfu_spider_onto_execution_time_test.jcm'
+    classpath sourceSets.main.runtimeClasspath
+}
+
+task runExperimentalTest (type: JavaExec, dependsOn: 'onto.classes') {
+    group 'JaCaMo'
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
+    main = 'jacamo.infra.JaCaMoLauncher'
+    args 'jcm/experimental/experimental_test.jcm'
+    classpath sourceSets.main.runtimeClasspath
+}
+
+clean {
+    delete 'bin'
+    delete 'build'
+    delete 'log'
+}
