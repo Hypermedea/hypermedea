@@ -1,9 +1,6 @@
 package hypermedia;
 
-import cartago.Artifact;
-import cartago.OPERATION;
-import cartago.ObsProperty;
-import cartago.OpFeedbackParam;
+import cartago.*;
 import onto.classes.AxiomJason;
 import onto.classes.OntologyIRIHolder;
 import onto.classes.SatisfiableResponse;

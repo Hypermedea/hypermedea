@@ -25,6 +25,7 @@ dependencies {
     compile group: 'edu.kit.aifb.linkeddatafu', name: 'linked-data-fu-standalone', version: '0.9.12'
     compile group: 'net.sourceforge.owlapi', name: 'owlapi-apibinding', version: '5.1.17'
     compile group: 'com.hermit-reasoner', name: 'org.semanticweb.hermit', version: '1.3.8.1'
+    compile fileTree(dir: 'lib', include: 'pddl4j-*.jar')
 }
 
 publishing {
