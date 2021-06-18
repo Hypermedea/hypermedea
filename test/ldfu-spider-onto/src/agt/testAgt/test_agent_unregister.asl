@@ -1,9 +1,17 @@
+/**
+ * @author Noé SAFFAF
+ */
+
+entryPointRegister("https://www.w3.org/ns/sosa/").
+entryPointRegister("https://www.w3.org/ns/ssn/").
+
+!testUnit.
 
 +!testUnit : true <-
     !create_artifact_ldfu(true);
     !registerPlan;
-    !unregisterPlan("registerURI2");
-    .wait(10000);
+    !unregisterPlan("https://www.w3.org/ns/ssn/");
+    .wait(1000);
 	.print("Test Assertion : Unit merged register test");
 	.count(class(_), C1);
 	.count(annotationProperty(_), C2);

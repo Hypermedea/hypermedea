@@ -1,8 +1,15 @@
+/**
+ * @author Noé SAFFAF
+ */
+
+entryPointCrawl("https://www.w3.org/ns/sosa/").
+
+!testUnit.
 
 +!testUnit : true <-
     !create_artifact_ldfu(false);
     !crawlPlan;
-    .wait(10000);
+    .wait(1000);
 	.print("Test Assertion : Unit simple crawl test");
 	.count(rdf(_, _, _), Count) ;
 	if (Count>0) {

@@ -1,21 +1,8 @@
 mas ldfu_mas {
 
-    agent test_agent_measure_crawl {
-        goals: create_artifact_ldfu_evaluation
-               testUnit
-        beliefs: entryPointCrawl("https://www.wikidata.org/wiki/Q515")
-    }
-    //entryPointCrawl("https://www.w3.org/ns/sosa/")
+    agent test_agent_measure_crawl
+    agent test_agent_measure_get
 
-    agent test_agent_measure_get {
-        goals: create_artifact_ldfu_evaluation
-               testUnit
-        beliefs: entryPointGet("https://www.wikidata.org/wiki/Q515")
-    }
-
-     //entryPointGet("https://www.w3.org/ns/sosa/")
-
-
-     asl-path: src/agt/base, src/agt/testAgt
+    asl-path: src/agt/base, src/agt/testAgt
 }
 

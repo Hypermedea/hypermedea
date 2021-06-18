@@ -1,3 +1,12 @@
+/**
+ * @author Noé SAFFAF
+ */
+
+endPointPost("http://localhost:8083/").
+entryPointCrawl("http://localhost:8083/").
+
+!testUnit.
+
 +!create_object_and_post(IRI) : true <-
     .union(["rdf(http://www.w3.org/ns/sosa/ExampleSensor1,http://www.w3.org/1999/02/22-rdf-syntax-ns#type,http://www.w3.org/ns/sosa/Sensor)"],
             ["rdf(http://www.w3.org/ns/sosa/ExampleSensor2,http://www.w3.org/1999/02/22-rdf-syntax-ns#type,http://www.w3.org/ns/sosa/Sensor)"],
@@ -9,7 +18,7 @@
 +!testUnit : true <-
     !create_artifact_ldfu(false);
     !create_object_and_post("https://www.w3.org/ns/sosa/");
-    .wait(10000);
+    .wait(1000);
 	.print("Test Assertion : Unit post test");
     .
 

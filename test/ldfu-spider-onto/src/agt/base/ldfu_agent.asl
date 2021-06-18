@@ -1,4 +1,6 @@
-
+/**
+ * @author Noé SAFFAF
+ */
 
 +!create_artifact_ldfu(INFERRED_BOOL) : true <-
      .my_name(NAME);

@@ -1,3 +1,11 @@
+/**
+ * @author Noé SAFFAF
+ */
+
+entryPointCrawl("ttl/instances_sosa.ttl").
+entryPointRegister("https://www.w3.org/ns/sosa/").
+
+!testUnit.
 
 +!testUnit : true <-
     !create_artifact_ldfu(true);

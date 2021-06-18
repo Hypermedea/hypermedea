@@ -3,37 +3,17 @@ package onto.ontologyAPI;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
 
-import java.io.File;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 
+/**
+ * A set of static utilities methods for ontologies
+ * @author Noé SAFFAF
+ */
 public class OntologyExtractionManager {
-    public static OWLOntology extractOntology(String uri, boolean local) throws OWLOntologyCreationException {
-        OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-        OWLOntology owlOntology = null;
-        if (local){
-            try {
-                owlOntology = manager.loadOntologyFromOntologyDocument(new File(uri));
-            } catch (OWLOntologyCreationException e) {
-                e.printStackTrace();
-            }
-
-        } else {
-            try {
-                // Load an ontology from the Web.  We load the ontology from a document IRI
-                IRI docIRI = IRI.create(uri);
-                owlOntology = manager.loadOntologyFromOntologyDocument(docIRI);
-            } catch (OWLOntologyCreationException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return owlOntology;
-    }
-
-    public static OWLOntology extractOntologyFromRegisteredSet(HashSet<String> registeredOntologySet) {
-        HashSet<OWLAxiom> owlAxiomSet = new HashSet<>();
+    public static OWLOntology extractOntologyFromRegisteredSet(Set<String> registeredOntologySet) {
+        Set<OWLAxiom> owlAxiomSet = new HashSet<>();
         IRI docIRI;
         for (String originURI : registeredOntologySet ){
             if (originURI.startsWith("http")){
@@ -60,9 +40,8 @@ public class OntologyExtractionManager {
         return mergedOntology;
     }
 
-    public static OWLOntology addOntology(String originURI, OWLOntology rootOntology, HashSet<String> registeredOntologySet) {
-
-        HashSet<OWLAxiom> owlAxiomSet = new HashSet<>();
+    public static OWLOntology addOntology(String originURI, OWLOntology rootOntology, Set<String> registeredOntologySet) {
+        Set<OWLAxiom> owlAxiomSet = new HashSet<>();
         owlAxiomSet.addAll(rootOntology.getAxioms());
         IRI docIRI;
         if (originURI.startsWith("http")){
@@ -82,6 +61,14 @@ public class OntologyExtractionManager {
             e.printStackTrace();
             return rootOntology;
         }
+    }
+
+    public static OWLOntology addAxiomToOntology(Set<OWLAxiom> owlAxiomSet, OWLOntology ontology) throws OWLOntologyCreationException {
+        OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+        Set<OWLAxiom> newOwlAxiom = new HashSet<>();
+        newOwlAxiom.addAll(ontology.getAxioms());
+        newOwlAxiom.addAll(owlAxiomSet);
+        return manager.createOntology(newOwlAxiom);
     }
 
     public static OWLOntology copyOntology(OWLOntology owlOntology) throws OWLOntologyCreationException {

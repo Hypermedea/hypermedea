@@ -1,8 +1,15 @@
+/**
+ * @author Noé SAFFAF
+ */
+
+entryPointRegister("ttl/example_ontology.ttl").
+
+!testUnit.
 
 +!testUnit : true <-
     !create_artifact_ldfu(true);
     !registerPlan;
-    .wait(10000);
+    .wait(1000);
 	.print("Test Assertion : Unit Satisfiable and Consistency test");
     isConsistent(C,REPORT_C);
     isSatisfiable(true, S, REPORT_S);

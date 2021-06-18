@@ -6,11 +6,12 @@ import java.util.Map;
 import java.util.Scanner;
 
 /**
+ * A couple of CSV tools
  * @author Noé Saffaf
  */
 public class CSVTools {
 
-    public static Map<String, String> readCSV(String resource) {
+    public static Map<String, String> readCSVtoMap(String resource) {
         Map<String, String> map = new HashMap();
         InputStream in = CSVTools.class.getClassLoader().getResourceAsStream(resource);
         Scanner myReader = new Scanner(in);

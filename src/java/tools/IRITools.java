@@ -1,5 +1,9 @@
 package tools;
 
+/**
+ * A couple of IRI tools
+ * @author Noé SAFFAF
+ */
 public class IRITools {
     public static String getSuffixIri(String iri, boolean replaceToLowerCase)
     {
@@ -87,7 +91,7 @@ public class IRITools {
         return "<" + s + ">";
     }
 
-    public static String removeWrapperUri(String s){
+    public static String removeWrapperIRI(String s){
         char[] c = s.toCharArray();
         if (c[0] == '<' & c[c.length-1] == '>'){
             s = s.substring(1,s.length()-1);

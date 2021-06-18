@@ -1,3 +1,11 @@
+/**
+ * @author Noé SAFFAF
+ */
+
+entryPointCrawl("https://www.wikidata.org/wiki/Q515").
+//entryPointCrawl("https://www.w3.org/ns/sosa/").
+
+!testUnit.
 
 +!create_artifact_ldfu_evaluation(INFERRED_BOOL) : true <-
      .my_name(NAME);
@@ -7,8 +15,8 @@
      .
 
 +!testUnit : true <-
-    !create_artifact_ldfu(false);
-    .wait(10000);
+    !create_artifact_ldfu_evaluation(false);
+    .wait(1000);
 	.print("Test : Unit measure crawl test");
 	for (.range(I,1,1)){
 	    for (entryPointCrawl(IRI)){
