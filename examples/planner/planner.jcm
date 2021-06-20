@@ -1,0 +1,13 @@
+mas planning_mas {
+
+    agent planner {
+        goals: start
+        join: planning_workspace
+        focus: planning_workspace.planner
+    }
+
+    workspace planning_workspace  {
+        artifact planner : hypermedia.PlannerArtifact()
+    }
+
+}

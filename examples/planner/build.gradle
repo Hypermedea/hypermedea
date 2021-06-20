@@ -1,5 +1,5 @@
 /**
- * Example project using the Linked-Data-Fu spider artifact to retrieve RDF graphs on the Web.
+ * Example project using the planner artifact artifact to generate executable plans from PDDL definitions.
  *
  */
 
@@ -16,10 +16,13 @@ targetCompatibility = 1.8
 repositories {
     mavenCentral()
     maven { url "https://raw.github.com/jacamo-lang/mvn-repo/master" }
+    maven { url 'https://paul.ti.rw.fau.de/maven/repository/' }
+
+    mavenLocal()
 }
 
 dependencies {
-    compile group: 'org.jacamo', name: 'hypermedia-jacamo', version: '0.1'
+    compile group: 'org.jacamo', name: 'hypermedea', version: '0.1'
 }
 
 sourceSets {

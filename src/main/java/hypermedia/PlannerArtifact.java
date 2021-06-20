@@ -1,16 +1,20 @@
 package hypermedia;
 
+import cartago.Artifact;
 import cartago.OPERATION;
 import cartago.OpFeedbackParam;
 import fr.uga.pddl4j.encoding.CodedProblem;
 import fr.uga.pddl4j.encoding.Encoder;
 import fr.uga.pddl4j.parser.Domain;
 import fr.uga.pddl4j.parser.Problem;
-import fr.uga.pddl4j.parser.Symbol;
 import fr.uga.pddl4j.planners.Planner;
 import fr.uga.pddl4j.planners.statespace.AbstractStateSpacePlanner;
 import fr.uga.pddl4j.planners.statespace.StateSpacePlannerFactory;
 import fr.uga.pddl4j.util.Plan;
+import jason.asSyntax.ASSyntax;
+import jason.asSyntax.Structure;
+import jason.asSyntax.parser.ParseException;
+import planning.PDDLTermWrapper;
 import planning.PlanJasonWrapper;
 
 /**
@@ -22,7 +26,7 @@ import planning.PlanJasonWrapper;
  *
  * @author Victor Charpenay, Jehad Melad
  */
-public class PlannerArtifact {
+public class PlannerArtifact extends Artifact {
 
     private final Planner planner;
 
@@ -37,26 +41,38 @@ public class PlannerArtifact {
      * operation to turn a Jason abstract specification of a PDDL domain/problem into a Jason plan
      * that agents can add to their plan library.
      *
-     * @param domainTerm a Jason term defining a PDDL domain
-     * @param problemTerm a Jason term defining a PDDL problem
+     * @param domainStructure a Jason structure defining a PDDL domain
+     * @param problemStructure a Jason structure defining a PDDL problem
      * @param plan a Jason plan serialized as string
      */
     @OPERATION
-    public void buildPlan(Object domainTerm, Object problemTerm, OpFeedbackParam<String> plan) {
-        Symbol domainName = new Symbol(Symbol.Kind.PROBLEM, "test-domain");
-        Domain domain = new Domain(domainName);
-        // TODO build domain from terms
+    public void buildPlan(String domainStructure, String problemStructure, OpFeedbackParam<String> plan) {
+        Domain domain = null;
+        Problem pb = null;
 
-        Symbol pbName = new Symbol(Symbol.Kind.PROBLEM, "test-problem");
-        Problem pb = new Problem(pbName);
-        // TODO build Problem from terms
-        // TODO list objects from initialState
+        try {
+            Structure domainTerm = ASSyntax.parseStructure(domainStructure);
+            Structure problemTerm = ASSyntax.parseStructure(problemStructure);
+
+            PDDLTermWrapper w = new PDDLTermWrapper(domainTerm, problemTerm);
+
+            domain = w.getDomain();
+
+            pb = w.getProblem();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        if (domain == null || pb == null) {
+            failed("The provided domain/problem definition is not valid");
+            return;
+        }
 
         CodedProblem cpb = Encoder.encode(domain, pb);
 
         Plan p = planner.search(cpb);
 
-        PlanJasonWrapper w = new PlanJasonWrapper(pbName.toString(), p, cpb);
+        PlanJasonWrapper w = new PlanJasonWrapper(pb.getName().toString(), p, cpb);
         plan.set(w.toString());
     }
 
