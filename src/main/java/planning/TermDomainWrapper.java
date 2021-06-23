@@ -4,10 +4,12 @@ import fr.uga.pddl4j.parser.*;
 import jason.asSyntax.ListTerm;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
+import org.apache.tools.ant.taskdefs.PathConvert;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class TermDomainWrapper {
 
@@ -59,17 +61,32 @@ public class TermDomainWrapper {
                     // action precondition is not well-defined
                     if (!s.getTerm(1).isStructure()) return null;
 
-                    TermExpWrapper w = new TermExpWrapper(s.getTerm(1));
-                    Exp precond = w.getExp();
+                    TermExpWrapper precondWrapper = new TermExpWrapper(s.getTerm(1));
+                    Exp precond = precondWrapper.getExp();
 
                     List<TypedSymbol> params = new ArrayList<>();
 
-                    for (Symbol v : w.getOpenVariables()) params.add(new TypedSymbol(v));
+                    for (Symbol v : precondWrapper.getOpenVariables()) params.add(new TypedSymbol(v));
 
                     // action effect is not well-defined
                     if (!s.getTerm(2).isStructure()) return null;
 
-                    Exp effect = new TermExpWrapper(s.getTerm(2)).getExp();
+                    TermExpWrapper effectWrapper = new TermExpWrapper(s.getTerm(2));
+                    Exp effect = effectWrapper.getExp();
+
+                    Map<Symbol, Integer> preds = precondWrapper.getPredicates();
+                    preds.putAll(effectWrapper.getPredicates());
+
+                    for (Symbol name : preds.keySet()) {
+                        NamedTypedList p = new NamedTypedList(name);
+
+                        for (int i = 0; i < preds.get(name); i++) {
+                            Symbol v = new Symbol(Symbol.Kind.VARIABLE, String.format("?var%d", i));
+                            p.add(new TypedSymbol(v));
+                        }
+
+                        domain.addPredicate(p);
+                    }
 
                     Op action = new Op(actionName, params, precond, effect);
                     domain.addOperator(action);
@@ -79,10 +96,6 @@ public class TermDomainWrapper {
                 //log(String.format("warning: ignoring domain declaration %s", d));
             }
         }
-
-        // TODO list predicates from actions
-        // TODO or: let agents define "fluents" (predicates with changing variables);
-        //  to allow for typed variables with (non-fluents) unary preds
 
         return domain;
     }

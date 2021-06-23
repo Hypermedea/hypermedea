@@ -1,16 +1,10 @@
 package planning;
 
-import fr.uga.pddl4j.parser.Connective;
-import fr.uga.pddl4j.parser.Exp;
-import fr.uga.pddl4j.parser.Symbol;
-import fr.uga.pddl4j.parser.TypedSymbol;
+import fr.uga.pddl4j.parser.*;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Wrapper for a Jason term encoding a PDDL logical expression.
@@ -24,6 +18,8 @@ public class TermExpWrapper {
     private Exp exp;
 
     private List<TermExpWrapper> children = new ArrayList<>();
+
+    private List<Symbol> predicate = null;
 
     /**
      * Construct a wrapper for a PDDL logical expression specified as a Jason term.
@@ -61,7 +57,7 @@ public class TermExpWrapper {
             // atomic predicate
             exp = new Exp(Connective.ATOM);
 
-            List<Symbol> predicate = new ArrayList<>();
+            predicate = new ArrayList<>();
 
             Symbol predicateName = new Symbol(Symbol.Kind.PREDICATE, expTerm.getFunctor());
             predicate.add(predicateName);
@@ -102,17 +98,17 @@ public class TermExpWrapper {
     public Set<Symbol> getOpenVariables() {
         Set<Symbol> vars = new HashSet<>();
 
-        for (TermExpWrapper c : children) {
-            vars.addAll(c.getOpenVariables());
-        }
-
-        if (exp.getAtom() != null) {
+        if (exp.getConnective().equals(Connective.ATOM)) {
             for (Symbol s : exp.getAtom()) {
                 if (s.getKind().equals(Symbol.Kind.VARIABLE)) vars.add(s);
             }
-        }
+        } else {
+            for (TermExpWrapper w : children) {
+                vars.addAll(w.getOpenVariables());
+            }
 
-        // TODO take quantified variables into account
+            // TODO take quantified variables into account
+        }
 
         return vars;
     }
@@ -120,12 +116,18 @@ public class TermExpWrapper {
     /**
      * List predicates used in the PDDL logical expression.
      *
-     * @return a list of predicates (e.g. [p, var1, var2], for a predicate with name "p" and arity 2)
+     * @return a list of predicates with their arity (e.g. [p -> 3, q -> 2])
      */
-    public Set<List<Symbol>> getPredicates() {
-        Set<List<Symbol>> preds = new HashSet<>();
+    public Map<Symbol, Integer> getPredicates() {
+        Map<Symbol, Integer> preds = new HashMap<>();
 
-        // TODO
+        // TODO deal with prerdicates with same name but different arities
+
+        if (exp.getConnective().equals(Connective.ATOM)) {
+            preds.put(predicate.get(0), predicate.size() - 1);
+        } else {
+            for (TermExpWrapper w : children) preds.putAll(w.getPredicates());
+        }
 
         return preds;
     }

@@ -1,6 +1,6 @@
 domain(domain("hanoi", [
   action("move",
-    and(smaller("?to", "?disc"), on("?disc", "?from"), clear("?disc"), clear("?to")),
+    and(smaller("?disc", "?to"), on("?disc", "?from"), clear("?disc"), clear("?to")),
     and(clear("?from"), on("?disc", "?to"), not(on("?disc", "?from")), not(clear("?to"))))
 ])) .
 
