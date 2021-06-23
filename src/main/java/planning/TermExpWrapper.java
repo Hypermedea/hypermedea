@@ -121,7 +121,7 @@ public class TermExpWrapper {
     public Map<Symbol, Integer> getPredicates() {
         Map<Symbol, Integer> preds = new HashMap<>();
 
-        // TODO deal with prerdicates with same name but different arities
+        // TODO deal with predicates with same name but different arities
 
         if (exp.getConnective().equals(Connective.ATOM)) {
             preds.put(predicate.get(0), predicate.size() - 1);
