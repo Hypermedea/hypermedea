@@ -3,11 +3,14 @@ package planning;
 import fr.uga.pddl4j.parser.Connective;
 import fr.uga.pddl4j.parser.Exp;
 import fr.uga.pddl4j.parser.Symbol;
+import fr.uga.pddl4j.parser.TypedSymbol;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Wrapper for a Jason term encoding a PDDL logical expression.
@@ -18,6 +21,10 @@ public class TermExpWrapper {
 
     private final Structure expTerm;
 
+    private Exp exp;
+
+    private List<TermExpWrapper> children = new ArrayList<>();
+
     /**
      * Construct a wrapper for a PDDL logical expression specified as a Jason term.
      *
@@ -26,6 +33,8 @@ public class TermExpWrapper {
     public TermExpWrapper(Term expTerm) {
         if (!expTerm.isStructure()) this.expTerm = null;
         else this.expTerm = (Structure) expTerm;
+
+        parseTerm();
     }
 
     /**
@@ -34,8 +43,10 @@ public class TermExpWrapper {
      * @return a PDDL logical expression
      */
     public Exp getExp() {
-        Exp exp;
+        return this.exp;
+    }
 
+    private void parseTerm() {
         Connective con = null;
 
         try {
@@ -57,7 +68,7 @@ public class TermExpWrapper {
 
             for (Term st : expTerm.getTerms()) {
                 // predicate is not well-formed
-                if (!(st.isString() || st.isAtom())) return null;
+                if (!(st.isString() || st.isAtom())) exp = null; // FIXME throw new exception instead
 
                 Symbol.Kind kind = null;
 
@@ -73,13 +84,50 @@ public class TermExpWrapper {
 
             for (Term st : expTerm.getTerms()) {
                 // expression is not well-formed
-                if (!st.isStructure()) return null;
+                if (!st.isStructure()) exp = null; // FIXME throw new exception instead
 
-                exp.addChild(new TermExpWrapper(st).getExp());
+                TermExpWrapper c = new TermExpWrapper(st);
+
+                children.add(c);
+                exp.addChild(c.getExp());
+            }
+        }
+    }
+
+    /**
+     * List open variables in the PDDL logical expression.
+     *
+     * @return a list of (open) variables
+     */
+    public Set<Symbol> getOpenVariables() {
+        Set<Symbol> vars = new HashSet<>();
+
+        for (TermExpWrapper c : children) {
+            vars.addAll(c.getOpenVariables());
+        }
+
+        if (exp.getAtom() != null) {
+            for (Symbol s : exp.getAtom()) {
+                if (s.getKind().equals(Symbol.Kind.VARIABLE)) vars.add(s);
             }
         }
 
-        return exp;
+        // TODO take quantified variables into account
+
+        return vars;
+    }
+
+    /**
+     * List predicates used in the PDDL logical expression.
+     *
+     * @return a list of predicates (e.g. [p, var1, var2], for a predicate with name "p" and arity 2)
+     */
+    public Set<List<Symbol>> getPredicates() {
+        Set<List<Symbol>> preds = new HashSet<>();
+
+        // TODO
+
+        return preds;
     }
 
 }

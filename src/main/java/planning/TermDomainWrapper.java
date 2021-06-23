@@ -6,6 +6,7 @@ import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TermDomainWrapper {
@@ -58,10 +59,12 @@ public class TermDomainWrapper {
                     // action precondition is not well-defined
                     if (!s.getTerm(1).isStructure()) return null;
 
-                    Exp precond = new TermExpWrapper(s.getTerm(1)).getExp();
+                    TermExpWrapper w = new TermExpWrapper(s.getTerm(1));
+                    Exp precond = w.getExp();
 
                     List<TypedSymbol> params = new ArrayList<>();
-                    // TODO extract params from exp
+
+                    for (Symbol v : w.getOpenVariables()) params.add(new TypedSymbol(v));
 
                     // action effect is not well-defined
                     if (!s.getTerm(2).isStructure()) return null;
@@ -78,6 +81,8 @@ public class TermDomainWrapper {
         }
 
         // TODO list predicates from actions
+        // TODO or: let agents define "fluents" (predicates with changing variables);
+        //  to allow for typed variables with (non-fluents) unary preds
 
         return domain;
     }
