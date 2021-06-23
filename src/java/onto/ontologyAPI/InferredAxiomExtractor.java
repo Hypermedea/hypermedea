@@ -61,7 +61,6 @@ public class InferredAxiomExtractor {
             reasoner.precomputeInferences(InferenceType.DATA_PROPERTY_HIERARCHY);
             reasoner.precomputeInferences(InferenceType.DATA_PROPERTY_ASSERTIONS);
 
-
             List<InferredAxiomGenerator<? extends OWLAxiom>> inferredAxiomGeneratorList = new ArrayList<InferredAxiomGenerator<? extends OWLAxiom>>();
             inferredAxiomGeneratorList.add(new InferredSubClassAxiomGenerator());
             inferredAxiomGeneratorList.add(new InferredClassAssertionAxiomGenerator());

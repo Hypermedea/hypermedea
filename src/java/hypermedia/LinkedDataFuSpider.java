@@ -60,29 +60,36 @@ import static jason.asSyntax.ASSyntax.createStructure;
  */
 public class LinkedDataFuSpider extends Artifact {
 
-	//private Pattern tripleTermPattern = Pattern.compile("rdf\\((.*)\",\"(.*)\",\"(.*)\"\\)");
-	private Pattern tripleTermPattern = Pattern.compile("rdf\\((.*),(.*),(.*)\\)");
 	private static final String COLLECT_QUERY = "construct { ?s ?p ?o . } where { ?s ?p ?o . }";
-	private Program program;
-	private BindingConsumerCollection triples;
-	private Timer timer;
 
+	//For triple matching
+	private static final String RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+
+	private Pattern tripleTermPattern = Pattern.compile("rdf\\((.*),(.*),(.*)\\)");
+
+	private Program program;
+
+	private BindingConsumerCollection triples;
+
+	private Timer timer;
 
 	//Case Inferred;
 	private boolean inferred;
+
 	private ReasonerFactory reasonerFactory;
-
-	//For triple matching
-	private static final String rdfType = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
-
-
 
 	//Register Save
 	private OWLOntology owlOntology;
+
 	private Set<String> registeredURIset;
+
 	private Map<OWLAxiomWrapper, ObsProperty> observablePropertyOntologyMap;
+
 	private Map<OWLAxiomWrapper, ObsProperty> observablePropertyTripleMap;
+
 	private Set<OWLAxiomWrapper> owlAxiomWrapperSet;
+
+	// TODO replace set of naming strategies with "combo" naming strategy (-> ordered for determinism)
 
 	//NamingStrategy
 	Set<NamingStrategy> namingStrategySet;
@@ -92,7 +99,6 @@ public class LinkedDataFuSpider extends Artifact {
 
 	public LinkedDataFuSpider() {
 		// set logging level to warning
-
 		Logger log = Logger.getLogger("edu.kit.aifb.datafu");
 		//log.setLevel(Level.WARNING);
 		log.setLevel(Level.OFF);
@@ -141,7 +147,7 @@ public class LinkedDataFuSpider extends Artifact {
 	 * Initiate parameters and prepare the belief naming strategy by computing all known namespaces
 	 */
 	private void initParameters(boolean inferred) {
-
+		// TODO put object attribute init above
 		registeredURIset = new HashSet<>();
 		owlAxiomWrapperSet = new HashSet<>();
 		observablePropertyOntologyMap = new HashMap<>();
@@ -150,10 +156,11 @@ public class LinkedDataFuSpider extends Artifact {
 		reasonerFactory = new ReasonerFactory();
 
 		try {
-
 			owlOntology = OWLManager.createOWLOntologyManager().createOntology();
 		} catch (OWLOntologyCreationException e){
 			e.printStackTrace();
+
+			// TODO log
 		}
 
 		namingStrategySet = NamingStrategyFactory.createAllNamingStrategySet();
@@ -165,24 +172,19 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
-	 * Deprecated, better use a verification from the agent space
+	 * External action to register all the ontologies in the pending list, merge them into one merged ontology and
+	 * create unary/binary beliefs (observable properties) of class declarations object property declarations, data
+	 * property declarations, owl annotations, and assertions from imported ontologies. Some axioms may be inferred.
+	 *
+	 * TODO rewrite description
 	 */
 	@OPERATION
-	public void isPresent(String st1, String st2, String st3, OpFeedbackParam<Boolean> result) {
-		result.set(hasObsPropertyByTemplate("rdf", st1, st2, st3));
-	}
+	public void register(String ontologyIRI) {
+		registeredURIset.add(ontologyIRI);
+		// TODO use import statement instead
+		owlOntology = OntologyExtractionManager.addOntology(ontologyIRI, owlOntology, registeredURIset);
 
-	/**
-	 * External action to register all the ontologies in the pending list, merge them into one merged ontology and create unary/binary beliefs (observable properties)
-	 * of class declarations object property declarations, data property declarations, owl annotations, and class insertions (instances of indivual) from the ontologies
-	 * files. It is possible to have inferred axioms.
-	 */
-	@OPERATION
-	public void register(String originURI) {
-		registeredURIset.add(originURI);
-		owlOntology = OntologyExtractionManager.addOntology(originURI, owlOntology, registeredURIset);
-
-		//Case We want to have inferred axioms
+		//Case we want to have inferred axioms
 		if (inferred) {
 			InferredAxiomExtractor inferredAxiomExtractor = new InferredAxiomExtractor(owlOntology, reasonerFactory);
 			inferredAxiomExtractor.precomputeInferredAxioms();
@@ -190,27 +192,22 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 
 		//We precompute all naming strategy that relies on an ontology
-		for (NamingStrategy ns : namingStrategySet){
+		for (NamingStrategy ns : namingStrategySet) {
+			// TODO replace with a factory method that creates a strategy with an ontology reference?
 			ns.precompute(owlOntology);
 		}
 
 		owlAxiomWrapperSet.addAll(getOwlAxiomWrapperSet(owlOntology));
 
-		/*
-		if (!owlAxiomWrapperSet.isEmpty()){
-			hasMadeRegister = true;
-		} else {
-			hasMadeRegister = false;
-		}*/
-
-		for (OWLAxiomWrapper axiom : owlAxiomWrapperSet){
+		for (OWLAxiomWrapper axiom : owlAxiomWrapperSet) {
 			String propFullName = axiom.getPropertyFullName();
 			String propName = axiom.getPropertyName();
 			if (propName == null || propName.isBlank()){
 				continue;
 			}
 			List<Object> argumentsList = axiom.getPropertyArguments();
-			if (argumentsList.size() == 1 && !hasObsPropertyByTemplate(propName,argumentsList.get(0))){
+			// TODO add annotation that a statement is inferred
+			if (argumentsList.size() == 1 && !hasObsPropertyByTemplate(propName,argumentsList.get(0))) {
 				ObsProperty obsProperty = defineObsProperty(propName,argumentsList.get(0));
 				Structure s = createStructure("predicate_uri", new Atom(propFullName));
 				obsProperty.addAnnot(s);
@@ -225,13 +222,13 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
-	 * External action to unregister an ontology by key, it recalculate all axioms with the removed ontology and compare it to the previous ones, and removes
-	 * from the observable ontology database the delta difference
+	 * External action to unregister an ontology by key, it recalculate all axioms with the removed ontology and compare
+	 * it to the previous ones, and removes from the observable ontology database the delta difference
 	 */
 	@OPERATION
-	public void unregister(String originURI){
+	public void unregister(String originURI) {
 		//hasMadeRegister &&
-		if (registeredURIset.contains(originURI)){
+		if (registeredURIset.contains(originURI)) {
 			registeredURIset.remove(originURI);
 
 			OWLOntology revisedOwlOntology = OntologyExtractionManager.extractOntologyFromRegisteredSet(registeredURIset);
@@ -250,7 +247,7 @@ public class LinkedDataFuSpider extends Artifact {
 			int numberDeleted = 0;
 			Set<OWLAxiomWrapper> owlAxiomWrapperSetToRemove = new HashSet<>();
 			for (OWLAxiomWrapper axiomWrapper : observablePropertyOntologyMap.keySet()){
-				if (owlAxiomWrapperSet.contains(axiomWrapper)){
+				if (owlAxiomWrapperSet.contains(axiomWrapper)) {
 					ObsProperty o = observablePropertyOntologyMap.get(axiomWrapper);
 					if(o.getValues().length == 1){
 						removeObsPropertyByTemplate(o.getName(),o.getValue(0));
@@ -261,7 +258,7 @@ public class LinkedDataFuSpider extends Artifact {
 					numberDeleted++;
 				}
 			}
-			for (OWLAxiomWrapper toRemove : owlAxiomWrapperSetToRemove){
+			for (OWLAxiomWrapper toRemove : owlAxiomWrapperSetToRemove) {
 				observablePropertyOntologyMap.remove(toRemove);
 			}
 
@@ -278,13 +275,13 @@ public class LinkedDataFuSpider extends Artifact {
 	 */
 	@OPERATION
 	public void isConsistent(OpFeedbackParam<Boolean> b, OpFeedbackParam<String> report){
-		if (owlOntology == null){
+		if (owlOntology == null) {
 			b.set(true);
 			report.set("No ontology is saved");
 		}
 
 		InferredAxiomExtractor inferredAxiomExtractor = new InferredAxiomExtractor(owlOntology, reasonerFactory);
-		if (inferredAxiomExtractor.checkConsistency()){
+		if (inferredAxiomExtractor.checkConsistency()) {
 			b.set(true);
 			report.set("The ontology is consistent");
 		} else {
@@ -293,8 +290,10 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 	}
 
+	// TODO remove one of the two operations (above/below)
+
 	/**
-	 * Eternal Action to check if the ontology is Satisfiable
+	 * External Action to check if the ontology is Satisfiable
 	 * @param displayClasses An option to feed the report message with all the unsatisfiable onto.classes
 	 * @param b A boolean parameter to unify with the response of the External action
 	 * @param report A string parameter to unify with the message report of the External action
@@ -321,21 +320,6 @@ public class LinkedDataFuSpider extends Artifact {
 				report.set("Warning : The ontology is not satisfiable.");
 			}
 		}
-	}
-
-
-	/**
-	 * Deprecated
-	 * @param st1
-	 * @param st2
-	 * @param st3
-	 * @param index
-	 * @param st4
-	 */
-	@OPERATION
-	public void update(String st1, String st2, String st3, int index, String st4) {
-		ObsProperty op = getObsPropertyByTemplate("rdf", st1, st2, st3);
-		op.updateValue(index, st4);
 	}
 
 	/**
@@ -406,6 +390,8 @@ public class LinkedDataFuSpider extends Artifact {
 		Set<OWLObjectProperty> owlObjectPropertySet = owlOntology.getObjectPropertiesInSignature();
 		Set<OWLDataProperty> owlDataPropertySet = owlOntology.getDataPropertiesInSignature();
 
+		// TODO set axioms in a separate ontology and import it in the master ontology
+
 		Set<OWLAxiom> owlCrawledAxiomSet = new HashSet<>();
 		for (Binding binding : this.triples.getCollection()) {
 			Node[] st = binding.getNodes().getNodeArray();
@@ -415,21 +401,6 @@ public class LinkedDataFuSpider extends Artifact {
 			defineObsProperty("rdf", subject, predicate, object);
 			owlCrawledAxiomSet.add(getOwlAxiomFromTriple(subject, predicate, object, owlClassSet, owlObjectPropertySet, owlDataPropertySet, dataFactory));
 		}
-
-		/*
-		catch (InterruptedException e) {
-			e.printStackTrace();
-			// TODO recover or ignore?
-		} catch (URISyntaxException e) {
-			// TODO throw it to make operation fail?
-			e.printStackTrace();
-		}*/
-
-
-		/*
-		if (!hasMadeRegister) {
-			return;
-		}*/
 
 
 		try {
@@ -508,7 +479,6 @@ public class LinkedDataFuSpider extends Artifact {
 			return;
 		}
 
-
 		// authoritative subject
 		// TODO graph name available?
 		if (hasObsPropertyByTemplate("rdf", originURI, null, null)) {
@@ -523,6 +493,8 @@ public class LinkedDataFuSpider extends Artifact {
 		Set<OWLObjectProperty> owlObjectPropertySet = owlOntology.getObjectPropertiesInSignature();
 		Set<OWLDataProperty> owlDataPropertySet = owlOntology.getDataPropertiesInSignature();
 
+		// TODO duplicated code
+
 		Set<OWLAxiom> owlCrawledAxiomSet = new HashSet<>();
 		for (Binding binding : this.triples.getCollection()) {
 			Node[] st = binding.getNodes().getNodeArray();
@@ -532,15 +504,6 @@ public class LinkedDataFuSpider extends Artifact {
 			defineObsProperty("rdf", subject, predicate, object);
 			owlCrawledAxiomSet.add(getOwlAxiomFromTriple(subject, predicate, object, owlClassSet, owlObjectPropertySet, owlDataPropertySet, dataFactory));
 		}
-
-		/*
-		catch (InterruptedException e) {
-			e.printStackTrace();
-			// TODO recover or ignore?
-		} catch (URISyntaxException e) {
-			// TODO throw it to make operation fail?
-			e.printStackTrace();
-		}*/
 
 		try {
 			OWLOntology copiedOntology = OntologyExtractionManager.copyOntology(owlOntology);
@@ -671,7 +634,7 @@ public class LinkedDataFuSpider extends Artifact {
 
 	private OWLAxiom getOwlAxiomFromTriple(String subject, String predicate, Object object, Set<OWLClass> owlClassSet, Set<OWLObjectProperty> owlObjectProperties, Set<OWLDataProperty> owlDataProperties, OWLDataFactory dataFactory)
 	{
-		if (predicate.equals(rdfType)){
+		if (predicate.equals(RDF_TYPE)){
 			for (OWLClass c : owlClassSet) {
 				if (IRITools.removeWrapperIRI(c.toString()).equals(object)){
 					OWLNamedIndividual namedIndividual = dataFactory.getOWLNamedIndividual(IRI.create(subject));
@@ -730,8 +693,6 @@ public class LinkedDataFuSpider extends Artifact {
 							));
 		return propertyAssertionAxiom;
 	}
-
-
 
 	private Set<OWLAxiomWrapper> getOwlAxiomWrapperSet(OWLOntology o){
 		Set<OWLAxiomWrapper> owlAxiomWrapperSet = new HashSet<>();
