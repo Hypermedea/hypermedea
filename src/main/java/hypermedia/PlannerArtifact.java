@@ -14,7 +14,8 @@ import fr.uga.pddl4j.util.Plan;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Structure;
 import jason.asSyntax.parser.ParseException;
-import planning.PDDLTermWrapper;
+import planning.TermDomainWrapper;
+import planning.TermProblemWrapper;
 import planning.PlanJasonWrapper;
 
 /**
@@ -54,11 +55,9 @@ public class PlannerArtifact extends Artifact {
             Structure domainTerm = ASSyntax.parseStructure(domainStructure);
             Structure problemTerm = ASSyntax.parseStructure(problemStructure);
 
-            PDDLTermWrapper w = new PDDLTermWrapper(domainTerm, problemTerm);
+            domain = new TermDomainWrapper(domainTerm).getDomain();
 
-            domain = w.getDomain();
-
-            pb = w.getProblem();
+            pb = new TermProblemWrapper(problemTerm).getProblem();
         } catch (ParseException e) {
             e.printStackTrace();
         }

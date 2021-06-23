@@ -10,15 +10,7 @@ import org.junit.Test;
 /**
  * @author Victor Charpenay
  */
-public class PDDLTermWrapperTest {
-
-    public static final String TEST_DOMAIN_STRUCTURE = "domain(\"hanoi\", [\n" +
-            "  action(\"move\",\n" +
-            "    and(smaller(\"?to\", \"?disc\"), on(\"?disc\", \"?from\"), clear(\"?disc\"), clear(\"?to\")),\n" +
-            "    and(clear(\"?from\"), on(\"?disc\", \"?to\"), not(on(\"?disc\", \"?from\")), not(clear(\"?to\"))))\n" +
-            "])";
-
-    public static final String TEST_DOMAIN_PDDL = "";
+public class TermProblemWrapperTest {
 
     public static final String TEST_PROBLEM_STRUCTURE = "problem(\"test\", \"hanoi\", [\n" +
             "  smaller(disk1, disk2),\n" +
@@ -30,19 +22,9 @@ public class PDDLTermWrapperTest {
             "], clear(disk2))";
 
     @Test
-    public void testGetDomain() throws ParseException {
-        Structure term = ASSyntax.parseStructure(TEST_DOMAIN_STRUCTURE);
-        PDDLTermWrapper w = new PDDLTermWrapper(term, ASSyntax.createAtom(""));
-
-        Domain d = w.getDomain();
-
-        assert d != null; // TODO re-parse domain and check components
-    }
-
-    @Test
     public void testGetProblem() throws ParseException {
         Structure term = ASSyntax.parseStructure(TEST_PROBLEM_STRUCTURE);
-        PDDLTermWrapper w = new PDDLTermWrapper(ASSyntax.createAtom(""), term);
+        TermProblemWrapper w = new TermProblemWrapper(term);
 
         Problem pb = w.getProblem();
 
