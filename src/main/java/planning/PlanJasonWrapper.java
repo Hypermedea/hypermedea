@@ -25,21 +25,25 @@ public class PlanJasonWrapper {
     public String toString() {
         StringBuilder list = new StringBuilder();
 
-        for (int i = 0; i < plan.size(); i++) {
-            BitOp op = plan.actions().get(i);
-            StringBuilder args = new StringBuilder();
+        if (plan == null || plan.size() == 0) {
+            list.append("fail");
+        } else {
+            for (int i = 0; i < plan.size(); i++) {
+                BitOp op = plan.actions().get(i);
+                StringBuilder args = new StringBuilder();
 
-            for (int j = 0; j < op.getArity(); j++) {
-                String arg = problem.getConstants().get(op.getValueOfParameter(j));
-                args.append(arg);
+                for (int j = 0; j < op.getArity(); j++) {
+                    String arg = problem.getConstants().get(op.getValueOfParameter(j));
+                    args.append(arg);
 
-                if (j < op.getArity() - 1) args.append(", ");
+                    if (j < op.getArity() - 1) args.append(", ");
+                }
+
+                String a = String.format("%s(%s)", op.getName(), args);
+                list.append(a);
+
+                if (i < plan.size() - 1) list.append("; ");
             }
-
-            String a = String.format("%s(%s)", op.getName(), args);
-            list.append(a);
-
-            if (i < plan.size() - 1) list.append("; ");
         }
 
         return String.format("!%s : true <- %s .", name, list);
