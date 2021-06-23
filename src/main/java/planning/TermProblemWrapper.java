@@ -6,7 +6,9 @@ import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Wrapper for a Jason term encoding a PDDL problem.
@@ -52,11 +54,20 @@ public class TermProblemWrapper {
 
         List<Term> initialFacts = ((ListTerm) problemTerm.getTerm(2)).getAsList();
 
+        Set<Symbol> objects = new HashSet<>();
+
         for (Term f : initialFacts) {
             // initial fact is not well-defined
             if (!f.isStructure()) return null;
 
-            pb.addInitialFact(new TermExpWrapper(f).getExp());
+            TermExpWrapper w = new TermExpWrapper(f);
+
+            pb.addInitialFact(w.getExp());
+            objects.addAll(w.getConstants());
+        }
+
+        for (Symbol o : objects) {
+            pb.addObject(new TypedSymbol(o));
         }
 
         // the domain has no goal state

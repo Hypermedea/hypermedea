@@ -21,6 +21,8 @@ public class TermExpWrapper {
 
     private List<Symbol> predicate = null;
 
+    private Set<Symbol> constants = null;
+
     /**
      * Construct a wrapper for a PDDL logical expression specified as a Jason term.
      *
@@ -58,6 +60,7 @@ public class TermExpWrapper {
             exp = new Exp(Connective.ATOM);
 
             predicate = new ArrayList<>();
+            constants = new HashSet<>();
 
             Symbol predicateName = new Symbol(Symbol.Kind.PREDICATE, expTerm.getFunctor());
             predicate.add(predicateName);
@@ -71,7 +74,10 @@ public class TermExpWrapper {
                 if (st.isString()) kind = Symbol.Kind.VARIABLE;
                 else if (st.isAtom()) kind = Symbol.Kind.CONSTANT;
 
-                predicate.add(new Symbol(kind, st.toString()));
+                Symbol arg = new Symbol(kind, st.toString());
+                if (arg.getKind().equals(Symbol.Kind.CONSTANT)) constants.add(arg);
+
+                predicate.add(arg);
             }
 
             exp.setAtom(predicate);
@@ -130,6 +136,23 @@ public class TermExpWrapper {
         }
 
         return preds;
+    }
+
+    /**
+     * List constants used in the PDDL logical expression
+     *
+     * @return a set of constants
+     */
+    public Set<Symbol> getConstants() {
+        if (exp.getConnective().equals(Connective.ATOM)) {
+            return constants;
+        } else {
+            Set<Symbol> constants = new HashSet<>();
+
+            for (TermExpWrapper w : children) constants.addAll(w.getConstants());
+
+            return constants;
+        }
     }
 
 }

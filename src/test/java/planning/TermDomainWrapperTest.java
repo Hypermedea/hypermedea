@@ -14,7 +14,7 @@ public class TermDomainWrapperTest {
 
     public static final String TEST_DOMAIN_STRUCTURE = "domain(\"hanoi\", [\n" +
             "  action(\"move\",\n" +
-            "    and(smaller(\"?to\", \"?disc\"), on(\"?disc\", \"?from\"), clear(\"?disc\"), clear(\"?to\")),\n" +
+            "    and(smaller(\"?disc\", \"?to\"), on(\"?disc\", \"?from\"), clear(\"?disc\"), clear(\"?to\")),\n" +
             "    and(clear(\"?from\"), on(\"?disc\", \"?to\"), not(on(\"?disc\", \"?from\")), not(clear(\"?to\"))))\n" +
             "])";
 
