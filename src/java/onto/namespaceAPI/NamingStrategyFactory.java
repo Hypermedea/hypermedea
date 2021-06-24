@@ -1,14 +1,26 @@
 package onto.namespaceAPI;
 
+import org.semanticweb.owlapi.model.OWLOntology;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class NamingStrategyFactory {
+
+    public enum NamingStrategyType {
+        LABEL,PREFERRED_NAMESPACE,KNOWN_NAMESPACE,DEFAULT
+    }
+
+    public static NamingStrategy createNamingStrategy(OWLOntology owlOntology) {
+        // TODO
+        return null;
+    }
+
     /**
      * Default Method to get only the default naming strategy
      * @return default naming strategy
      */
-    public static Set<NamingStrategy> createDefaultNamingStrategySet(){
+    public static Set<NamingStrategy> createDefaultNamingStrategySet() {
         Set<NamingStrategy> namingStrategySet = new LinkedHashSet<>();
         namingStrategySet.add(new DefaultNamingStrategy());
         return namingStrategySet;
@@ -44,7 +56,7 @@ public class NamingStrategyFactory {
      * (Label -> PreferredNamespaces -> KnownNamespaces/Prefix -> Default)
      * @return
      */
-    public static Set<NamingStrategy> createAllNamingStrategySet(){
+    public static Set<NamingStrategy> createAllNamingStrategySet() {
         Set<NamingStrategy> namingStrategySet = new LinkedHashSet<>();
         namingStrategySet.add(new LabelNamingStrategy());
         namingStrategySet.add(new PreferredNamespaceNamingStrategy());

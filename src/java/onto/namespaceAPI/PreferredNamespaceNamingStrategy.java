@@ -12,25 +12,14 @@ import java.util.Map;
  */
 public class PreferredNamespaceNamingStrategy implements NamingStrategy{
 
-    public Map<String,String> mappedPreferredNamespaces;
+    public static final String PREFERRED_NAMESPACE_URI = "http://purl.org/vocab/vann/preferredNamespaceUri";
 
-    public PreferredNamespaceNamingStrategy() {
-    }
+    public Map<String,String> mappedPreferredNamespaces = new HashMap<>();
 
-    @Override
-    public void init() {
-        mappedPreferredNamespaces = new HashMap<>();
-        return;
-    }
-
-    @Override
-    public void precompute(OWLOntology owlOntology) {
-        mappedPreferredNamespaces.clear();
+    public PreferredNamespaceNamingStrategy(OWLOntology owlOntology) {
         for(OWLClass owlClass : owlOntology.getClassesInSignature()) {
             for (OWLAnnotation annotation : owlClass.getAnnotations(owlOntology)) {
-                //System.out.println(IRITools.removeWrapperUri(owlClass.toString()) + " ::: "+ ((OWLLiteral) annotation.getValue()).getLiteral());
-                if (IRITools.removeWrapperIRI(annotation.getProperty().toString()).equals("http://purl.org/vocab/vann/preferredNamespaceUri")
-                        || IRITools.removeWrapperIRI(annotation.getProperty().toString()).equals("http://purl.org/vocab/vann/preferredNamespacePrefix")){
+                if (IRITools.removeWrapperIRI(annotation.getProperty().toString()).equals(PREFERRED_NAMESPACE_URI)) {
                     mappedPreferredNamespaces.put(IRITools.removeWrapperIRI(owlClass.toString()),((OWLLiteral) annotation.getValue()).getLiteral());
                 }
             }
@@ -42,7 +31,6 @@ public class PreferredNamespaceNamingStrategy implements NamingStrategy{
         if (iri == null || iri.toString() == ""){
             return null;
         } else if (mappedPreferredNamespaces.containsKey(iri.toString())){
-            //System.out.println(axiom.getPredicateFullName() + " : " + mappedPreferredNamespaces.get(axiom.getPredicateFullName()));
             if (iri.toString().startsWith(mappedPreferredNamespaces.get(iri.toString()))) {
                 String suffix = IRITools.getNameByMatchingPrefix(iri.toString(),mappedPreferredNamespaces.get(iri.toString()));
                 return IRITools.firstCharToLowerCase(suffix);

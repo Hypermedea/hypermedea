@@ -10,21 +10,11 @@ import java.util.Map;
  * Strategy based on the label of class, ie: if a class that has a defined label, it will be used as the shortened name
  * @author Noé SAFFAF
  */
-public class LabelNamingStrategy implements NamingStrategy{
-    private Map<String,String> mappedLabels;
+public class LabelNamingStrategy implements NamingStrategy {
 
-    public LabelNamingStrategy() {
-    }
+    private Map<String,String> mappedLabels = new HashMap<>();
 
-
-    @Override
-    public void init() {
-        mappedLabels = new HashMap<>();
-        return;
-    }
-
-    @Override
-    public void precompute(OWLOntology owlOntology) {
+    public LabelNamingStrategy(OWLOntology owlOntology) {
         mappedLabels.clear();
         for (OWLClass c : owlOntology.getClassesInSignature()){
             for(OWLAnnotationAssertionAxiom a : owlOntology.getAnnotationAssertionAxioms(c.getIRI())) {

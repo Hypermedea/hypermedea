@@ -10,28 +10,15 @@ import java.util.Map;
  * Strategy
  * @author Noe SAFFAF
  */
-public class KnownNamespaceNamingStrategy implements NamingStrategy{
-    private Map<String,String> mappedKnownNamespaces;
+public class KnownNamespaceNamingStrategy implements NamingStrategy {
 
-    public KnownNamespaceNamingStrategy() {
-    }
-
-    @Override
-    public void init() {
-        mappedKnownNamespaces = CSVTools.readCSVtoMap("prefixes.csv");
-    }
-
-    @Override
-    public void precompute(OWLOntology ontology) {
-        return;
-    }
+    private Map<String,String> mappedKnownNamespaces = CSVTools.readCSVtoMap("prefixes.csv");
 
     @Override
     public String getNameForIRI(IRI iri) {
         if (iri == null || iri.toString() == ""){
             return null;
-        } else if (mappedKnownNamespaces.containsKey(iri.toString())){
-            //System.out.println(axiom.getPredicateFullName() + " : " + mappedPreferredNamespaces.get(axiom.getPredicateFullName()));
+        } else if (mappedKnownNamespaces.containsKey(iri.toString())) {
             if (iri.toString().startsWith(mappedKnownNamespaces.get(iri.toString()))) {
                 String suffix = IRITools.getNameByMatchingPrefix(iri.toString(),mappedKnownNamespaces.get(iri.toString()));
                 return IRITools.firstCharToLowerCase(suffix);

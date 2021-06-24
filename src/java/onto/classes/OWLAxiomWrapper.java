@@ -56,7 +56,7 @@ public class OWLAxiomWrapper {
      * Returns the property's name of an axiom
      * @return Name of an OWL Axiom
      */
-    public String getPropertyFullName(){
+    public String getPropertyFullName() {
         String propertyFullName = null;
         if (axiom.isOfType(AxiomType.DECLARATION)) {
             OWLDeclarationAxiom owlDeclarationAxiom = (OWLDeclarationAxiom) axiom;
