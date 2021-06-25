@@ -1,24 +1,14 @@
 package hypermedia;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
-
-import cartago.*;
-import onto.classes.*;
+import cartago.Artifact;
+import cartago.OPERATION;
+import cartago.ObsProperty;
+import cartago.OpFeedbackParam;
 import edu.kit.aifb.datafu.*;
 import edu.kit.aifb.datafu.consumer.impl.BindingConsumerCollection;
 import edu.kit.aifb.datafu.engine.EvaluateProgram;
-import edu.kit.aifb.datafu.io.input.request.EvaluateRequestOrigin;
 import edu.kit.aifb.datafu.io.origins.FileOrigin;
+import edu.kit.aifb.datafu.io.origins.InputOrigin;
 import edu.kit.aifb.datafu.io.origins.InternalOrigin;
 import edu.kit.aifb.datafu.io.origins.RequestOrigin;
 import edu.kit.aifb.datafu.io.output.request.EvaluateUnsafeRequestOrigin;
@@ -29,28 +19,35 @@ import edu.kit.aifb.datafu.parser.notation3.Notation3Parser;
 import edu.kit.aifb.datafu.parser.sparql.SparqlParser;
 import edu.kit.aifb.datafu.planning.EvaluateProgramConfig;
 import edu.kit.aifb.datafu.planning.EvaluateProgramGenerator;
-import jason.asSyntax.*;
-import onto.namespaceAPI.NamingStrategy;
+import jason.asSyntax.ASSyntax;
+import jason.asSyntax.StringTerm;
+import jason.asSyntax.Structure;
+import onto.classes.OWLAxiomWrapper;
 import onto.namespaceAPI.NamingStrategyFactory;
 import onto.ontologyAPI.InferredAxiomExtractor;
-import onto.ontologyAPI.OntologyExtractionManager;
 import org.semanticweb.HermiT.Reasoner.ReasonerFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
-import org.semanticweb.yars.nx.BNode;
-import org.semanticweb.yars.nx.Node;
-import org.semanticweb.yars.nx.Nodes;
-import org.semanticweb.yars.nx.Resource;
-import org.semanticweb.yars.nx.Literal;
-import tools.IRITools;
+import org.semanticweb.owlapi.util.OWLOntologyChangeVisitorAdapter;
+import org.semanticweb.owlapi.util.ShortFormProvider;
+import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
+import org.semanticweb.yars.nx.*;
+import org.semanticweb.yars.nx.namespace.XSD;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
-
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static jason.asSyntax.ASSyntax.createStructure;
 
 /**
  * A CArtAgO artifact for browsing Linked Data.
@@ -60,50 +57,79 @@ import static jason.asSyntax.ASSyntax.createStructure;
 public class LinkedDataFuSpider extends Artifact {
 
 	/**
-	 * Manager that listens to changes in the underlying root ontology and adds/removes corresponding observable
-	 * properties
+	 * Manager that listens to changes in the underlying root ontology
+	 * and adds/removes corresponding observable properties.
 	 */
-	private class ObsPropertyManager implements OWLOntologyChangeListener, OWLOntologyChangeVisitor {
+	private class ObsPropertyManager extends OWLOntologyChangeVisitorAdapter
+			implements OWLOntologyChangeListener, OWLOntologyLoaderListener {
+
+		private final Set<IRI> pendingImports = new HashSet<>();
 
 		private final Map<OWLOntology, Set<ObsProperty>> propertiesByOntology = new HashMap<>();
 
 		@Override
-		public void ontologiesChanged(List<? extends OWLOntologyChange> list) throws OWLException {
+		public void ontologiesChanged(List<? extends OWLOntologyChange> list) {
 			for (OWLOntologyChange c : list) {
 				if (c.getOntology().equals(rootOntology)) c.accept(this);
 			}
 		}
 
 		@Override
+		public void startedLoadingOntology(LoadingStartedEvent event) {
+			// ignore
+		}
+
+		@Override
+		public void finishedLoadingOntology(LoadingFinishedEvent event) {
+			IRI ontologyIRI = event.getOntologyID().getOntologyIRI();
+
+			if (event.isSuccessful()) {
+				OWLOntology o = ontologyManager.getOntology(ontologyIRI);
+
+				if (!propertiesByOntology.containsKey(o)) {
+					Set<ObsProperty> properties = new HashSet<>();
+
+					for (OWLAxiom axiom : o.getAxioms()) {
+						OWLAxiomWrapper w = new OWLAxiomWrapper(axiom, namingStrategy);
+
+						String name = w.getPropertyName();
+						Object[] args = w.getPropertyArguments();
+
+						ObsProperty p = null;
+
+						if (args.length == 1) p = defineObsProperty(name, args[0]);
+						else if (args.length == 2) p = defineObsProperty(name, args[0], args[1]);
+
+						if (p != null) {
+							String fullName = w.getPropertyFullName();
+
+							if (fullName != null) {
+								StringTerm t = ASSyntax.createString(fullName);
+								Structure annotation = ASSyntax.createStructure(PREDICATE_IRI_FUNCTOR, t);
+								p.addAnnot(annotation);
+							}
+
+							properties.add(p);
+						}
+					}
+
+					propertiesByOntology.put(o, properties);
+				}
+			}
+
+			pendingImports.remove(ontologyIRI);
+		}
+
+		@Override
 		public void visit(AddImport addImport) {
 			IRI ontologyIRI = addImport.getImportDeclaration().getIRI();
-			OWLOntology o = owlOntologyManager.getOntology(ontologyIRI);
-
-			if (!propertiesByOntology.containsKey(o)) {
-				Set<ObsProperty> properties = new HashSet<>();
-
-				for (OWLAxiom axiom : o.getAxioms()) {
-					OWLAxiomWrapper w = new OWLAxiomWrapper(axiom, namingStrategySet);
-
-					String name = w.getPropertyName();
-					List<Object> args = w.getPropertyArguments();
-
-					ObsProperty p = null;
-
-					if (args.size() == 1) p = defineObsProperty(name, args.get(0));
-					else if (args.size() == 2) p = defineObsProperty(name, args.get(0), args.get(1));
-
-					if (p != null) properties.add(p);
-				}
-
-				propertiesByOntology.put(o, properties);
-			}
+			pendingImports.add(ontologyIRI);
 		}
 
 		@Override
 		public void visit(RemoveImport removeImport) {
 			IRI ontologyIRI = removeImport.getImportDeclaration().getIRI();
-			OWLOntology o = owlOntologyManager.getOntology(ontologyIRI);
+			OWLOntology o = ontologyManager.getOntology(ontologyIRI);
 
 			if (propertiesByOntology.containsKey(o)) {
 				for (ObsProperty p : propertiesByOntology.get(o)) {
@@ -115,29 +141,16 @@ public class LinkedDataFuSpider extends Artifact {
 				}
 			}
 		}
-		
+
 		// TODO manage inferred statements
-
-		@Override
-		public void visit(AddAxiom addAxiom) { /* ignore */ }
-
-		@Override
-		public void visit(RemoveAxiom removeAxiom) { /* ignore */ }
-
-		@Override
-		public void visit(SetOntologyID setOntologyID) { /* ignore */ }
-
-		@Override
-		public void visit(AddOntologyAnnotation addOntologyAnnotation) { /* ignore */ }
-
-		@Override
-		public void visit(RemoveOntologyAnnotation removeOntologyAnnotation) { /* ignore */ }
 
 	}
 
 	private static final String COLLECT_QUERY = "construct { ?s ?p ?o . } where { ?s ?p ?o . }";
 
-	private static final String RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+	private static final String RDF_TYPE = OWLRDFVocabulary.RDF_TYPE.toString();
+
+	private static final String CRAWLED_ASSERTIONS_IRI = String.format("urn:uuid:%s", UUID.randomUUID());
 
 	private static final String PREDICATE_IRI_FUNCTOR = "predicate_uri";
 
@@ -151,29 +164,20 @@ public class LinkedDataFuSpider extends Artifact {
 
 	private OWLReasoner owlReasoner = null;
 
-	// TODO or a StructuralReasonerFactory if no inference
+	// TODO or a StructuralReasonerFactory if no inference?
 	private ReasonerFactory reasonerFactory = new ReasonerFactory();
 
-	private OWLOntologyManager owlOntologyManager = OWLManager.createOWLOntologyManager();
+	private OWLOntologyManager ontologyManager = OWLManager.createOWLOntologyManager();
 
 	private OWLOntology rootOntology;
 
-	// TODO to remove
-	private Set<String> registeredURIset = new HashSet<>();
-
-	private Map<OWLAxiomWrapper, ObsProperty> observablePropertyOntologyMap = new HashMap<>();
+	private OWLOntology crawledAssertions;
 
 	private Map<OWLAxiomWrapper, ObsProperty> observablePropertyTripleMap = new HashMap<>();
 
-	private Set<OWLAxiomWrapper> owlAxiomWrapperSet = new HashSet<>();
+	private ShortFormProvider namingStrategy;
 
-	// TODO replace set of naming strategies with "combo" naming strategy (-> ordered for determinism)
-
-	//NamingStrategy
-	Set<NamingStrategy> namingStrategySet;
-
-	//DataFactory
-	OWLDataFactory dataFactory = new OWLDataFactoryImpl();
+	private OWLDataFactory dataFactory = new OWLDataFactoryImpl();
 
 	public LinkedDataFuSpider() {
 		// set logging level to warning
@@ -184,8 +188,9 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
-	 * Initiate the artifact by passing a programFile for the ldfu engine
-	 * @param programFile
+	 * Initialize the artifact by passing a program file name to the ldfu engine.
+	 *
+	 * @param programFile name of a Linked Data program file
 	 */
 	public void init(String programFile, boolean inferred) {
 		initProgram(programFile);
@@ -225,24 +230,26 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
-	 * Initiate parameters and prepare the belief naming strategy by computing all known namespaces
+	 * Initialize the artifact's ontology manager.
 	 */
 	private void initOntology(boolean inferred) {
 		try {
-			rootOntology = owlOntologyManager.createOntology();
+			rootOntology = ontologyManager.createOntology();
 
-			owlOntologyManager.addOntologyChangeListener(new ObsPropertyManager());
+			OWLOntologyChangeBroadcastStrategy broadcastStrategy = new SpecificOntologyChangeBroadcastStrategy(rootOntology);
+			ontologyManager.setDefaultChangeBroadcastStrategy(broadcastStrategy);
+
+			ObsPropertyManager m = new ObsPropertyManager();
+			ontologyManager.addOntologyChangeListener(m);
+			ontologyManager.addOntologyLoaderListener(m);
 
 			if (inferred) owlReasoner = reasonerFactory.createNonBufferingReasoner(rootOntology);
 		} catch (OWLOntologyCreationException e){
 			e.printStackTrace();
-
 			// TODO log
 		}
 
-		namingStrategySet = NamingStrategyFactory.createAllNamingStrategySet();
-
-		// TODO replace naming strategies with instances of ShortFormProvider
+		namingStrategy = NamingStrategyFactory.createDefaultNamingStrategy(ontologyManager);
 	}
 
 	/**
@@ -255,7 +262,8 @@ public class LinkedDataFuSpider extends Artifact {
 	@OPERATION
 	public void register(String ontologyIRI) {
 		OWLImportsDeclaration decl = dataFactory.getOWLImportsDeclaration(IRI.create(ontologyIRI));
-		rootOntology.getImportsDeclarations().add(decl);
+		AddImport change = new AddImport(rootOntology, decl);
+		ontologyManager.applyChange(change);
 	}
 
 	/**
@@ -265,284 +273,187 @@ public class LinkedDataFuSpider extends Artifact {
 	@OPERATION
 	public void unregister(String ontologyIRI) {
 		OWLImportsDeclaration decl = dataFactory.getOWLImportsDeclaration(IRI.create(ontologyIRI));
-		rootOntology.getImportsDeclarations().remove(decl);
+		RemoveImport change = new RemoveImport(rootOntology, decl);
+		ontologyManager.applyChange(change);
 
 		// TODO is OWLImportsDeclaration.equals() based on IRIs?
 	}
 
 	/**
-	 * External Action to check if the ontology is Consistent (has NamedIndividual instance of an unsatisfiable class)
+	 * External Action to check if the ontology is consistent (no individual instance of owl:Nothing).
+	 *
 	 * @param b A boolean parameter to unify with the response of the External action
-	 * @param report A string parameter to unify with the message report of the External action
 	 */
 	@OPERATION
-	public void isConsistent(OpFeedbackParam<Boolean> b, OpFeedbackParam<String> report){
+	public void isConsistent(OpFeedbackParam<Boolean> b){
 		if (rootOntology == null) {
 			b.set(true);
-			report.set("No ontology is saved");
+			return;
 		}
 
 		InferredAxiomExtractor inferredAxiomExtractor = new InferredAxiomExtractor(rootOntology, reasonerFactory);
-		if (inferredAxiomExtractor.checkConsistency()) {
-			b.set(true);
-			report.set("The ontology is consistent");
-		} else {
-			b.set(false);
-			report.set("Warning : The ontology is not consistent");
-		}
-	}
-
-	// TODO remove one of the two operations (above/below)
-
-	/**
-	 * External Action to check if the ontology is Satisfiable
-	 * @param displayClasses An option to feed the report message with all the unsatisfiable onto.classes
-	 * @param b A boolean parameter to unify with the response of the External action
-	 * @param report A string parameter to unify with the message report of the External action
-	 */
-	@OPERATION
-	public void isSatisfiable(boolean displayClasses, OpFeedbackParam<Boolean> b, OpFeedbackParam<String> report){
-		if (rootOntology == null){
-			b.set(true);
-			report.set("No ontology is saved");
-		}
-		InferredAxiomExtractor inferredAxiomExtractor = new InferredAxiomExtractor(rootOntology, reasonerFactory);
-		if (inferredAxiomExtractor.checkSatisfiability()) {
-			b.set(true);
-			report.set("The ontology is satisfiable");
-		} else {
-			b.set(false);
-			if (displayClasses){
-				String s = "Unsatisfiable Axioms : ";
-				for (OWLClass c : inferredAxiomExtractor.getUnsatisfiableClasses()){
-					s += "\n" + c.toString();
-				}
-				report.set("Warning : The ontology is not satisfiable.\n"+s);
-			} else {
-				report.set("Warning : The ontology is not satisfiable.");
-			}
-		}
+		b.set(inferredAxiomExtractor.checkConsistency());
 	}
 
 	/**
 	 * External action to execute the Linked Data program and notifies agent with collected triples and their unary
 	 * binary axioms according to the already registered ontologies. Can accept local file and can have the inferred
-	 * axioms (Class assertion only) of the unary/binary beliefs
+	 * axioms (Class assertion only) of the unary/binary beliefs.
+	 *
 	 * @param originURI The entrypoint for the data graph file to crawl, can be a local path if the option local is activated
 	 */
 	@OPERATION
-	public void crawl(String originURI){
+	public void crawl(String originURI) {
 		if (program == null) return;
 
 		EvaluateProgramConfig config = new EvaluateProgramConfig();
-		//config.setThreadingModel(EvaluateProgramConfig.ThreadingModel.SERIAL);
 		EvaluateProgram eval = new EvaluateProgramGenerator(program, config).getEvaluateProgram();
 		eval.start();
 
+		InputOrigin origin = asOrigin(originURI);
 
-		boolean uriCreated = false;
-		URI uri;
-
-		try {
-			if (!uriCreated && originURI.startsWith("http")) {
-				uri = URI.create(originURI);
-				eval.getInputOriginConsumer().consume(new RequestOrigin(uri, Request.Method.GET));
-				uriCreated = true;
-			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
+		if (origin == null) return;
 
 		try {
-			if (!uriCreated) {
-				eval.getInputOriginConsumer().consume(new FileOrigin(new File(originURI), FileOrigin.Mode.READ, null));
-				uriCreated = true;
-			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
-		try {
-			if (!uriCreated) {
-				uri = URI.create("file:///" + Paths.get(originURI).toAbsolutePath().toString().replaceAll("\\\\","//"));
-				System.out.println();
-				eval.getInputOriginConsumer().consume(new RequestOrigin(uri, Request.Method.GET));
-				uriCreated = true;
-			}
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			System.out.println("URI/FilePath is invalid");
-			return;
-		}
-
-
-		try {
+			eval.getInputOriginConsumer().consume(origin);
 			eval.awaitIdleAndFinish();
 			eval.shutdown();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 
-		String subject;
-		String predicate;
-		String object;
-
-		Set<OWLClass> owlClassSet = rootOntology.getClassesInSignature();
-		Set<OWLObjectProperty> owlObjectPropertySet = rootOntology.getObjectPropertiesInSignature();
-		Set<OWLDataProperty> owlDataPropertySet = rootOntology.getDataPropertiesInSignature();
-
-		// TODO set axioms in a separate ontology and import it in the master ontology
-
-		Set<OWLAxiom> owlCrawledAxiomSet = new HashSet<>();
-		for (Binding binding : this.triples.getCollection()) {
-			Node[] st = binding.getNodes().getNodeArray();
-			subject = st[0].getLabel();
-			predicate = st[1].getLabel();
-			object = st[2].getLabel();
-			defineObsProperty("rdf", subject, predicate, object);
-			owlCrawledAxiomSet.add(getOwlAxiomFromTriple(subject, predicate, object, owlClassSet, owlObjectPropertySet, owlDataPropertySet, dataFactory));
-		}
-
+		if (hasObsProperty("rdf")) removeObsProperty("rdf"); // TODO only if crawl succeeded
 
 		try {
-			OWLOntology copiedOntology = OntologyExtractionManager.copyOntology(rootOntology);
-			copiedOntology = OntologyExtractionManager.addAxiomToOntology(owlCrawledAxiomSet, copiedOntology);
-			if (inferred){
-				InferredAxiomExtractor inferredAxiomExtractor = new InferredAxiomExtractor(copiedOntology, reasonerFactory);
-				inferredAxiomExtractor.precomputeInferredAxioms();
-				copiedOntology = inferredAxiomExtractor.getInferredOntology();
-			}
+			unregister(CRAWLED_ASSERTIONS_IRI);
 
-			Set<OWLAxiomWrapper> owlCrawledAxiomWrapperSet = getOwlAxiomWrapperSet(copiedOntology);
-
-			for (OWLAxiomWrapper axiom : owlCrawledAxiomWrapperSet){
-				String propFullName = axiom.getPropertyFullName();
-				String propName = axiom.getPropertyName();
-				if (propName == null || propName.isBlank()){
-					continue;
-				}
-				List<Object> argumentsList = axiom.getPropertyArguments();
-				if (!observablePropertyTripleMap.containsKey(axiom)){
-					if (argumentsList.size() == 1 && !hasObsPropertyByTemplate(propName,argumentsList.get(0))){
-						ObsProperty obsProperty = defineObsProperty(propName,argumentsList.get(0));
-						Structure s = createStructure("predicate_uri", new Atom(propFullName));
-						obsProperty.addAnnot(s);
-						observablePropertyTripleMap.put(axiom, obsProperty);
-					} else if (argumentsList.size() == 2 && !hasObsPropertyByTemplate(propName, argumentsList.get(0), argumentsList.get(1))) {
-						ObsProperty obsProperty = defineObsProperty(propName,argumentsList.get(0), argumentsList.get(1));
-						Structure s = createStructure("predicate_uri", new Atom(propFullName));
-						obsProperty.addAnnot(s);
-						observablePropertyTripleMap.put(axiom, obsProperty);
-					}
-				}
-			}
+			crawledAssertions = ontologyManager.createOntology();
 		} catch (OWLOntologyCreationException e) {
 			e.printStackTrace();
-			return;
-		}
-	}
-
-	/**
-	 * performs a GET request and updates the belief base as the result.
-	 */
-	@OPERATION
-	public void get(String originURI) {
-		//long startTime = System.currentTimeMillis();
-
-		/*
-		long endTime = System.currentTimeMillis();
-		op_time.set(new Double(endTime-startTime));
-		totalTime += endTime - startTime;
-		 */
-
-		RequestOrigin req;
-
-		boolean uriCreated = false;
-		URI uri;
-
-		if (!uriCreated && originURI.startsWith("http")) {
-			uri = URI.create(originURI);
-		} else {
-			uri = URI.create("file:///" + Paths.get(originURI).toAbsolutePath().toString().replaceAll("\\\\", "//"));
+			failed("Could not create ABox statements.");
 		}
 
-		req = new RequestOrigin(uri, Request.Method.GET);
-
-		BindingConsumerCollection triples = new BindingConsumerCollection();
-
-		EvaluateRequestOrigin eval = new EvaluateRequestOrigin();
-		eval.setTripleCallback(new BindingConsumerSink(triples));
-		try {
-			eval.consume(req);
-			eval.shutdown();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			return;
-		}
-
-		// authoritative subject
-		// TODO graph name available?
-		if (hasObsPropertyByTemplate("rdf", originURI, null, null)) {
-			removeObsPropertyByTemplate("rdf", originURI, null, null);
-		}
-
-		String subject;
-		String predicate;
-		String object;
-
-		Set<OWLClass> owlClassSet = rootOntology.getClassesInSignature();
-		Set<OWLObjectProperty> owlObjectPropertySet = rootOntology.getObjectPropertiesInSignature();
-		Set<OWLDataProperty> owlDataPropertySet = rootOntology.getDataPropertiesInSignature();
-
-		// TODO duplicated code
-
-		Set<OWLAxiom> owlCrawledAxiomSet = new HashSet<>();
 		for (Binding binding : this.triples.getCollection()) {
 			Node[] st = binding.getNodes().getNodeArray();
-			subject = st[0].getLabel();
-			predicate = st[1].getLabel();
-			object = st[2].getLabel();
+
+			// create basic rdf/3 property
+
+			String subject = st[0].getLabel();
+			String predicate = st[1].getLabel();
+			String object = st[2].getLabel();
+
 			defineObsProperty("rdf", subject, predicate, object);
-			owlCrawledAxiomSet.add(getOwlAxiomFromTriple(subject, predicate, object, owlClassSet, owlObjectPropertySet, owlDataPropertySet, dataFactory));
+
+			// create idiomatic property with name derived from registered ontologies
+
+			OWLAxiom axiom = asOwlAxiom(st);
+
+			if (axiom != null) crawledAssertions.getAxioms().add(axiom);
 		}
 
-		try {
-			OWLOntology copiedOntology = OntologyExtractionManager.copyOntology(rootOntology);
-			copiedOntology = OntologyExtractionManager.addAxiomToOntology(owlCrawledAxiomSet, copiedOntology);
-			if (inferred) {
-				InferredAxiomExtractor inferredAxiomExtractor = new InferredAxiomExtractor(copiedOntology, reasonerFactory);
-				inferredAxiomExtractor.precomputeInferredAxioms();
-				copiedOntology = inferredAxiomExtractor.getInferredOntology();
-			}
-			Set<OWLAxiomWrapper> owlCrawledAxiomWrapperSet = getOwlAxiomWrapperSet(copiedOntology);
-
-			for (OWLAxiomWrapper axiom : owlCrawledAxiomWrapperSet) {
-				String propFullName = axiom.getPropertyFullName();
-				String propName = axiom.getPropertyName();
-				if (propName == null || propName.isBlank()){
-					continue;
-				}
-				List<Object> argumentsList = axiom.getPropertyArguments();
-				if (!observablePropertyTripleMap.containsKey(axiom)) {
-					if (argumentsList.size() == 1 && !hasObsPropertyByTemplate(propName,argumentsList.get(0))) {
-						ObsProperty obsProperty = defineObsProperty(propName, argumentsList.get(0));
-						Structure s = createStructure("predicate_uri", new Atom(propFullName));
-						obsProperty.addAnnot(s);
-						observablePropertyTripleMap.put(axiom, obsProperty);
-					} else if (argumentsList.size() == 2 && !hasObsPropertyByTemplate(propName, argumentsList.get(0), argumentsList.get(1))) {
-						ObsProperty obsProperty = defineObsProperty(propName, argumentsList.get(0), argumentsList.get(1));
-						Structure s = createStructure("predicate_uri", new Atom(propFullName));
-						obsProperty.addAnnot(s);
-						observablePropertyTripleMap.put(axiom, obsProperty);
-					}
-				}
-			}
-		} catch (OWLOntologyCreationException e) {
-			e.printStackTrace();
-			return;
-		}
+		register(CRAWLED_ASSERTIONS_IRI);
 	}
+
+//	/**
+//	 * performs a GET request and updates the belief base as the result.
+//	 */
+//	@OPERATION
+//	public void get(String originURI) {
+//		//long startTime = System.currentTimeMillis();
+//
+//		/*
+//		long endTime = System.currentTimeMillis();
+//		op_time.set(new Double(endTime-startTime));
+//		totalTime += endTime - startTime;
+//		 */
+//
+//		RequestOrigin req;
+//
+//		boolean uriCreated = false;
+//		URI uri;
+//
+//		if (!uriCreated && originURI.startsWith("http")) {
+//			uri = URI.create(originURI);
+//		} else {
+//			uri = URI.create("file:///" + Paths.get(originURI).toAbsolutePath().toString().replaceAll("\\\\", "//"));
+//		}
+//
+//		req = new RequestOrigin(uri, Request.Method.GET);
+//
+//		BindingConsumerCollection triples = new BindingConsumerCollection();
+//
+//		EvaluateRequestOrigin eval = new EvaluateRequestOrigin();
+//		eval.setTripleCallback(new BindingConsumerSink(triples));
+//		try {
+//			eval.consume(req);
+//			eval.shutdown();
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//			return;
+//		}
+//
+//		// authoritative subject
+//		// TODO graph name available?
+//		if (hasObsPropertyByTemplate("rdf", originURI, null, null)) {
+//			removeObsPropertyByTemplate("rdf", originURI, null, null);
+//		}
+//
+//		String subject;
+//		String predicate;
+//		String object;
+//
+//		Set<OWLClass> owlClassSet = rootOntology.getClassesInSignature();
+//		Set<OWLObjectProperty> owlObjectPropertySet = rootOntology.getObjectPropertiesInSignature();
+//		Set<OWLDataProperty> owlDataPropertySet = rootOntology.getDataPropertiesInSignature();
+//
+//		// TODO duplicated code
+//
+//		Set<OWLAxiom> owlCrawledAxiomSet = new HashSet<>();
+//		for (Binding binding : this.triples.getCollection()) {
+//			Node[] st = binding.getNodes().getNodeArray();
+//			subject = st[0].getLabel();
+//			predicate = st[1].getLabel();
+//			object = st[2].getLabel();
+//			defineObsProperty("rdf", subject, predicate, object);
+//			owlCrawledAxiomSet.add(asOwlAxiom(subject, predicate, object, owlClassSet, owlObjectPropertySet, owlDataPropertySet, dataFactory));
+//		}
+//
+//		try {
+//			OWLOntology copiedOntology = OntologyExtractionManager.copyOntology(rootOntology);
+//			copiedOntology = OntologyExtractionManager.addAxiomToOntology(owlCrawledAxiomSet, copiedOntology);
+//			if (inferred) {
+//				InferredAxiomExtractor inferredAxiomExtractor = new InferredAxiomExtractor(copiedOntology, reasonerFactory);
+//				inferredAxiomExtractor.precomputeInferredAxioms();
+//				copiedOntology = inferredAxiomExtractor.getInferredOntology();
+//			}
+//			Set<OWLAxiomWrapper> owlCrawledAxiomWrapperSet = getOwlAxiomWrapperSet(copiedOntology);
+//
+//			for (OWLAxiomWrapper axiom : owlCrawledAxiomWrapperSet) {
+//				String propFullName = axiom.getPropertyFullName();
+//				String propName = axiom.getPropertyName();
+//				if (propName == null || propName.isBlank()){
+//					continue;
+//				}
+//				List<Object> argumentsList = axiom.getPropertyArguments();
+//				if (!observablePropertyTripleMap.containsKey(axiom)) {
+//					if (argumentsList.size() == 1 && !hasObsPropertyByTemplate(propName,argumentsList.get(0))) {
+//						ObsProperty obsProperty = defineObsProperty(propName, argumentsList.get(0));
+//						Structure s = createStructure("predicate_uri", new Atom(propFullName));
+//						obsProperty.addAnnot(s);
+//						observablePropertyTripleMap.put(axiom, obsProperty);
+//					} else if (argumentsList.size() == 2 && !hasObsPropertyByTemplate(propName, argumentsList.get(0), argumentsList.get(1))) {
+//						ObsProperty obsProperty = defineObsProperty(propName, argumentsList.get(0), argumentsList.get(1));
+//						Structure s = createStructure("predicate_uri", new Atom(propFullName));
+//						obsProperty.addAnnot(s);
+//						observablePropertyTripleMap.put(axiom, obsProperty);
+//					}
+//				}
+//			}
+//		} catch (OWLOntologyCreationException e) {
+//			e.printStackTrace();
+//			return;
+//		}
+//	}
 
 	/**
 	 * performs a PUT request with the given input triples, of the form [rdf(S, P, O), rdf(S, P, O), ...].
@@ -634,89 +545,109 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 	}
 
-	private OWLAxiom getOwlAxiomFromTriple(String subject, String predicate, Object object, Set<OWLClass> owlClassSet, Set<OWLObjectProperty> owlObjectProperties, Set<OWLDataProperty> owlDataProperties, OWLDataFactory dataFactory)
-	{
-		if (predicate.equals(RDF_TYPE)){
-			for (OWLClass c : owlClassSet) {
-				if (IRITools.removeWrapperIRI(c.toString()).equals(object)){
-					OWLNamedIndividual namedIndividual = dataFactory.getOWLNamedIndividual(IRI.create(subject));
-					OWLClassAssertionAxiom classAssertion = dataFactory.getOWLClassAssertionAxiom(c, namedIndividual);
-					return classAssertion;
-				}
-			}
-
-			//Case we didn't find the type class
-			OWLNamedIndividual namedIndividual = dataFactory.getOWLNamedIndividual(IRI.create(subject));
-			OWLClassExpression classExpression = dataFactory.getOWLClass(IRI.create(object.toString()));
-			OWLClassAssertionAxiom classAssertion = dataFactory.getOWLClassAssertionAxiom(classExpression, namedIndividual);
-			return classAssertion;
-
-		} else {
-			//We check all properties
-			for (OWLObjectProperty op : owlObjectProperties){
-				if (predicate.equals(IRITools.removeWrapperIRI(op.toString()))){
-					OWLObjectPropertyAssertionAxiom propertyAssertionAxiom =
-							dataFactory.getOWLObjectPropertyAssertionAxiom(
-								op,
-								dataFactory.getOWLNamedIndividual(IRI.create(subject)),
-								dataFactory.getOWLNamedIndividual(IRI.create(object.toString()))
-						);
-					return propertyAssertionAxiom;
-				}
-			}
-
-			for (OWLDataProperty dp : owlDataProperties){
-				if (predicate.equals(IRITools.removeWrapperIRI(dp.toString()))){
-					OWLLiteral literal = null;
-					if (object instanceof String){
-						literal = dataFactory.getOWLLiteral((String) object);
-					} else if (object instanceof Boolean){
-						literal = dataFactory.getOWLLiteral((Boolean) object);
-					} else if (object instanceof Integer){
-						literal = dataFactory.getOWLLiteral((Integer) object);
-					} else if (object instanceof Double){
-						literal = dataFactory.getOWLLiteral((Double) object);
-					}
-
-					OWLDataPropertyAssertionAxiom propertyAssertionAxiom =
-							dataFactory.getOWLDataPropertyAssertionAxiom(
-									dp,
-									dataFactory.getOWLNamedIndividual(IRI.create(subject)),
-									literal);
-					return propertyAssertionAxiom;
-				}
-			}
-		}
-		OWLObjectPropertyAssertionAxiom propertyAssertionAxiom =
-				dataFactory.getOWLObjectPropertyAssertionAxiom(
-							dataFactory.getOWLObjectProperty(IRI.create(predicate)),
-							dataFactory.getOWLNamedIndividual(IRI.create(subject)),
-							dataFactory.getOWLNamedIndividual(IRI.create(object.toString())
-							));
-		return propertyAssertionAxiom;
+	/**
+	 * Encapsulate a file or HTTP resource into a upper-level class.
+	 *
+	 * @param uriOrFilename URI of the HTTP resource or file name
+	 * @return an InputOrigin instance
+	 */
+	private InputOrigin asOrigin(String uriOrFilename) {
+		if (uriOrFilename.startsWith("http")) return new RequestOrigin(URI.create(uriOrFilename), Request.Method.GET);
+		else return new FileOrigin(new File(uriOrFilename), FileOrigin.Mode.READ, null);
 	}
 
-	private Set<OWLAxiomWrapper> getOwlAxiomWrapperSet(OWLOntology o){
-		Set<OWLAxiomWrapper> owlAxiomWrapperSet = new HashSet<>();
-		for (OWLAxiom axiom : o.getAxioms()){
-			owlAxiomWrapperSet.add(new OWLAxiomWrapper(axiom, namingStrategySet));
+	private OWLAxiom asOwlAxiom(Node[] t) {
+		if (t.length != 3) return null;
+
+		if (t[1].getLabel().equals(RDF_TYPE)) {
+			OWLClass c = dataFactory.getOWLClass(IRI.create(t[2].getLabel()));
+
+			if (isRegistered(c)) {
+				OWLNamedIndividual i = dataFactory.getOWLNamedIndividual(IRI.create(t[0].getLabel()));
+
+				return dataFactory.getOWLClassAssertionAxiom(c, i);
+			}
+		} else if (t[2] instanceof Literal) {
+			OWLDataProperty p = dataFactory.getOWLDataProperty(IRI.create(t[1].getLabel()));
+
+			if (isRegistered(p)) {
+				OWLNamedIndividual s = dataFactory.getOWLNamedIndividual(IRI.create(t[0].getLabel()));
+
+				Literal lit = (Literal) t[2];
+
+				OWLDatatype dt = null;
+				if (lit.getDatatype() != null) dt = dataFactory.getOWLDatatype(IRI.create(lit.getDatatype().toString()));
+
+				OWLLiteral o = dt != null
+						? dataFactory.getOWLLiteral(lit.getLabel(), dt)
+						: dataFactory.getOWLLiteral(lit.getLabel());
+
+				return dataFactory.getOWLDataPropertyAssertionAxiom(p, s, o);
+			}
+		} else {
+			OWLObjectProperty p = dataFactory.getOWLObjectProperty(IRI.create(t[1].getLabel()));
+
+			if (isRegistered(p)) {
+				OWLNamedIndividual s = dataFactory.getOWLNamedIndividual(IRI.create(t[0].getLabel()));
+				OWLNamedIndividual o = dataFactory.getOWLNamedIndividual(IRI.create(t[2].getLabel()));
+
+				return dataFactory.getOWLObjectPropertyAssertionAxiom(p, s, o);
+			}
 		}
-		return owlAxiomWrapperSet;
+
+		return null;
+	}
+
+	private boolean isRegistered(OWLEntity e) {
+		OWLAxiom decl = dataFactory.getOWLDeclarationAxiom(e);
+		return !ontologyManager.getOntologies(decl).isEmpty();
+	}
+
+	private Object asBuiltIn(Node n) {
+		if (!(n instanceof Literal)) return n.getLabel();
+
+		Literal lit = (Literal) n;
+		Resource dt = lit.getDatatype();
+
+		if (dt == null) lit.getLabel();
+
+		if (dt.equals(XSD.BOOLEAN)) return Boolean.parseBoolean(lit.getLabel());
+
+
+		Boolean isDouble = dt.equals(XSD.DECIMAL)
+				|| dt.equals(XSD.FLOAT)
+				|| dt.equals(XSD.DOUBLE);
+
+		if (isDouble) return Double.parseDouble(lit.getLabel());
+
+		Boolean isInteger = dt.equals(XSD.INTEGER)
+				|| dt.equals(XSD.INT)
+				|| dt.equals(XSD.BYTE)
+				|| dt.equals(XSD.SHORT)
+				|| dt.equals(XSD.NEGATIVEINTEGER)
+				|| dt.equals(XSD.NONNEGATIVEINTEGER)
+				|| dt.equals(XSD.POSITIVEINTEGER)
+				|| dt.equals(XSD.NONPOSITIVEINTEGER)
+				|| dt.equals(XSD.UNSIGNEDBYTE)
+				|| dt.equals(XSD.UNSIGNEDSHORT)
+				|| dt.equals(XSD.UNSIGNEDINT);
+
+		if (isInteger) return Integer.parseInt(lit.getLabel());
+
+		return lit.getLabel();
 	}
 
 	private Node asNode(String lexicalForm) {
-		if (lexicalForm.startsWith("http")) {
-			return new Resource(lexicalForm);
-		} else if (lexicalForm.startsWith("_:")) {
-			return new BNode((lexicalForm));
-		} else if (lexicalForm.matches("^\\d+$")) {
-			return new Literal(lexicalForm, new Resource("http://www.w3.org/2001/XMLSchema#integer"));
-		} else if (lexicalForm.matches("^\\d+\\.\\d*$")) {
-			return new Literal(lexicalForm, new Resource("http://www.w3.org/2001/XMLSchema#decimal"));
-		} else if (lexicalForm.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")) {
-			return new Literal(lexicalForm, new Resource("http://www.w3.org/2001/XMLSchema#dateTime"));
-		} else {
-			return new Literal(lexicalForm);
-		}
+		if (lexicalForm.startsWith("http"))  return new Resource(lexicalForm);
+
+		if (lexicalForm.startsWith("_:")) return new BNode((lexicalForm));
+
+		if (lexicalForm.matches("^\\d+$")) return new Literal(lexicalForm, XSD.INTEGER);
+
+		if (lexicalForm.matches("^\\d+\\.\\d*$")) return new Literal(lexicalForm, XSD.DOUBLE);
+
+		if (lexicalForm.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")) return new Literal(lexicalForm, XSD.DATETIME);
+
+		return new Literal(lexicalForm);
 	}
 }

@@ -1,14 +1,11 @@
 package onto.classes;
 
 
-import onto.namespaceAPI.NamingStrategy;
 import org.semanticweb.owlapi.model.*;
-import tools.IRITools;
+import org.semanticweb.owlapi.util.OWLAxiomVisitorAdapter;
+import org.semanticweb.owlapi.util.ShortFormProvider;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Wrapper for OWL axioms to be exposed as a CArtAgO observable properties.
@@ -18,38 +15,115 @@ import java.util.Set;
  */
 public class OWLAxiomWrapper {
 
-    protected OWLAxiom axiom;
-    protected Set<NamingStrategy> namingStrategySet;
-
-    /*
-     * TODO the constructors below can take a TBox or ABox axiom.
-     * To create a wrapper for a plain RDF triple, use OWLDataPropertyAssertionAxiomImpl and OWLObjectPropertyAssertionAxiomImpl.
-     * If the triple doesn't use any registered OWL term, then don't create a wrapper (agents can still access it via rdf/3).
+    /**
+     * Visitor that extracts a property's name and arguments from an axiom, along with the source IRI for the name
+     * (to allow for disambiguation in case two IRIs map to the same short form).
      */
+    protected class WrapperVisitor extends OWLAxiomVisitorAdapter {
 
-    public OWLAxiomWrapper(OWLAxiom axiom, Set<NamingStrategy> namingStrategySet) {
-        this.axiom = axiom;
-        this.namingStrategySet = namingStrategySet;
+        private String name;
+
+        private IRI iri;
+
+        private Object[] arguments;
+
+        public String getName() {
+            return name;
+        }
+
+        public IRI getIRI() {
+            return iri;
+        }
+
+        public Object[] getArguments() {
+            return arguments;
+        }
+
+        @Override
+        public void visit(OWLDeclarationAxiom axiom) {
+            OWLEntity e = axiom.getEntity();
+
+            if (e.isOWLClass()) name = "class";
+            else if (e.isOWLObjectProperty()) name = "objectProperty";
+            else if (e.isOWLDataProperty()) name = "dataProperty";
+            else name = null;
+
+            if (name != null) arguments = new Object[] { namingStrategy.getShortForm(e) };
+        }
+
+        @Override
+        public void visit(OWLClassAssertionAxiom axiom) {
+            OWLIndividual i = axiom.getIndividual();
+            OWLClassExpression c = axiom.getClassExpression();
+
+            if (i.isNamed() && !c.isAnonymous()) {
+                setEntityName(c.asOWLClass());
+
+                String indiv = namingStrategy.getShortForm(i.asOWLNamedIndividual());
+                arguments = new Object[] { indiv };
+            }
+        }
+
+        @Override
+        public void visit(OWLObjectPropertyAssertionAxiom axiom) {
+            OWLIndividual s = axiom.getSubject();
+            OWLObjectPropertyExpression p = axiom.getProperty();
+            OWLIndividual o = axiom.getObject();
+
+            if (s.isNamed() && !p.isAnonymous() && o.isNamed()) {
+                setEntityName(p.asOWLObjectProperty());
+
+                String subject = namingStrategy.getShortForm(s.asOWLNamedIndividual());
+                String object = namingStrategy.getShortForm(o.asOWLNamedIndividual());
+
+                arguments = new Object[] { subject, object };
+            } else {
+                // TODO warn
+            }
+        }
+
+        @Override
+        public void visit(OWLDataPropertyAssertionAxiom axiom) {
+            OWLIndividual s = axiom.getSubject();
+            OWLDataPropertyExpression p = axiom.getProperty();
+            OWLLiteral o = axiom.getObject();
+
+            if (!s.isNamed() && !p.isAnonymous()) {
+                setEntityName(p.asOWLDataProperty());
+
+                String subject = namingStrategy.getShortForm(s.asOWLNamedIndividual());
+                String object = o.getLiteral(); // TODO language string and datatype as annotations?
+
+                arguments = new Object[] { subject, object };
+            } else {
+                // TODO warn
+            }
+        }
+
+        private void setEntityName(OWLEntity e) {
+            iri = e.getIRI();
+            name = namingStrategy.getShortForm(e);
+        }
+
     }
 
-    /*
-     * TODO the two methods below should be used within LinkedDataFuSpider when calling defineObsProperty(name, args).
-     * The artifact may keep a map OWLAxiomWrapper -> ObsProperty to quickly retrieve the observable property from an axiom
-     */
+    protected OWLAxiom axiom;
+
+    protected ShortFormProvider namingStrategy;
+
+    protected final WrapperVisitor visitor = new WrapperVisitor();
+
+    public OWLAxiomWrapper(OWLAxiom axiom, ShortFormProvider namingStrategy) {
+        this.axiom = axiom;
+        this.namingStrategy = namingStrategy;
+    }
 
     /**
-     * Returns the property's shortened name based in naming strategies
+     * Returns the property's shortened name based on naming strategies
      * @return Shortened Name of an OWL Axiom
      */
     public String getPropertyName() {
-        String name = null;
-        for (NamingStrategy namingStrategy : namingStrategySet){
-            name = namingStrategy.getNameForIRI(IRI.create(getPropertyFullName()));
-            if (name != null){
-                return name;
-            }
-        }
-        return null; // TODO retrieve the relevant IRI depending on the type of axiom and use namingStrategy.getNameForIRI()
+        return visitor.getName();
     }
 
     /**
@@ -57,73 +131,15 @@ public class OWLAxiomWrapper {
      * @return Name of an OWL Axiom
      */
     public String getPropertyFullName() {
-        String propertyFullName = null;
-        if (axiom.isOfType(AxiomType.DECLARATION)) {
-            OWLDeclarationAxiom owlDeclarationAxiom = (OWLDeclarationAxiom) axiom;
-            propertyFullName = IRITools.removeWrapperIRI(owlDeclarationAxiom.getEntity().getEntityType().toString());
-        }
-
-        else if (axiom.isOfType(AxiomType.CLASS_ASSERTION)) {
-            OWLClassAssertionAxiom owlClassAssertionAxiom = (OWLClassAssertionAxiom) axiom;
-            propertyFullName = IRITools.removeWrapperIRI(owlClassAssertionAxiom.getClassExpression().toString());
-        }
-
-        else if (axiom.isOfType(AxiomType.ANNOTATION_ASSERTION)){
-            OWLAnnotationAssertionAxiom owlAnnotationAssertionAxiom = (OWLAnnotationAssertionAxiom) axiom;
-            propertyFullName = IRITools.removeWrapperIRI(owlAnnotationAssertionAxiom.getProperty().toString());
-        }
-
-        else if (axiom.isOfType(AxiomType.OBJECT_PROPERTY_ASSERTION)) {
-            OWLObjectPropertyAssertionAxiom owlObjectPropertyAssertionAxiom = (OWLObjectPropertyAssertionAxiom) axiom;
-            propertyFullName = IRITools.removeWrapperIRI(owlObjectPropertyAssertionAxiom.getProperty().toString());
-        }
-
-        else if (axiom.isOfType(AxiomType.DATA_PROPERTY_ASSERTION)) {
-            OWLDataPropertyAssertionAxiom owlDataPropertyAssertionAxiom = (OWLDataPropertyAssertionAxiom) axiom;
-            propertyFullName = IRITools.removeWrapperIRI(owlDataPropertyAssertionAxiom.getProperty().toString());
-        }
-
-        else {
-            propertyFullName = "unhandled_axiom";
-        }
-
-        return propertyFullName;
+        return visitor.getIRI().toString();
     }
 
     /**
      * Returns property's arguments
      * @return Property's arguments
      */
-    public List<Object> getPropertyArguments() {
-        List<Object> propertyArguments = new ArrayList<>();
-        if (axiom.isOfType(AxiomType.DECLARATION)) {
-            OWLDeclarationAxiom owlDeclarationAxiom = (OWLDeclarationAxiom) axiom;
-            propertyArguments.add(IRITools.removeWrapperIRI(owlDeclarationAxiom.getEntity().toString()));
-        }
-
-
-        else if (axiom.isOfType(AxiomType.CLASS_ASSERTION)) {
-            OWLClassAssertionAxiom owlClassAssertionAxiom = (OWLClassAssertionAxiom) axiom;
-            propertyArguments.add(IRITools.removeWrapperIRI(owlClassAssertionAxiom.getIndividual().toString()));
-        }
-
-        else if (axiom.isOfType(AxiomType.ANNOTATION_ASSERTION)){
-            OWLAnnotationAssertionAxiom owlAnnotationAssertionAxiom = (OWLAnnotationAssertionAxiom) axiom;
-            propertyArguments.add(IRITools.removeWrapperIRI(owlAnnotationAssertionAxiom.getSubject().toString()));
-            propertyArguments.add(IRITools.removeWrapperIRI(owlAnnotationAssertionAxiom.getValue().toString()));
-        }
-        else if (axiom.isOfType(AxiomType.OBJECT_PROPERTY_ASSERTION)) {
-            OWLObjectPropertyAssertionAxiom owlObjectPropertyAssertionAxiom = (OWLObjectPropertyAssertionAxiom) axiom;
-            propertyArguments.add(IRITools.removeWrapperIRI(owlObjectPropertyAssertionAxiom.getSubject().toString()));
-            propertyArguments.add(IRITools.removeWrapperIRI(owlObjectPropertyAssertionAxiom.getObject().toString()));
-        }
-        else if (axiom.isOfType(AxiomType.DATA_PROPERTY_ASSERTION)) {
-            OWLDataPropertyAssertionAxiom owlDataPropertyAssertionAxiom = (OWLDataPropertyAssertionAxiom) axiom;
-            propertyArguments.add(IRITools.removeWrapperIRI(owlDataPropertyAssertionAxiom.getSubject().toString()));
-            propertyArguments.add(IRITools.removeWrapperIRI(owlDataPropertyAssertionAxiom.getObject().toString()));
-        }
-
-        return propertyArguments; // TODO implement depending on the type of axiom
+    public Object[] getPropertyArguments() {
+        return visitor.getArguments();
     }
 
     @Override
@@ -136,6 +152,7 @@ public class OWLAxiomWrapper {
 
     @Override
     public int hashCode() {
-        return Objects.hash(axiom);
+        return Objects.hash(axiom, namingStrategy);
     }
+
 }
