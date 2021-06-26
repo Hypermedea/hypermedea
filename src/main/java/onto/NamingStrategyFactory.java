@@ -90,7 +90,7 @@ public class NamingStrategyFactory {
                 Map<OWLAnnotationProperty, List<String>> langMap = new HashMap<>();
                 List<String> lang = new ArrayList<>();
 
-                lang.add("en"); // TODO others? Make languages parameterizable?
+                //lang.add("en"); // TODO others? Make languages parameterizable?
                 for (OWLAnnotationProperty p : properties) langMap.put(p, lang);
 
                 return new AnnotationValueShortFormProvider(properties, langMap, m);
