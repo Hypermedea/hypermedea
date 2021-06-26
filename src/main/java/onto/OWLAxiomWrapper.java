@@ -1,4 +1,4 @@
-package onto.classes;
+package onto;
 
 
 import org.semanticweb.owlapi.model.*;
@@ -116,6 +116,8 @@ public class OWLAxiomWrapper {
     public OWLAxiomWrapper(OWLAxiom axiom, ShortFormProvider namingStrategy) {
         this.axiom = axiom;
         this.namingStrategy = namingStrategy;
+
+        axiom.accept(visitor);
     }
 
     /**

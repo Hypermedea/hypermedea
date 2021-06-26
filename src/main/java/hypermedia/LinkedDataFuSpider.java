@@ -22,9 +22,9 @@ import edu.kit.aifb.datafu.planning.EvaluateProgramGenerator;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.StringTerm;
 import jason.asSyntax.Structure;
-import onto.classes.OWLAxiomWrapper;
-import onto.namespaceAPI.NamingStrategyFactory;
-import onto.ontologyAPI.InferredAxiomExtractor;
+import onto.OWLAxiomWrapper;
+import onto.NamingStrategyFactory;
+import onto.InferredAxiomExtractor;
 import org.semanticweb.HermiT.Reasoner.ReasonerFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
@@ -82,6 +82,8 @@ public class LinkedDataFuSpider extends Artifact {
 		@Override
 		public void finishedLoadingOntology(LoadingFinishedEvent event) {
 			IRI ontologyIRI = event.getOntologyID().getOntologyIRI();
+
+			if (!pendingImports.contains(ontologyIRI)) return;
 
 			if (event.isSuccessful()) {
 				OWLOntology o = ontologyManager.getOntology(ontologyIRI);
@@ -236,11 +238,10 @@ public class LinkedDataFuSpider extends Artifact {
 		try {
 			rootOntology = ontologyManager.createOntology();
 
-			OWLOntologyChangeBroadcastStrategy broadcastStrategy = new SpecificOntologyChangeBroadcastStrategy(rootOntology);
-			ontologyManager.setDefaultChangeBroadcastStrategy(broadcastStrategy);
+			OWLOntologyChangeBroadcastStrategy filter = new SpecificOntologyChangeBroadcastStrategy(rootOntology);
 
 			ObsPropertyManager m = new ObsPropertyManager();
-			ontologyManager.addOntologyChangeListener(m);
+			ontologyManager.addOntologyChangeListener(m, filter);
 			ontologyManager.addOntologyLoaderListener(m);
 
 			if (inferred) owlReasoner = reasonerFactory.createNonBufferingReasoner(rootOntology);

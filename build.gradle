@@ -23,6 +23,7 @@ repositories {
 }
 
 dependencies {
+    implementation 'junit:junit:4.13.1'
     compile group: 'org.jacamo', name: 'jacamo', version: '0.9'
     compile group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
     compile group: 'edu.kit.aifb.linkeddatafu', name: 'linked-data-fu-standalone', version: '0.9.12'

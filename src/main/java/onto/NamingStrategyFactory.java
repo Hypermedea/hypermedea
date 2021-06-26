@@ -1,4 +1,4 @@
-package onto.namespaceAPI;
+package onto;
 
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.AnnotationValueShortFormProvider;
@@ -14,6 +14,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @author Victor Charpenay, Noé Saffaf
+ */
 public class NamingStrategyFactory {
 
     public enum NamingStrategyType {

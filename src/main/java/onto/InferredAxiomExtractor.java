@@ -1,4 +1,4 @@
-package onto.ontologyAPI;
+package onto;
 
 import org.semanticweb.HermiT.Reasoner.ReasonerFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
