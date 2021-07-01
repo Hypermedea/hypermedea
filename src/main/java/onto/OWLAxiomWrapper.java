@@ -48,7 +48,7 @@ public class OWLAxiomWrapper {
             else if (e.isOWLDataProperty()) name = "dataProperty";
             else name = null;
 
-            if (name != null) arguments = new Object[] { namingStrategy.getShortForm(e) };
+            if (name != null) arguments = new Object[] { e.getIRI().toString() };
         }
 
         @Override
