@@ -25,7 +25,7 @@ public class OWLAxiomWrapper {
 
         private IRI iri;
 
-        private Object[] arguments;
+        private Object[] arguments = new Object[0];
 
         public String getName() {
             return name;
@@ -132,12 +132,13 @@ public class OWLAxiomWrapper {
      * Returns the property's name of an axiom
      * @return Name of an OWL Axiom
      */
-    public String getPropertyFullName() {
-        return visitor.getIRI().toString();
+    public String getPropertyIRI() {
+        IRI iri = visitor.getIRI();
+        return iri != null ? iri.toString() : null;
     }
 
     /**
-     * Returns property's arguments
+     * Returns the property's arguments
      * @return Property's arguments
      */
     public Object[] getPropertyArguments() {

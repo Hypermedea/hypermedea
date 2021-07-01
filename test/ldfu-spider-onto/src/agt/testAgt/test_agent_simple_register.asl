@@ -2,7 +2,7 @@
  * @author Noé SAFFAF
  */
 
-entryPointRegister("https://www.w3.org/ns/sosa/").
+entryPointRegister("http://www.w3.org/ns/sosa/").
 
 !testUnit.
 

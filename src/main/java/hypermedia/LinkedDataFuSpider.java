@@ -60,10 +60,7 @@ public class LinkedDataFuSpider extends Artifact {
 	 * Manager that listens to changes in the underlying root ontology
 	 * and adds/removes corresponding observable properties.
 	 */
-	private class ObsPropertyManager extends OWLOntologyChangeVisitorAdapter
-			implements OWLOntologyChangeListener, OWLOntologyLoaderListener {
-
-		private final Set<IRI> pendingImports = new HashSet<>();
+	private class ObsPropertyManager extends OWLOntologyChangeVisitorAdapter implements OWLOntologyChangeListener {
 
 		private final Map<OWLOntology, Set<ObsProperty>> propertiesByOntology = new HashMap<>();
 
@@ -75,57 +72,11 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 
 		@Override
-		public void startedLoadingOntology(LoadingStartedEvent event) {
-			// ignore
-		}
-
-		@Override
-		public void finishedLoadingOntology(LoadingFinishedEvent event) {
-			IRI ontologyIRI = event.getOntologyID().getOntologyIRI();
-
-			if (!pendingImports.contains(ontologyIRI)) return;
-
-			if (event.isSuccessful()) {
-				OWLOntology o = ontologyManager.getOntology(ontologyIRI);
-
-				if (!propertiesByOntology.containsKey(o)) {
-					Set<ObsProperty> properties = new HashSet<>();
-
-					for (OWLAxiom axiom : o.getAxioms()) {
-						OWLAxiomWrapper w = new OWLAxiomWrapper(axiom, namingStrategy);
-
-						String name = w.getPropertyName();
-						Object[] args = w.getPropertyArguments();
-
-						ObsProperty p = null;
-
-						if (args.length == 1) p = defineObsProperty(name, args[0]);
-						else if (args.length == 2) p = defineObsProperty(name, args[0], args[1]);
-
-						if (p != null) {
-							String fullName = w.getPropertyFullName();
-
-							if (fullName != null) {
-								StringTerm t = ASSyntax.createString(fullName);
-								Structure annotation = ASSyntax.createStructure(PREDICATE_IRI_FUNCTOR, t);
-								p.addAnnot(annotation);
-							}
-
-							properties.add(p);
-						}
-					}
-
-					propertiesByOntology.put(o, properties);
-				}
-			}
-
-			pendingImports.remove(ontologyIRI);
-		}
-
-		@Override
 		public void visit(AddImport addImport) {
 			IRI ontologyIRI = addImport.getImportDeclaration().getIRI();
-			pendingImports.add(ontologyIRI);
+			OWLOntology o = ontologyManager.getOntology(ontologyIRI);
+
+			definePropertiesForOntology(o);
 		}
 
 		@Override
@@ -133,6 +84,44 @@ public class LinkedDataFuSpider extends Artifact {
 			IRI ontologyIRI = removeImport.getImportDeclaration().getIRI();
 			OWLOntology o = ontologyManager.getOntology(ontologyIRI);
 
+			removePropertiesForOntology(o);
+		}
+
+		// TODO manage inferred statements
+
+		private void definePropertiesForOntology(OWLOntology o) {
+			if (!propertiesByOntology.containsKey(o)) {
+				Set<ObsProperty> properties = new HashSet<>();
+
+				for (OWLAxiom axiom : o.getAxioms()) {
+					OWLAxiomWrapper w = new OWLAxiomWrapper(axiom, namingStrategy);
+
+					String name = w.getPropertyName();
+					Object[] args = w.getPropertyArguments();
+
+					ObsProperty p = null;
+
+					if (args.length == 1) p = defineObsProperty(name, args[0]);
+					else if (args.length == 2) p = defineObsProperty(name, args[0], args[1]);
+
+					if (p != null) {
+						String fullName = w.getPropertyIRI();
+
+						if (fullName != null) {
+							StringTerm t = ASSyntax.createString(fullName);
+							Structure annotation = ASSyntax.createStructure(PREDICATE_IRI_FUNCTOR, t);
+							p.addAnnot(annotation);
+						}
+
+						properties.add(p);
+					}
+				}
+
+				propertiesByOntology.put(o, properties);
+			}
+		}
+
+		private void removePropertiesForOntology(OWLOntology o) {
 			if (propertiesByOntology.containsKey(o)) {
 				for (ObsProperty p : propertiesByOntology.get(o)) {
 					String name = p.getName();
@@ -143,8 +132,6 @@ public class LinkedDataFuSpider extends Artifact {
 				}
 			}
 		}
-
-		// TODO manage inferred statements
 
 	}
 
@@ -262,7 +249,17 @@ public class LinkedDataFuSpider extends Artifact {
 	 */
 	@OPERATION
 	public void register(String ontologyIRI) {
-		OWLImportsDeclaration decl = dataFactory.getOWLImportsDeclaration(IRI.create(ontologyIRI));
+		IRI iri = IRI.create(ontologyIRI);
+
+		try {
+			ontologyManager.loadOntologyFromOntologyDocument(iri);
+		} catch (OWLOntologyCreationException e) {
+			failed(String.format("Couldn't register ontology <%s>: %s", ontologyIRI, e.getMessage()));
+			// TODO keep track of stack trace
+			return;
+		}
+
+		OWLImportsDeclaration decl = dataFactory.getOWLImportsDeclaration(iri);
 		AddImport change = new AddImport(rootOntology, decl);
 		ontologyManager.applyChange(change);
 	}
@@ -328,7 +325,7 @@ public class LinkedDataFuSpider extends Artifact {
 		try {
 			unregister(CRAWLED_ASSERTIONS_IRI);
 
-			crawledAssertions = ontologyManager.createOntology();
+			crawledAssertions = ontologyManager.createOntology(IRI.create(CRAWLED_ASSERTIONS_IRI));
 		} catch (OWLOntologyCreationException e) {
 			e.printStackTrace();
 			failed("Could not create ABox statements.");
@@ -345,7 +342,7 @@ public class LinkedDataFuSpider extends Artifact {
 
 			defineObsProperty("rdf", subject, predicate, object);
 
-			// create idiomatic property with name derived from registered ontologies
+			// add axiom to ABox (will create idiomatic property with name derived from registered ontologies)
 
 			OWLAxiom axiom = asOwlAxiom(st);
 
