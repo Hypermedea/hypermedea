@@ -229,7 +229,6 @@ public class LinkedDataFuSpider extends Artifact {
 
 			ObsPropertyManager m = new ObsPropertyManager();
 			ontologyManager.addOntologyChangeListener(m, filter);
-			ontologyManager.addOntologyLoaderListener(m);
 
 			if (inferred) owlReasoner = reasonerFactory.createNonBufferingReasoner(rootOntology);
 		} catch (OWLOntologyCreationException e){
