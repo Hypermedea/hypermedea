@@ -77,38 +77,17 @@ task runLeubot (type: JavaExec, dependsOn: 'classes') {
     classpath sourceSets.main.runtimeClasspath
 }
 
-// Tests
-task runLdfuSpiderTest (type: JavaExec, dependsOn: 'classes') {
+/**
+ * integration tests of artifacts with Jason agents
+ */
+task testAgt (type: JavaExec, dependsOn: 'classes') {
     description 'runs the JaCaMo application'
     doFirst {
         mkdir 'log'
     }
     main = 'jacamo.infra.JaCaMoLauncher'
-    args 'ldfu_spider_onto_test.jcm'
-    workingDir = 'test/ldfu-spider-onto/'
-    classpath sourceSets.main.runtimeClasspath
-}
-
-
-task runLdfuSpiderEvaluationTest (type: JavaExec, dependsOn: 'classes') {
-    description 'runs the JaCaMo application'
-    doFirst {
-        mkdir 'log'
-    }
-    main = 'jacamo.infra.JaCaMoLauncher'
-    args 'ldfu_spider_onto_execution_time_test.jcm'
-    workingDir = 'test/ldfu-spider-onto/'
-    classpath sourceSets.main.runtimeClasspath
-}
-
-task runExperimentalTest (type: JavaExec, dependsOn: 'classes') {
-    description 'runs the JaCaMo application'
-    doFirst {
-        mkdir 'log'
-    }
-    main = 'jacamo.infra.JaCaMoLauncher'
-    args 'experimental_test.jcm'
-    workingDir = 'test/ldfu-spider-onto/'
+    args 'test.jcm'
+    workingDir = 'src/test/jacamo/'
     classpath sourceSets.main.runtimeClasspath
 }
 

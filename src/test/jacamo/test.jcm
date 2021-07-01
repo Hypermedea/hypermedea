@@ -1,6 +1,5 @@
 mas ldfu_mas {
 
-    //agent test_agent_simple_crawl
     agent test_agent_simple_register
     agent test_agent_merged_register
     agent test_agent_inferred_register
@@ -8,17 +7,7 @@ mas ldfu_mas {
     agent test_agent_consistency_satisfiability_v2
     agent test_agent_unregister
     agent test_agent_crawl_with_register
-    /*
-    agent test_agent_get
-    agent test_agent_put
-    agent test_agent_post
-    agent test_agent_delete
-    */
-
-    /*
-    workspace ldfu_workspace  {
-        artifact ldfu_spider : hypermedia.LinkedDataFuSpider("get.n3",false)
-    }*/
 
     asl-path: src/agt/base, src/agt/testAgt
+
 }

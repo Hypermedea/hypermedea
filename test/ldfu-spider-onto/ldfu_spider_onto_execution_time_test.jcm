@@ -1,8 +1,0 @@
-mas ldfu_mas {
-
-    agent test_agent_measure_crawl
-    agent test_agent_measure_get
-
-    asl-path: src/agt/base, src/agt/testAgt
-}
-
