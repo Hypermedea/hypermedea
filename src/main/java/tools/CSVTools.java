@@ -19,11 +19,19 @@ public class CSVTools {
             String data = myReader.nextLine();
             String[] s = data.split(",");
             if (s.length == 2) {
-                map.put(s[0] + ":", IRITools.removeQuotationMarks(s[1]));
+                map.put(s[0] + ":", removeQuotationMarks(s[1]));
             }
         }
         myReader.close();
         return map;
+    }
+
+    public static String removeQuotationMarks(String s) {
+        char[] c = s.toCharArray();
+        if (c[0] == '\"' & c[c.length-1] == '\"'){
+            s = s.substring(1,s.length()-1);
+        }
+        return s;
     }
 
 }

@@ -10,13 +10,10 @@ entryPointRegister("ttl/example_ontology.ttl").
     !create_artifact_ldfu(true);
     !registerPlan;
     .wait(1000);
-	.print("Test Assertion : Unit Satisfiable and Consistency test");
-    isConsistent(C,REPORT_C);
-    isSatisfiable(true, S, REPORT_S);
-    .print(REPORT_C);
-    .print(REPORT_S);
-    if(S & C){
-        .print("Test Satisfiable and Consistency : Passed");
+	.print("Test Assertion : Unit Consistency test");
+    isConsistent(C);
+    if(C){
+        .print("Test Consistency : Passed");
     } else {
         .print("Test Satisfiable and Consistency : Failed");
     }

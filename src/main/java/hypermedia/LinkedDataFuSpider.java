@@ -22,9 +22,9 @@ import edu.kit.aifb.datafu.planning.EvaluateProgramGenerator;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.StringTerm;
 import jason.asSyntax.Structure;
-import onto.OWLAxiomWrapper;
-import onto.NamingStrategyFactory;
 import onto.InferredAxiomExtractor;
+import onto.NamingStrategyFactory;
+import onto.OWLAxiomWrapper;
 import org.semanticweb.HermiT.Reasoner.ReasonerFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
@@ -34,6 +34,7 @@ import org.semanticweb.owlapi.util.ShortFormProvider;
 import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
 import org.semanticweb.yars.nx.*;
 import org.semanticweb.yars.nx.namespace.XSD;
+import tools.IRITools;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
 import java.io.File;
@@ -240,27 +241,33 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
-	 * External action to register all the ontologies in the pending list, merge them into one merged ontology and
-	 * create unary/binary beliefs (observable properties) of class declarations object property declarations, data
-	 * property declarations, owl annotations, and assertions from imported ontologies. Some axioms may be inferred.
+	 * Register an ontology declared in the document given as argument (the IRI of the ontology may differ from the IRI
+	 * of the given document, e.g. if the document is a local copy of an online ontology).
 	 *
-	 * TODO rewrite description
+	 * After successful registration, the ontology's vocabulary (class and property names) will then be used to
+	 * generate unary and binary predicate in subsequent RDF crawls and the ontology's axioms will be used for
+	 * automated reasoning on the crawled RDF.
+	 *
+	 * @param documentIRI (relative) IRI of an ontology document
 	 */
 	@OPERATION
-	public void register(String ontologyIRI) {
-		IRI iri = IRI.create(ontologyIRI);
+	public void register(String documentIRI) {
+		IRI iri = IRI.create(documentIRI);
+
+		if (!iri.isAbsolute()) iri = IRITools.getFileIRI(documentIRI);
 
 		try {
-			ontologyManager.loadOntologyFromOntologyDocument(iri);
+			OWLOntology o = ontologyManager.loadOntologyFromOntologyDocument(iri);
+			IRI ontologyIRI = o.getOntologyID().getOntologyIRI();
+
+			OWLImportsDeclaration decl = dataFactory.getOWLImportsDeclaration(ontologyIRI);
+			AddImport change = new AddImport(rootOntology, decl);
+			ontologyManager.applyChange(change);
 		} catch (OWLOntologyCreationException e) {
-			failed(String.format("Couldn't register ontology <%s>: %s", ontologyIRI, e.getMessage()));
+			failed(String.format("Couldn't register ontology <%s>: %s", documentIRI, e.getMessage()));
 			// TODO keep track of stack trace
 			return;
 		}
-
-		OWLImportsDeclaration decl = dataFactory.getOWLImportsDeclaration(iri);
-		AddImport change = new AddImport(rootOntology, decl);
-		ontologyManager.applyChange(change);
 	}
 
 	/**

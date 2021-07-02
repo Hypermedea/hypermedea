@@ -4,6 +4,7 @@ package onto;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.OWLAxiomVisitorAdapter;
 import org.semanticweb.owlapi.util.ShortFormProvider;
+import tools.IRITools;
 
 import java.util.Objects;
 
@@ -102,7 +103,7 @@ public class OWLAxiomWrapper {
 
         private void setEntityName(OWLEntity e) {
             iri = e.getIRI();
-            name = namingStrategy.getShortForm(e);
+            name = IRITools.getJasonAtomIdentifier(namingStrategy.getShortForm(e));
         }
 
     }

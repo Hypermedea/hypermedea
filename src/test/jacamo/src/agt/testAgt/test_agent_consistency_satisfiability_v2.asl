@@ -2,7 +2,7 @@
  * @author Noé SAFFAF
  */
 
-entryPointRegister("ttl/insatisfiable_ontology.ttl").
+entryPointRegister("ttl/unsatisfiable_ontology.ttl").
 
 !testUnit.
 
@@ -11,11 +11,8 @@ entryPointRegister("ttl/insatisfiable_ontology.ttl").
     !registerPlan;
     .wait(1000);
 	.print("Test Assertion : Unit Satisfiable and Consistency test");
-    isConsistent(C,REPORT_C);
-    isSatisfiable(true, S, REPORT_S);
-    .print(REPORT_C);
-    .print(REPORT_S);
-    if(C & not S){
+    isConsistent(C);
+    if(not C){
         .print("Test Satisfiable and Consistency : Passed");
     } else {
         .print("Test Satisfiable and Consistency : Failed");
