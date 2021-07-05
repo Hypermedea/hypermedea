@@ -7,6 +7,8 @@ import cartago.OpFeedbackParam;
 import edu.kit.aifb.datafu.*;
 import edu.kit.aifb.datafu.consumer.impl.BindingConsumerCollection;
 import edu.kit.aifb.datafu.engine.EvaluateProgram;
+import edu.kit.aifb.datafu.io.input.EvaluateInputOrigin;
+import edu.kit.aifb.datafu.io.input.request.EvaluateRequestOrigin;
 import edu.kit.aifb.datafu.io.origins.FileOrigin;
 import edu.kit.aifb.datafu.io.origins.InputOrigin;
 import edu.kit.aifb.datafu.io.origins.InternalOrigin;
@@ -405,106 +407,68 @@ public class LinkedDataFuSpider extends Artifact {
 		register(CRAWLED_ASSERTIONS_IRI);
 	}
 
-//	/**
-//	 * performs a GET request and updates the belief base as the result.
-//	 */
-//	@OPERATION
-//	public void get(String originURI) {
-//		//long startTime = System.currentTimeMillis();
-//
-//		/*
-//		long endTime = System.currentTimeMillis();
-//		op_time.set(new Double(endTime-startTime));
-//		totalTime += endTime - startTime;
-//		 */
-//
-//		RequestOrigin req;
-//
-//		boolean uriCreated = false;
-//		URI uri;
-//
-//		if (!uriCreated && originURI.startsWith("http")) {
-//			uri = URI.create(originURI);
-//		} else {
-//			uri = URI.create("file:///" + Paths.get(originURI).toAbsolutePath().toString().replaceAll("\\\\", "//"));
-//		}
-//
-//		req = new RequestOrigin(uri, Request.Method.GET);
-//
-//		BindingConsumerCollection triples = new BindingConsumerCollection();
-//
-//		EvaluateRequestOrigin eval = new EvaluateRequestOrigin();
-//		eval.setTripleCallback(new BindingConsumerSink(triples));
-//		try {
-//			eval.consume(req);
-//			eval.shutdown();
-//		} catch (InterruptedException e) {
-//			e.printStackTrace();
-//			return;
-//		}
-//
-//		// authoritative subject
-//		// TODO graph name available?
-//		if (hasObsPropertyByTemplate("rdf", originURI, null, null)) {
-//			removeObsPropertyByTemplate("rdf", originURI, null, null);
-//		}
-//
-//		String subject;
-//		String predicate;
-//		String object;
-//
-//		Set<OWLClass> owlClassSet = rootOntology.getClassesInSignature();
-//		Set<OWLObjectProperty> owlObjectPropertySet = rootOntology.getObjectPropertiesInSignature();
-//		Set<OWLDataProperty> owlDataPropertySet = rootOntology.getDataPropertiesInSignature();
-//
-//		// TODO duplicated code
-//
-//		Set<OWLAxiom> owlCrawledAxiomSet = new HashSet<>();
-//		for (Binding binding : this.triples.getCollection()) {
-//			Node[] st = binding.getNodes().getNodeArray();
-//			subject = st[0].getLabel();
-//			predicate = st[1].getLabel();
-//			object = st[2].getLabel();
-//			defineObsProperty("rdf", subject, predicate, object);
-//			owlCrawledAxiomSet.add(asOwlAxiom(subject, predicate, object, owlClassSet, owlObjectPropertySet, owlDataPropertySet, dataFactory));
-//		}
-//
-//		try {
-//			OWLOntology copiedOntology = OntologyExtractionManager.copyOntology(rootOntology);
-//			copiedOntology = OntologyExtractionManager.addAxiomToOntology(owlCrawledAxiomSet, copiedOntology);
-//			if (inferred) {
-//				InferredAxiomExtractor inferredAxiomExtractor = new InferredAxiomExtractor(copiedOntology, reasonerFactory);
-//				inferredAxiomExtractor.precomputeInferredAxioms();
-//				copiedOntology = inferredAxiomExtractor.getInferredOntology();
-//			}
-//			Set<OWLAxiomWrapper> owlCrawledAxiomWrapperSet = getOwlAxiomWrapperSet(copiedOntology);
-//
-//			for (OWLAxiomWrapper axiom : owlCrawledAxiomWrapperSet) {
-//				String propFullName = axiom.getPropertyFullName();
-//				String propName = axiom.getPropertyName();
-//				if (propName == null || propName.isBlank()){
-//					continue;
-//				}
-//				List<Object> argumentsList = axiom.getPropertyArguments();
-//				if (!observablePropertyTripleMap.containsKey(axiom)) {
-//					if (argumentsList.size() == 1 && !hasObsPropertyByTemplate(propName,argumentsList.get(0))) {
-//						ObsProperty obsProperty = defineObsProperty(propName, argumentsList.get(0));
-//						Structure s = createStructure("predicate_uri", new Atom(propFullName));
-//						obsProperty.addAnnot(s);
-//						observablePropertyTripleMap.put(axiom, obsProperty);
-//					} else if (argumentsList.size() == 2 && !hasObsPropertyByTemplate(propName, argumentsList.get(0), argumentsList.get(1))) {
-//						ObsProperty obsProperty = defineObsProperty(propName, argumentsList.get(0), argumentsList.get(1));
-//						Structure s = createStructure("predicate_uri", new Atom(propFullName));
-//						obsProperty.addAnnot(s);
-//						observablePropertyTripleMap.put(axiom, obsProperty);
-//					}
-//				}
-//			}
-//		} catch (OWLOntologyCreationException e) {
-//			e.printStackTrace();
-//			return;
-//		}
-//	}
+	/**
+	 * performs a GET request and updates the belief base as the result.
+	 */
+	@OPERATION
+	public void get(String originURI) {
+		InputOrigin origin = asOrigin(originURI);
+
+		if (origin == null || !(origin instanceof RequestOrigin)) return;
+
+		BindingConsumerCollection triples = new BindingConsumerCollection();
+
+		EvaluateRequestOrigin eval = new EvaluateRequestOrigin();
+		eval.setTripleCallback(new BindingConsumerSink(triples));
+		try {
+			eval.consume((RequestOrigin) origin);
+			eval.shutdown();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			return;
+		}
+
+		// authoritative subject
+		// TODO graph name available?
+		if (hasObsPropertyByTemplate("rdf", originURI, null, null)) {
+			removeObsPropertyByTemplate("rdf", originURI, null, null);
+		}
+
+		// FIXME duplicate code below (to be modified)
+
+		try {
+			if (crawledAssertions == null) {
+				crawledAssertions = ontologyManager.createOntology(IRI.create(CRAWLED_ASSERTIONS_IRI));
+			}
+		} catch (OWLOntologyCreationException e) {
+			e.printStackTrace();
+			failed("Could not create ABox statements.");
+		}
+
+		for (Binding binding : triples.getCollection()) {
+			Node[] st = binding.getNodes().getNodeArray();
+
+			// create basic rdf/3 property
+
+			String subject = st[0].getLabel();
+			String predicate = st[1].getLabel();
+			String object = st[2].getLabel();
+
+			defineObsProperty("rdf", subject, predicate, object);
+
+			// add axiom to ABox (will create idiomatic property with name derived from registered ontologies)
+
+			OWLAxiom axiom = asOwlAxiom(st);
+
+			if (axiom != null) {
+				AddAxiom addAxiom = new AddAxiom(crawledAssertions, axiom);
+				ontologyManager.applyChange(addAxiom);
+			}
+		}
+
+		// TODO replace AddImport listener with AddAxiom listener (otherwise, other asssertions duplicates)
+		register(CRAWLED_ASSERTIONS_IRI);
+	}
 
 	/**
 	 * performs a PUT request with the given input triples, of the form [rdf(S, P, O), rdf(S, P, O), ...].
