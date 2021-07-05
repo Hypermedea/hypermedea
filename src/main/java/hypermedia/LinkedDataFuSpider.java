@@ -275,12 +275,17 @@ public class LinkedDataFuSpider extends Artifact {
 	 * it to the previous ones, and removes from the observable ontology database the delta difference
 	 */
 	@OPERATION
-	public void unregister(String ontologyIRI) {
-		OWLImportsDeclaration decl = dataFactory.getOWLImportsDeclaration(IRI.create(ontologyIRI));
-		RemoveImport change = new RemoveImport(rootOntology, decl);
-		ontologyManager.applyChange(change);
+	public void unregister(String documentIRI) {
+		for (OWLImportsDeclaration decl : rootOntology.getImportsDeclarations()) {
+			IRI ontologyIRI = decl.getIRI();
 
-		// TODO is OWLImportsDeclaration.equals() based on IRIs?
+			if (documentIRI.equals(ontologyIRI.toString())) {
+				RemoveImport change = new RemoveImport(rootOntology, decl);
+				ontologyManager.applyChange(change);
+			}
+
+			// TODO check document IRI instead of ontology IRI
+		}
 	}
 
 	/**

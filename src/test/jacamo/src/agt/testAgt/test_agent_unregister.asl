@@ -10,7 +10,7 @@ entryPointRegister("https://www.w3.org/ns/ssn/").
 +!testUnit : true <-
     !create_artifact_ldfu(true);
     !registerPlan;
-    !unregisterPlan("https://www.w3.org/ns/ssn/");
+    !unregisterPlan("http://www.w3.org/ns/ssn/");
     .wait(1000);
 	.print("Test Assertion : Unit merged register test");
 	.count(class(_), C1);
