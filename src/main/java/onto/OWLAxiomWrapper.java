@@ -30,8 +30,6 @@ public class OWLAxiomWrapper {
 
         private Object[] arguments = new Object[0];
 
-        // TODO return valid Jason identifier for arguments
-
         public String getName() {
             return name;
         }

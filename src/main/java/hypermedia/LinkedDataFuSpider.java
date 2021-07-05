@@ -97,8 +97,6 @@ public class LinkedDataFuSpider extends Artifact {
 			}
 		}
 
-		// TODO manage inferred statements
-
 		private Set<ObsProperty> definePropertiesForAxioms(Set<OWLAxiom> axioms) {
 			Set<ObsProperty> properties = new HashSet<>();
 
@@ -109,8 +107,6 @@ public class LinkedDataFuSpider extends Artifact {
 				Object[] args = w.getPropertyArguments();
 
 				ObsProperty p = null;
-
-				// TODO turn args into terms
 
 				if (args.length == 1) p = defineObsProperty(name, args[0]);
 				else if (args.length == 2) p = defineObsProperty(name, args[0], args[1]);
@@ -248,10 +244,6 @@ public class LinkedDataFuSpider extends Artifact {
 
 			triples = new BindingConsumerCollection();
 			program.registerConstructQuery(query, new BindingConsumerSink(triples));
-
-			// TODO recurrent polling with computation of +/- delta?
-			//timer = new Timer();
-			//timer.schedule(new TimerTask() { @Override public void run() { crawl(); } }, 0, 10000);
 		} catch (Exception e) {
 			e.printStackTrace();
 			// TODO report error
@@ -605,7 +597,7 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
-	 * Encapsulate a file or HTTP resource into a upper-level class.
+	 * Encapsulate a file or HTTP resource into an upper-level class.
 	 *
 	 * @param uriOrFilename URI of the HTTP resource or file name
 	 * @return an InputOrigin instance
