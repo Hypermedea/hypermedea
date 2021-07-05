@@ -14,7 +14,7 @@ entryPointRegister("ttl/example_ontology.ttl").
     !checkBelief;
 	.
 
-+!checkBelief : system("http://www.semanticweb.org/noesaffaf/ontologies/2021/4/untitled-ontology-2#ExampleSensor") <-
++!checkBelief : system(exampleSensor) <-
       .print("Test inferred register : Passed");
       .
 

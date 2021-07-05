@@ -1,6 +1,8 @@
 package onto;
 
 
+import jason.asSyntax.ASSyntax;
+import jason.asSyntax.Atom;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.OWLAxiomVisitorAdapter;
 import org.semanticweb.owlapi.util.ShortFormProvider;
@@ -28,6 +30,8 @@ public class OWLAxiomWrapper {
 
         private Object[] arguments = new Object[0];
 
+        // TODO return valid Jason identifier for arguments
+
         public String getName() {
             return name;
         }
@@ -47,6 +51,7 @@ public class OWLAxiomWrapper {
             if (e.isOWLClass()) name = "class";
             else if (e.isOWLObjectProperty()) name = "objectProperty";
             else if (e.isOWLDataProperty()) name = "dataProperty";
+            else if (e.isOWLNamedIndividual()) name = "namedIndividual";
             else name = null;
 
             if (name != null) arguments = new Object[] { e.getIRI().toString() };
@@ -58,9 +63,10 @@ public class OWLAxiomWrapper {
             OWLClassExpression c = axiom.getClassExpression();
 
             if (i.isNamed() && !c.isAnonymous()) {
-                setEntityName(c.asOWLClass());
+                iri = c.asOWLClass().getIRI();
+                name = getEntityName(c.asOWLClass());
 
-                String indiv = namingStrategy.getShortForm(i.asOWLNamedIndividual());
+                Atom indiv = ASSyntax.createAtom(getEntityName(i.asOWLNamedIndividual()));
                 arguments = new Object[] { indiv };
             }
         }
@@ -72,10 +78,11 @@ public class OWLAxiomWrapper {
             OWLIndividual o = axiom.getObject();
 
             if (s.isNamed() && !p.isAnonymous() && o.isNamed()) {
-                setEntityName(p.asOWLObjectProperty());
+                iri = p.asOWLObjectProperty().getIRI();
+                name = getEntityName(p.asOWLObjectProperty());
 
-                String subject = namingStrategy.getShortForm(s.asOWLNamedIndividual());
-                String object = namingStrategy.getShortForm(o.asOWLNamedIndividual());
+                Atom subject = ASSyntax.createAtom(getEntityName(s.asOWLNamedIndividual()));
+                Atom object = ASSyntax.createAtom(getEntityName(o.asOWLNamedIndividual()));
 
                 arguments = new Object[] { subject, object };
             } else {
@@ -90,9 +97,10 @@ public class OWLAxiomWrapper {
             OWLLiteral o = axiom.getObject();
 
             if (!s.isNamed() && !p.isAnonymous()) {
-                setEntityName(p.asOWLDataProperty());
+                iri = p.asOWLDataProperty().getIRI();
+                name = getEntityName(p.asOWLDataProperty());
 
-                String subject = namingStrategy.getShortForm(s.asOWLNamedIndividual());
+                Atom subject = ASSyntax.createAtom(getEntityName(s.asOWLNamedIndividual()));
                 String object = o.getLiteral(); // TODO language string and datatype as annotations?
 
                 arguments = new Object[] { subject, object };
@@ -101,9 +109,8 @@ public class OWLAxiomWrapper {
             }
         }
 
-        private void setEntityName(OWLEntity e) {
-            iri = e.getIRI();
-            name = IRITools.getJasonAtomIdentifier(namingStrategy.getShortForm(e));
+        private String getEntityName(OWLEntity e) {
+            return IRITools.getJasonAtomIdentifier(namingStrategy.getShortForm(e));
         }
 
     }
