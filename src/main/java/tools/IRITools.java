@@ -22,7 +22,7 @@ public class IRITools {
      * @return a valid Jason atom identifier
      */
     public static String getJasonAtomIdentifier(String str) {
-        if(str == null || str.length() == 0) return null;
+        if (str == null || str.length() == 0) return null;
 
         String withLowerCase = str.substring(0, 1).toLowerCase() + str.substring(1);
 

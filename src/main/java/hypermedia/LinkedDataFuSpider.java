@@ -257,7 +257,12 @@ public class LinkedDataFuSpider extends Artifact {
 		if (!iri.isAbsolute()) iri = IRITools.getFileIRI(documentIRI);
 
 		try {
-			OWLOntology o = ontologyManager.loadOntologyFromOntologyDocument(iri);
+			OWLOntology o = ontologyManager.contains(iri)
+					// the ontology has either been manually created beforehand
+					? ontologyManager.getOntology(iri)
+					// or is assumed to be available online/in the file system
+					: ontologyManager.loadOntologyFromOntologyDocument(iri);
+
 			IRI ontologyIRI = o.getOntologyID().getOntologyIRI();
 
 			OWLImportsDeclaration decl = dataFactory.getOWLImportsDeclaration(ontologyIRI);
@@ -357,7 +362,10 @@ public class LinkedDataFuSpider extends Artifact {
 
 			OWLAxiom axiom = asOwlAxiom(st);
 
-			if (axiom != null) crawledAssertions.getAxioms().add(axiom);
+			if (axiom != null) {
+				AddAxiom addAxiom = new AddAxiom(crawledAssertions, axiom);
+				ontologyManager.applyChange(addAxiom);
+			}
 		}
 
 		register(CRAWLED_ASSERTIONS_IRI);
