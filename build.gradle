@@ -10,7 +10,7 @@ plugins {
 }
 
 version '0.1'
-group   'org.jacamo'
+group   'org.hypermedea'
 
 mainClassName = 'jacamo.infra.JaCaMoLauncher'
 

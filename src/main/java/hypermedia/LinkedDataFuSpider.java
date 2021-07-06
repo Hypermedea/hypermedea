@@ -354,6 +354,8 @@ public class LinkedDataFuSpider extends Artifact {
 
 		if (hasObsProperty("rdf")) removeObsProperty("rdf"); // TODO only if crawl succeeded
 
+		// TODO clear axioms in root ontology?
+
 		definePropertiesForBindings(this.triples.getCollection());
 
 		for (Binding binding : this.triples.getCollection()) {
