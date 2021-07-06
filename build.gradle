@@ -1,5 +1,5 @@
 /*
- * Hypermedia JaCaMo build file
+ * Hypermedea build file
  *
  */
 
@@ -41,7 +41,6 @@ sourceSets {
         }
     }
 }
-
 
 publishing {
     publications {
