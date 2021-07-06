@@ -21,4 +21,4 @@ Artifacts:
 - `ThingArtifact`: wrapper for WoT 'things'
 
 
-Refer to [doc/ldfu-spider-ont/readme.md](doc/ldfu-spider-ont/readme.md) for a documentation on the `LinkedDataFuSpider` artifact.
+Refer to [doc/ldfu-spider-ont/readme.md](doc/ldfu-spider-ont/readme.md) for a documentation of the `LinkedDataFuSpider` artifact.
