@@ -2,11 +2,17 @@
 
 # Hypermedea
 
-Medea is known in Greek mythology as Jason's wife. Hypermedea is a companion framework to Jason, along with CArtAgO and Moise (known collectively as [JaCaMo](jacamo.sourceforge.net/)), designed for programming hypermedia multi-agent systems.
+Medea is known in Greek mythology as Jason's wife.
+Hypermedea is a companion framework to Jason, CArtAgO and Moise (known collectively as [JaCaMo](jacamo.sourceforge.net/)).
+Hypermedea is designed for programming hypermedia multi-agent systems.
 
 ## Getting started
 
-See `examples/` for example agents.
+To get started, download the latest Hypermedea [release](https://github.com/Hypermedea/hypermedea/releases) or generate it from sources.
+
+To generate a release from source, run `gradle install` in the root directory. The shell script to run Hypermedea is then created under `build/install/hypermedea/bin/`.
+
+To run example agents, go to the corresponding folder under `examples`.
 
 ## Documentation
 
@@ -15,4 +21,4 @@ Artifacts:
 - `ThingArtifact`: wrapper for WoT 'things'
 
 
-Refer to **doc/Ldfu-spider-ont/readme.md** for documentation for ldfu spider
+Refer to [doc/ldfu-spider-ont/readme.md](doc/ldfu-spider-ont/readme.md) for a documentation on the `LinkedDataFuSpider` artifact.
