@@ -26,7 +26,7 @@ public class OWLAxiomWrapperTest {
 
         OWLAxiomWrapper w = new OWLAxiomWrapper(axiom, strategy);
 
-        assert w.getPropertyName().equals("C");
+        assert w.getPropertyName().equals("c");
     }
 
     @Test
@@ -36,7 +36,7 @@ public class OWLAxiomWrapperTest {
 
         OWLAxiomWrapper w = new OWLAxiomWrapper(axiom, strategy);
 
-        assert w.getPropertyName().equals("P");
+        assert w.getPropertyName().equals("p");
     }
 
     @Test
