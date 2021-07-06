@@ -1,0 +1,13 @@
+mas ldfu_mas {
+
+    agent test_agent_simple_register
+    agent test_agent_merged_register
+    agent test_agent_inferred_register
+    agent test_agent_consistency_satisfiability
+    agent test_agent_consistency_satisfiability_v2
+    agent test_agent_unregister
+    agent test_agent_crawl_with_register
+
+    asl-path: src/agt/base, src/agt/testAgt
+
+}

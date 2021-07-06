@@ -1,6 +1,6 @@
 /*
- * Hypermedia JaCaMo build file
- * 
+ * Hypermedea build file
+ *
  */
 
 plugins {
@@ -10,7 +10,7 @@ plugins {
 }
 
 version '0.1'
-group   'org.jacamo'
+group   'org.hypermedea'
 
 repositories {
     mavenCentral()
@@ -21,12 +21,23 @@ repositories {
 }
 
 dependencies {
+    implementation 'junit:junit:4.13.1'
     compile group: 'org.jacamo', name: 'jacamo', version: '0.9'
     compile group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
     compile group: 'edu.kit.aifb.linkeddatafu', name: 'linked-data-fu-standalone', version: '0.9.12'
     compile group: 'net.sourceforge.owlapi', name: 'owlapi-apibinding', version: '5.1.17'
     compile group: 'com.hermit-reasoner', name: 'org.semanticweb.hermit', version: '1.3.8.1'
-    compile fileTree(dir: 'lib', include: 'pddl4j-*.jar')
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/java'
+        }
+        resources {
+            srcDir 'src/resources'
+        }
+    }
 }
 
 mainClassName = 'jacamo.infra.JaCaMoLauncher'
@@ -42,9 +53,23 @@ publishing {
     // see https://docs.gradle.org/4.4.1/userguide/publishing_maven.html
 }
 
-task runLeubot (type: JavaExec, dependsOn: 'classes') {
-    workingDir 'examples/leubot'
+/**
+ * integration tests of artifacts with Jason agents
+ */
+task testAgt (type: JavaExec, dependsOn: 'classes') {
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
     main = 'jacamo.infra.JaCaMoLauncher'
-    args 'leubot.jcm'
+    args 'test.jcm'
+    workingDir = 'src/test/jacamo/'
     classpath sourceSets.main.runtimeClasspath
+}
+
+// Clean up
+clean {
+    delete 'bin'
+    delete 'build'
+    delete 'log'
 }
