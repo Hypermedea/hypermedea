@@ -12,8 +12,6 @@ plugins {
 version '0.1'
 group   'org.hypermedea'
 
-mainClassName = 'jacamo.infra.JaCaMoLauncher'
-
 repositories {
     mavenCentral()
     // artifact repository for JaCaMo-related project
@@ -41,6 +39,8 @@ sourceSets {
         }
     }
 }
+
+mainClassName = 'jacamo.infra.JaCaMoLauncher'
 
 publishing {
     publications {
