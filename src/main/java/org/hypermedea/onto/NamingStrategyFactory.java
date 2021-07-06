@@ -1,4 +1,4 @@
-package onto;
+package org.hypermedea.onto;
 
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.AnnotationValueShortFormProvider;
@@ -6,7 +6,7 @@ import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.semanticweb.owlapi.util.ShortFormProvider;
 import org.semanticweb.owlapi.util.SimpleShortFormProvider;
 import org.semanticweb.owlapi.vocab.SKOSVocabulary;
-import tools.CSVTools;
+import org.hypermedea.tools.CSVTools;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
 import java.util.ArrayList;

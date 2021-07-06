@@ -16,9 +16,9 @@ release_action(Thing, Action, "release") :- thing(Thing) & base(Base) & .concat(
     <-
     // To also execute the requests, remove the second init parameter (dryRun flag).
     // When dryRun is set to true, the requests are printed (but not executed).
-    //makeArtifact(Name, "hypermedia.ThingArtifact", [Thing, false], ArtId);
+    //makeArtifact(Name, "org.hypermedea.ThingArtifact", [Thing, false], ArtId);
     //.println("PAY ATTENTION: I am in dryRun=True mode");
-    makeArtifact("leubot", "hypermedia.ThingArtifact", [Thing, false], ArtId);
+    makeArtifact("leubot", "org.hypermedea.ThingArtifact", [Thing, false], ArtId);
     focus(ArtId);
 
     // Set API key is a call of the operation setAPIKey on the ThingArtifact

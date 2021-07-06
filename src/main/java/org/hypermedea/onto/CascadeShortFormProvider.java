@@ -1,4 +1,4 @@
-package onto;
+package org.hypermedea.onto;
 
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.util.ShortFormProvider;

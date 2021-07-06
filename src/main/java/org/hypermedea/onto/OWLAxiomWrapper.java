@@ -1,4 +1,4 @@
-package onto;
+package org.hypermedea.onto;
 
 
 import jason.asSyntax.ASSyntax;
@@ -6,7 +6,7 @@ import jason.asSyntax.Atom;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.OWLAxiomVisitorAdapter;
 import org.semanticweb.owlapi.util.ShortFormProvider;
-import tools.IRITools;
+import org.hypermedea.tools.IRITools;
 
 import java.util.Objects;
 

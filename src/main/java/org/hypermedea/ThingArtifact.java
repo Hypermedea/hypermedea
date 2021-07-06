@@ -1,4 +1,4 @@
-package hypermedia;
+package org.hypermedea;
 
 import java.io.IOException;
 import java.util.ArrayList;

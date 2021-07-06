@@ -1,4 +1,4 @@
-package hypermedia;
+package org.hypermedea;
 
 import cartago.Artifact;
 import cartago.OPERATION;
@@ -7,7 +7,6 @@ import cartago.OpFeedbackParam;
 import edu.kit.aifb.datafu.*;
 import edu.kit.aifb.datafu.consumer.impl.BindingConsumerCollection;
 import edu.kit.aifb.datafu.engine.EvaluateProgram;
-import edu.kit.aifb.datafu.io.input.EvaluateInputOrigin;
 import edu.kit.aifb.datafu.io.input.request.EvaluateRequestOrigin;
 import edu.kit.aifb.datafu.io.origins.FileOrigin;
 import edu.kit.aifb.datafu.io.origins.InputOrigin;
@@ -25,8 +24,8 @@ import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Atom;
 import jason.asSyntax.StringTerm;
 import jason.asSyntax.Structure;
-import onto.NamingStrategyFactory;
-import onto.OWLAxiomWrapper;
+import org.hypermedea.onto.NamingStrategyFactory;
+import org.hypermedea.onto.OWLAxiomWrapper;
 import org.semanticweb.HermiT.Reasoner.ReasonerFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
@@ -38,7 +37,7 @@ import org.semanticweb.owlapi.util.*;
 import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
 import org.semanticweb.yars.nx.*;
 import org.semanticweb.yars.nx.namespace.XSD;
-import tools.IRITools;
+import org.hypermedea.tools.IRITools;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
 import java.io.File;
@@ -154,8 +153,6 @@ public class LinkedDataFuSpider extends Artifact {
 	private static final String COLLECT_QUERY = "construct { ?s ?p ?o . } where { ?s ?p ?o . }";
 
 	private static final String RDF_TYPE = OWLRDFVocabulary.RDF_TYPE.toString();
-
-	private static final String CRAWLED_ASSERTIONS_IRI = String.format("urn:uuid:%s", UUID.randomUUID());
 
 	private static final String PREDICATE_IRI_FUNCTOR = "predicate_uri";
 

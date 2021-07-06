@@ -1,4 +1,4 @@
-package tools;
+package org.hypermedea.tools;
 
 import java.io.InputStream;
 import java.util.HashMap;

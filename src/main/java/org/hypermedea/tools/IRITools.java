@@ -1,4 +1,4 @@
-package tools;
+package org.hypermedea.tools;
 
 import org.semanticweb.owlapi.model.IRI;
 
