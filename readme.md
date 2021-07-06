@@ -10,6 +10,5 @@ Artifacts:
 - `LinkedDataFuSpider`: read/write Linked Data browser
 - `ThingArtifact`: wrapper for WoT 'things'
 
-## Acknowledgment
 
-This project started as part of the [ai4industry](https://ai4industry.wp.imt.fr/) summer school.
+Refer to **doc/Ldfu-spider-ont/readme.md** for documentation for ldfu spider
