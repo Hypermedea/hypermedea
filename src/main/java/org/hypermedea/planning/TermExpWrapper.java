@@ -1,4 +1,4 @@
-package planning;
+package org.hypermedea.planning;
 
 import fr.uga.pddl4j.parser.*;
 import jason.asSyntax.Structure;

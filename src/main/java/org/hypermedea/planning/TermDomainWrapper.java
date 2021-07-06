@@ -1,13 +1,11 @@
-package planning;
+package org.hypermedea.planning;
 
 import fr.uga.pddl4j.parser.*;
 import jason.asSyntax.ListTerm;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
-import org.apache.tools.ant.taskdefs.PathConvert;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 

@@ -1,10 +1,10 @@
-package hypermedia;
+package org.hypermedea;
 
 import cartago.OpFeedbackParam;
 import org.junit.Test;
 
-import static planning.TermDomainWrapperTest.TEST_DOMAIN_STRUCTURE;
-import static planning.TermProblemWrapperTest.TEST_PROBLEM_STRUCTURE;
+import static org.hypermedea.planning.TermDomainWrapperTest.TEST_DOMAIN_STRUCTURE;
+import static org.hypermedea.planning.TermProblemWrapperTest.TEST_PROBLEM_STRUCTURE;
 
 public class PlannerArtifactTest {
 

@@ -7,7 +7,7 @@ mas planning_mas {
     }
 
     workspace planning_workspace  {
-        artifact planner : hypermedia.PlannerArtifact()
+        artifact planner : org.hypermedea.PlannerArtifact()
     }
 
 }

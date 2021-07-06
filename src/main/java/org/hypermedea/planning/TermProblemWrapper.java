@@ -1,11 +1,10 @@
-package planning;
+package org.hypermedea.planning;
 
 import fr.uga.pddl4j.parser.*;
 import jason.asSyntax.ListTerm;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

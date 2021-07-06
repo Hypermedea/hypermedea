@@ -1,7 +1,6 @@
-package planning;
+package org.hypermedea.planning;
 
 import fr.uga.pddl4j.parser.Domain;
-import fr.uga.pddl4j.parser.Problem;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Structure;
 import jason.asSyntax.parser.ParseException;

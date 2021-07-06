@@ -1,4 +1,4 @@
-package hypermedia;
+package org.hypermedea;
 
 import cartago.Artifact;
 import cartago.OPERATION;
@@ -14,9 +14,9 @@ import fr.uga.pddl4j.util.Plan;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Structure;
 import jason.asSyntax.parser.ParseException;
-import planning.TermDomainWrapper;
-import planning.TermProblemWrapper;
-import planning.PlanJasonWrapper;
+import org.hypermedea.planning.TermDomainWrapper;
+import org.hypermedea.planning.TermProblemWrapper;
+import org.hypermedea.planning.PlanJasonWrapper;
 
 /**
  * Artifact to help agents build plans based on PDDL abstractions. The PDDL language includes:
