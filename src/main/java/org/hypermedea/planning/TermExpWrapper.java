@@ -29,7 +29,7 @@ public class TermExpWrapper {
      *
      * @param expTerm
      */
-    public TermExpWrapper(Term expTerm) {
+    public TermExpWrapper(Term expTerm) throws TermWrapperException {
         if (!expTerm.isStructure()) this.expTerm = null;
         else this.expTerm = (Structure) expTerm;
 
@@ -45,7 +45,7 @@ public class TermExpWrapper {
         return this.exp;
     }
 
-    private void parseTerm() {
+    private void parseTerm() throws TermWrapperException {
         Connective con = null;
 
         try {
@@ -67,8 +67,7 @@ public class TermExpWrapper {
             predicate.add(predicateName);
 
             for (Term st : expTerm.getTerms()) {
-                // predicate is not well-formed
-                if (!(st.isString() || st.isAtom())) exp = null; // FIXME throw new exception instead
+                if (!(st.isString() || st.isAtom())) throw new TermWrapperException(st, "predicate is not well-formed");
 
                 Symbol.Kind kind = null;
 
@@ -86,8 +85,7 @@ public class TermExpWrapper {
             exp = new Exp(con);
 
             for (Term st : expTerm.getTerms()) {
-                // expression is not well-formed
-                if (!st.isStructure()) exp = null; // FIXME throw new exception instead
+                if (!st.isStructure()) throw new TermWrapperException(st, "expression is not well-formed");
 
                 TermExpWrapper c = new TermExpWrapper(st);
 

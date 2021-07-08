@@ -12,13 +12,13 @@ import org.junit.Test;
 public class TermDomainWrapperTest {
 
     public static final String TEST_DOMAIN_STRUCTURE = "domain(\"hanoi\", [\n" +
-            "  action(\"move\",\n" +
+            "  action(\"move\", [\"?disc\", \"?from\", \"?to\"],\n" +
             "    and(smaller(\"?disc\", \"?to\"), on(\"?disc\", \"?from\"), clear(\"?disc\"), clear(\"?to\")),\n" +
             "    and(clear(\"?from\"), on(\"?disc\", \"?to\"), not(on(\"?disc\", \"?from\")), not(clear(\"?to\"))))\n" +
             "])";
 
     @Test
-    public void testGetDomain() throws ParseException {
+    public void testGetDomain() throws ParseException, TermWrapperException {
         Structure term = ASSyntax.parseStructure(TEST_DOMAIN_STRUCTURE);
         TermDomainWrapper w = new TermDomainWrapper(term);
 

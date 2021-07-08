@@ -17,6 +17,7 @@ import jason.asSyntax.parser.ParseException;
 import org.hypermedea.planning.TermDomainWrapper;
 import org.hypermedea.planning.TermProblemWrapper;
 import org.hypermedea.planning.PlanJasonWrapper;
+import org.hypermedea.planning.TermWrapperException;
 
 /**
  * Artifact to help agents build plans based on PDDL abstractions. The PDDL language includes:
@@ -58,7 +59,7 @@ public class PlannerArtifact extends Artifact {
             domain = new TermDomainWrapper(domainTerm).getDomain();
 
             pb = new TermProblemWrapper(problemTerm).getProblem();
-        } catch (ParseException e) {
+        } catch (ParseException | TermWrapperException e) {
             e.printStackTrace();
         }
 

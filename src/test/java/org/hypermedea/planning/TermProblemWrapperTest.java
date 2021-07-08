@@ -21,7 +21,7 @@ public class TermProblemWrapperTest {
             "], clear(disk2))";
 
     @Test
-    public void testGetProblem() throws ParseException {
+    public void testGetProblem() throws ParseException, TermWrapperException {
         Structure term = ASSyntax.parseStructure(TEST_PROBLEM_STRUCTURE);
         TermProblemWrapper w = new TermProblemWrapper(term);
 

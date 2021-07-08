@@ -14,14 +14,18 @@ public class TermDomainWrapper {
 
     private final Structure domainTerm;
 
+    private Domain domain;
+
     /**
      * Construct a wrapper for a PDDL domain specified as Jason term.
      *
      * @param domainTerm
      */
-    public TermDomainWrapper(Term domainTerm) {
+    public TermDomainWrapper(Term domainTerm) throws TermWrapperException {
         if (!domainTerm.isStructure()) this.domainTerm = null;
         else this.domainTerm = (Structure) domainTerm;
+
+        parseTerm();
     }
 
     /**
@@ -30,17 +34,30 @@ public class TermDomainWrapper {
      * @return a PDDL domain definition
      */
     public Domain getDomain() {
-        // the structure is not defining a domain
-        if (!domainTerm.getFunctor().equals("domain")) return null;
+        return domain;
+    }
 
-        // the domain has no name
-        if (domainTerm.getArity() < 1 || !domainTerm.getTerm(0).isString()) return null;
+    private void parseTerm() throws TermWrapperException {
+        if (!domainTerm.getFunctor().equals("domain")) {
+            throw new TermWrapperException(domainTerm, "the structure is not defining a domain");
+        }
+
+        if (domainTerm.getArity() < 2) {
+            throw new TermWrapperException(domainTerm, "the domain has missing arguments (name, [actions])");
+        }
+
+        Term nameTerm = domainTerm.getTerm(0);
+
+        if (!nameTerm.isString() && !nameTerm.isAtom()) {
+            throw new TermWrapperException(nameTerm, "domain name is expected to be a string or atom");
+        }
 
         Symbol domainName = new Symbol(Symbol.Kind.DOMAIN, Identifiers.getLexicalForm(domainTerm.getTerm(0)));
-        Domain domain = new Domain(domainName);
+        domain = new Domain(domainName);
 
-        // declarations are absent or not given as a list
-        if (domainTerm.getArity() != 2 || !domainTerm.getTerm(1).isList()) return null;
+        if (!domainTerm.getTerm(1).isList()) {
+            throw new TermWrapperException(domainTerm.getTerm(1), "action declarations are not given as a list");
+        }
 
         List<Term> declarations = ((ListTerm) domainTerm.getTerm(1)).getAsList();
 
@@ -49,16 +66,21 @@ public class TermDomainWrapper {
                 Structure s = (Structure) d;
 
                 if (s.getFunctor().equals("action")) {
-                    // action declaration has missing arguments (name, precondition, effect)
-                    if (s.getArity() < 3) return null;
+                    if (s.getArity() < 3) {
+                        throw new TermWrapperException(s, "action declaration has missing arguments (name, precondition, effect)");
+                    }
 
-                    // action name is not a string
-                    if (!s.getTerm(0).isString()) return null;
+                    Term actionNameTerm = s.getTerm(0);
+
+                    if (!actionNameTerm.isString() && !actionNameTerm.isAtom()) {
+                        throw new TermWrapperException(actionNameTerm, "action name is expected to be a string or atom");
+                    }
 
                     Symbol actionName = new Symbol(Symbol.Kind.ACTION, Identifiers.getLexicalForm(s.getTerm(0)));
 
-                    // action precondition is not well-defined
-                    if (!s.getTerm(1).isStructure()) return null;
+                    if (!s.getTerm(1).isStructure()) {
+                        throw new TermWrapperException(s.getTerm(1), "action precondition is not well-defined");
+                    }
 
                     TermExpWrapper precondWrapper = new TermExpWrapper(s.getTerm(1));
                     Exp precond = precondWrapper.getExp();
@@ -67,8 +89,9 @@ public class TermDomainWrapper {
 
                     for (Symbol v : precondWrapper.getOpenVariables()) params.add(new TypedSymbol(v));
 
-                    // action effect is not well-defined
-                    if (!s.getTerm(2).isStructure()) return null;
+                    if (!s.getTerm(2).isStructure()) {
+                        throw new TermWrapperException(s.getTerm(2), "action effect is not well-defined");
+                    }
 
                     TermExpWrapper effectWrapper = new TermExpWrapper(s.getTerm(2));
                     Exp effect = effectWrapper.getExp();
@@ -95,8 +118,6 @@ public class TermDomainWrapper {
                 //log(String.format("warning: ignoring domain declaration %s", d));
             }
         }
-
-        return domain;
     }
 
 }

@@ -19,14 +19,18 @@ public class TermProblemWrapper {
 
     private final Structure problemTerm;
 
+    private Problem problem;
+
     /**
      * Construct a wrapper for a PDDL problem specified as Jason term.
      *
      * @param problemTerm
      */
-    public TermProblemWrapper(Term problemTerm) {
+    public TermProblemWrapper(Term problemTerm) throws TermWrapperException {
         if (!problemTerm.isStructure()) this.problemTerm = null;
         else this.problemTerm = (Structure) problemTerm;
+
+        parseTerm();
     }
 
     /**
@@ -35,52 +39,66 @@ public class TermProblemWrapper {
      * @return a PDDL problem definition
      */
     public Problem getProblem() {
-        if (!problemTerm.getFunctor().equals("problem")) return null;
+        return problem;
+    }
 
-        // the problem has no name
-        if (problemTerm.getArity() < 1 || !problemTerm.getTerm(0).isString()) return null;
+    private void parseTerm() throws TermWrapperException {
+        if (!problemTerm.getFunctor().equals("problem")) {
+            throw new TermWrapperException(problemTerm, "the structure is not defining a problem");
+        }
 
-        Symbol pbName = new Symbol(Symbol.Kind.PROBLEM, Identifiers.getLexicalForm(problemTerm.getTerm(0)));
-        Problem pb = new Problem(pbName);
+        if (problemTerm.getArity() < 4) {
+            throw new TermWrapperException(problemTerm, "the problem has missing arguments (name, domainName, initialState, goalState)");
+        }
 
-        // the problem has no domain reference
-        if (problemTerm.getArity() < 2 || !problemTerm.getTerm(1).isString()) return null;
+        Term pbNameTerm = problemTerm.getTerm(0);
 
-        Symbol domainName = new Symbol(Symbol.Kind.DOMAIN, Identifiers.getLexicalForm(problemTerm.getTerm(1)));
-        pb.setDomain(domainName);
+        if (!pbNameTerm.isString() && !pbNameTerm.isAtom()) {
+            throw new TermWrapperException(pbNameTerm, "problem name is expected to be a string or atom");
+        }
 
-        // the domain has no initial state
-        if (problemTerm.getArity() < 3 || !problemTerm.getTerm(2).isList()) return null;
+        Symbol pbName = new Symbol(Symbol.Kind.PROBLEM, Identifiers.getLexicalForm(pbNameTerm));
+        problem = new Problem(pbName);
+
+        Term domainTerm = problemTerm.getTerm(1);
+
+        if (!domainTerm.isString() && !domainTerm.isAtom()) {
+            throw new TermWrapperException(problemTerm, "domain reference is expected to be a string or atom");
+        }
+
+        Symbol domainName = new Symbol(Symbol.Kind.DOMAIN, Identifiers.getLexicalForm(domainTerm));
+        problem.setDomain(domainName);
+
+        if (!problemTerm.getTerm(2).isList()) {
+            throw new TermWrapperException(problemTerm, "the problem has no initial state");
+        }
 
         List<Term> initialFacts = ((ListTerm) problemTerm.getTerm(2)).getAsList();
 
         Set<Symbol> objects = new HashSet<>();
 
         for (Term f : initialFacts) {
-            // initial fact is not well-defined
-            if (!f.isStructure()) return null;
+            if (!f.isStructure()) {
+                throw new TermWrapperException(f, "initial fact is not well-defined");
+            }
 
             TermExpWrapper w = new TermExpWrapper(f);
 
-            pb.addInitialFact(w.getExp());
+            problem.addInitialFact(w.getExp());
             objects.addAll(w.getConstants());
         }
 
         for (Symbol o : objects) {
-            pb.addObject(new TypedSymbol(o));
+            problem.addObject(new TypedSymbol(o));
         }
 
-        // the domain has no goal state
-        if (problemTerm.getArity() < 4 || !problemTerm.getTerm(3).isStructure()) return null;
+        if (!problemTerm.getTerm(3).isStructure()) {
+            throw new TermWrapperException(problemTerm, "goal state is not well-defined");
+        }
 
-        // goal state is not well-defined
-        if (!problemTerm.getTerm(3).isStructure()) return null;
-
-        pb.setGoal(new TermExpWrapper(problemTerm.getTerm(3)).getExp());
+        problem.setGoal(new TermExpWrapper(problemTerm.getTerm(3)).getExp());
 
         // TODO list objects from initialState
-
-        return pb;
     }
 
 }
