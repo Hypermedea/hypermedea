@@ -7,8 +7,11 @@ mas thing_mas {
     }
 
     workspace thing_workspace  {
-        /* note: this example requires to statically expose a simulated Thing */
-        artifact thing: org.hypermedea.ThingArtifact("http://localhost:8080/td.ttl")
+        /*
+         * note: this example requires to statically expose a simulated Thing.
+         * Run 'node src/js/thing.js' to start the simulation.
+         */
+        artifact thing: org.hypermedea.ThingArtifact("http://localhost:8080/td")
     }
 
 }

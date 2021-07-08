@@ -3,8 +3,9 @@
     <-
     readProperty("status", Status) ;
     .print("light status: ", Status) ;
-    writeProperty("status", false) ;
-    .print .
+    invokeAction("toggle") ;
+    readProperty("status", NewStatus) ;
+    .print("light status: ", NewStatus) ; .
 
 { include("$jacamoJar/templates/common-cartago.asl") }
 { include("$jacamoJar/templates/common-moise.asl") }
