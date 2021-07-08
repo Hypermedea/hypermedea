@@ -19,6 +19,7 @@ To run example agents, go to the corresponding folder under `examples`.
 Artifacts:
 - `LinkedDataFuSpider`: read/write Linked Data browser
 - `ThingArtifact`: wrapper for WoT 'things'
+- `PlannerArtifact`: PDDL planner (to handle WoT affordances, among others)
 
 
 Refer to [doc/ldfu-spider-ont/readme.md](doc/ldfu-spider-ont/readme.md) for a documentation of the `LinkedDataFuSpider` artifact.
