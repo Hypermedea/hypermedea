@@ -1,0 +1,39 @@
+@prefix td: <https://www.w3.org/2019/wot/td#> .
+@prefix htv: <http://www.w3.org/2011/http#> .
+@prefix hctl: <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix wotsec: <https://www.w3.org/2019/wot/security#> .
+@prefix js: <https://www.w3.org/2019/wot/json-schema#> .
+@base <http://localhost:8080/> .
+
+<#thing> a td:Thing ;
+    dct:title "Light switch" ;
+    td:hasSecurityConfiguration [ a wotsec:NoSecurityScheme ] ;
+    td:hasBase <> ;
+    td:hasPropertyAffordance [
+        a td:PropertyAffordance, js:BooleanSchema ;
+        td:name "status" ;
+        dct:title "Light status" ;
+        td:hasForm [
+            htv:methodName "GET" ;
+            hctl:hasTarget <status> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:readProperty ;
+        ], [
+            htv:methodName "PUT" ;
+            hctl:hasTarget <status> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:writeProperty ;
+        ] ;
+    ] ;
+    td:hasActionAffordance [
+        a td:ActionAffordance ;
+        td:name "toggle" ;
+        dct:title "Toggle action" ;
+        td:hasForm [
+            htv:methodName "PUT" ;
+            hctl:hasTarget <toggle> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:invokeAction ;
+        ]
+    ] .

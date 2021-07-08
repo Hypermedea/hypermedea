@@ -1,0 +1,14 @@
+mas thing_mas {
+
+   agent consumer {
+          goals: start
+          join: thing_workspace
+          focus: thing_workspace.thing
+    }
+
+    workspace thing_workspace  {
+        /* note: this example requires to statically expose a simulated Thing */
+        artifact thing: org.hypermedea.ThingArtifact("http://localhost:8080/td.ttl")
+    }
+
+}

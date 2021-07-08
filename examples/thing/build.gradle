@@ -1,5 +1,5 @@
 /**
- * Example project using the ThingArtifact class to ease interaction with WoT devices desribed by Thing Descriptions.
+ * Example project using the ThingArtifact class to ease interaction with WoT devices described by Thing Descriptions.
  *
  */
 
@@ -50,7 +50,7 @@ task run (type: JavaExec, dependsOn: 'classes') {
         mkdir 'log'
     }
     main 'jacamo.infra.JaCaMoLauncher'
-    args 'leubot.jcm'
+    args 'thing.jcm'
     classpath sourceSets.main.runtimeClasspath
 }
 
