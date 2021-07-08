@@ -46,7 +46,7 @@ public class PlanJasonWrapper {
             }
         }
 
-        return String.format("!%s : true <- %s .", name, list);
+        return String.format("+!%s : true <- %s .", name, list);
     }
 
 }

@@ -4,6 +4,7 @@ import fr.uga.pddl4j.parser.*;
 import jason.asSyntax.ListTerm;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
+import org.hypermedea.tools.Identifiers;
 
 import java.util.HashSet;
 import java.util.List;
@@ -39,13 +40,13 @@ public class TermProblemWrapper {
         // the problem has no name
         if (problemTerm.getArity() < 1 || !problemTerm.getTerm(0).isString()) return null;
 
-        Symbol pbName = new Symbol(Symbol.Kind.PROBLEM, problemTerm.getTerm(0).toString());
+        Symbol pbName = new Symbol(Symbol.Kind.PROBLEM, Identifiers.getLexicalForm(problemTerm.getTerm(0)));
         Problem pb = new Problem(pbName);
 
         // the problem has no domain reference
         if (problemTerm.getArity() < 2 || !problemTerm.getTerm(1).isString()) return null;
 
-        Symbol domainName = new Symbol(Symbol.Kind.DOMAIN, problemTerm.getTerm(1).toString());
+        Symbol domainName = new Symbol(Symbol.Kind.DOMAIN, Identifiers.getLexicalForm(problemTerm.getTerm(1)));
         pb.setDomain(domainName);
 
         // the domain has no initial state

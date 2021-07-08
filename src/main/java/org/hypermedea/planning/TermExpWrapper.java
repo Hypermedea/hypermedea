@@ -3,6 +3,7 @@ package org.hypermedea.planning;
 import fr.uga.pddl4j.parser.*;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
+import org.hypermedea.tools.Identifiers;
 
 import java.util.*;
 
@@ -74,7 +75,7 @@ public class TermExpWrapper {
                 if (st.isString()) kind = Symbol.Kind.VARIABLE;
                 else if (st.isAtom()) kind = Symbol.Kind.CONSTANT;
 
-                Symbol arg = new Symbol(kind, st.toString());
+                Symbol arg = new Symbol(kind, Identifiers.getLexicalForm(st));
                 if (arg.getKind().equals(Symbol.Kind.CONSTANT)) constants.add(arg);
 
                 predicate.add(arg);

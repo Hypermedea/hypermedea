@@ -37,7 +37,7 @@ import org.semanticweb.owlapi.util.*;
 import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
 import org.semanticweb.yars.nx.*;
 import org.semanticweb.yars.nx.namespace.XSD;
-import org.hypermedea.tools.IRITools;
+import org.hypermedea.tools.Identifiers;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
 import java.io.File;
@@ -271,7 +271,7 @@ public class LinkedDataFuSpider extends Artifact {
 	public void register(String documentIRI) {
 		IRI iri = IRI.create(documentIRI);
 
-		if (!iri.isAbsolute()) iri = IRITools.getFileIRI(documentIRI);
+		if (!iri.isAbsolute()) iri = Identifiers.getFileIRI(documentIRI);
 
 		try {
 			OWLOntology o = ontologyManager.contains(iri)

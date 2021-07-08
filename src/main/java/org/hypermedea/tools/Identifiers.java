@@ -1,15 +1,16 @@
 package org.hypermedea.tools;
 
+import jason.asSyntax.*;
 import org.semanticweb.owlapi.model.IRI;
 
 import java.io.File;
 
 /**
- * TODO class name somewhat misleading?
+ * Various methods to handle identifiers (Jason/PDDL identifiers, IRIs).
  *
  * @author Noé SAFFAF, Victor Charpenay
  */
-public class IRITools {
+public class Identifiers {
 
     /**
      * Normalize an identifier to be a valid Jason atom. Performed operations:
@@ -29,6 +30,19 @@ public class IRITools {
         String withoutWhiteSpace = withLowerCase.replaceAll("\\s", "_");
 
         return withoutWhiteSpace;
+    }
+
+    /**
+     * Return the lexical form (a string) of a Jason term. E.g. remove quotes from Jason strings.
+     *
+     * @param t a Jason term
+     * @return <code>t</code>'s lexical form
+     */
+    public static String getLexicalForm(Term t) {
+        if (t.isAtom()) return t.toString();
+        else if (t.isString()) return ((StringTerm) t).getString();
+
+        return null;
     }
 
     public static IRI getFileIRI(String filename) {

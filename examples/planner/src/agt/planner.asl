@@ -18,6 +18,9 @@ problem(problem("test", "hanoi", [
     <-
     // build a Jason plan from a PDDL domain/problem definition
     buildPlan(Domain, Problem, Plan) ;
+    // add the plan to the agent's plan library
+    .print(Plan) ;
+    .add_plan(Plan) ;
   .
 
 { include("$jacamoJar/templates/common-cartago.asl") }
