@@ -4,6 +4,7 @@ mas thing_mas {
           goals: start
           join: thing_workspace
           focus: thing_workspace.thing
+                 thing_workspace.planner
     }
 
     workspace thing_workspace  {
@@ -12,6 +13,7 @@ mas thing_mas {
          * Run 'node src/js/thing.js' to start the simulation.
          */
         artifact thing: org.hypermedea.ThingArtifact("http://localhost:8080/td")
+        artifact planner: org.hypermedea.PlannerArtifact()
     }
 
 }
