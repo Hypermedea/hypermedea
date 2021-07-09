@@ -17,7 +17,7 @@ public class Identifiers {
      * <ul>
      *     <li>lowerize first character</li>
      *     <li>replace white space with underscore (_)</li>
-     *     <li>remove all non-word characters (not in [a-zA-Z_0-9])</li>
+     *     <li>replace all non-word characters (not in [a-zA-Z_0-9]) with underscore (_)</li>
      * </ul>
      *
      * @param str an identifier represented as a string
@@ -30,7 +30,7 @@ public class Identifiers {
 
         String withoutWhiteSpace = withLowerCase.replaceAll("\\s", "_");
 
-        String withAsciiOnly = withoutWhiteSpace.replaceAll("\\W", "");
+        String withAsciiOnly = withoutWhiteSpace.replaceAll("\\W", "_");
 
         return withAsciiOnly;
     }

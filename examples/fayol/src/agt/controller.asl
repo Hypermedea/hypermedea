@@ -3,12 +3,15 @@ knownVocabulary("https://w3id.org/bot#") .
 +!start :
     true
     <-
+    // create ldfu spider
+    makeArtifact(spider, "org.hypermedea.LinkedDataFuSpider", ["crawl.n3", true], ArtId) ;
+    focus(ArtId) ;
     // register OWL vocabularies/ontologies for idiomatic programming
     for (knownVocabulary(Vocab)) { register(Vocab) } ;
     // crawl the building's topology according to a predefined program
     crawl("https://territoire.emse.fr/kg/emse/fayol/index.ttl") ;
     !countTriples ;
-    !countRooms .
+    !countZones .
 
 +!countTriples :
     true
@@ -17,7 +20,7 @@ knownVocabulary("https://w3id.org/bot#") .
     .count(rdf(S, P, O), Count) ;
     .print("found ", Count, " triples in the KG.") .
 
-+!countRooms :
++!countZones :
     true
     <-
     // zone/1 is a unary predicate generated after vocabulary registration

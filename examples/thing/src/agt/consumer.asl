@@ -25,7 +25,7 @@ goal(hasValue("status", false)) .
     .print("light status: ", Status) ;
     invokeAction("toggle") ;
     readProperty("status", NewStatus) ;
-    .print("light status: ", NewStatus) ; .
+    .print("light status: ", NewStatus) .
 
 +!plan :
     domain(Domain) & problem(Pb) & goal(Goal)

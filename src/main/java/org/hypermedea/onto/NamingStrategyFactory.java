@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.hypermedea.onto.NamingStrategyFactory.NamingStrategyType.BY_IRI;
+
 /**
  * @author Victor Charpenay, Noé Saffaf
  */
@@ -41,6 +43,8 @@ public class NamingStrategyFactory {
         BY_IRI
     }
 
+    public static NamingStrategyType DEFAULT_NAMING_STRATEGY = NamingStrategyType.BY_LABEL;
+
     private static final OWLAnnotationProperty SKOS_PREFLABEL;
 
     private static final OWLAnnotationProperty RDFS_LABEL;
@@ -64,12 +68,7 @@ public class NamingStrategyFactory {
      * @return default naming strategy
      */
     public static ShortFormProvider createDefaultNamingStrategy(OWLOntologyManager m) {
-        ShortFormProvider byLabel = createNamingStrategy(NamingStrategyType.BY_LABEL, m);
-        // TODO byPreferredNamespace
-        ShortFormProvider byNamespace = createNamingStrategy(NamingStrategyType.BY_KNOWN_NAMESPACE, m);
-        ShortFormProvider byIRI = createNamingStrategy(NamingStrategyType.BY_IRI, m);
-
-        return new CascadeShortFormProvider(byLabel, byNamespace, byIRI);
+        return createNamingStrategy(DEFAULT_NAMING_STRATEGY, m);
     }
 
     /**
@@ -99,9 +98,9 @@ public class NamingStrategyFactory {
                 }
 
                 // if the OWL entity has a non-tagged label, label should still be taken
-                AnnotationValueShortFormProvider defaultProvider = new AnnotationValueShortFormProvider(properties, emptyLangMap, m);
+                ShortFormProvider fallback = new AnnotationValueShortFormProvider(properties, emptyLangMap, m);
 
-                return new AnnotationValueShortFormProvider(properties, langMap, m, defaultProvider);
+                return new AnnotationValueShortFormProvider(properties, langMap, m, fallback);
 
             case BY_PREFERRED_NAMESPACE:
                 DefaultPrefixManager preferredPrefixManager = new DefaultPrefixManager();

@@ -249,7 +249,7 @@ public class LinkedDataFuSpider extends Artifact {
 					: new StructuralReasonerFactory();
 
 			reasoner = f.createNonBufferingReasoner(rootOntology);
-		} catch (OWLOntologyCreationException e){
+		} catch (OWLOntologyCreationException e) {
 			e.printStackTrace();
 			// TODO log
 		}
