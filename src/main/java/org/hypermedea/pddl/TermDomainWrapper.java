@@ -2,6 +2,7 @@ package org.hypermedea.pddl;
 
 import fr.uga.pddl4j.parser.*;
 import jason.asSyntax.ListTerm;
+import jason.asSyntax.Literal;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 import org.hypermedea.tools.Identifiers;
@@ -91,18 +92,22 @@ public class TermDomainWrapper {
                         params.add(new TypedSymbol(v));
                     }
 
-                    if (!s.getTerm(2).isStructure()) {
+                    Term precondTerm = s.getTerm(2);
+
+                    if (!precondTerm.isStructure() && !precondTerm.equals(Literal.LTrue)) {
                         throw new TermWrapperException(s.getTerm(2), "action precondition is not well-defined");
                     }
 
-                    TermExpWrapper precondWrapper = new TermExpWrapper(s.getTerm(2));
+                    TermExpWrapper precondWrapper = new TermExpWrapper(precondTerm);
                     Exp precond = precondWrapper.getExp();
 
-                    if (!s.getTerm(3).isStructure()) {
+                    Term effectTerm = s.getTerm(3);
+
+                    if (!effectTerm.isStructure() && !effectTerm.equals(Literal.LTrue)) {
                         throw new TermWrapperException(s.getTerm(3), "action effect is not well-defined");
                     }
 
-                    TermExpWrapper effectWrapper = new TermExpWrapper(s.getTerm(3));
+                    TermExpWrapper effectWrapper = new TermExpWrapper(effectTerm);
                     Exp effect = effectWrapper.getExp();
 
                     Map<Symbol, Integer> preds = precondWrapper.getPredicates();

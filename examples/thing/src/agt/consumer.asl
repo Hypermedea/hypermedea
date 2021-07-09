@@ -30,9 +30,13 @@ goal(hasValue("status", false)) .
 +!plan :
     domain(Domain) & problem(Pb) & goal(Goal)
     <-
+    getAsPDDL(Domain, DomainStr) ;
+    getAsPDDL(Pb, PbStr) ;
+    .print("planning with the following domain and problem: ", DomainStr, PbStr) ;
     buildPlan(Domain, Pb, Plan) ;
+    .print("found the following Jason plan: ", Plan) ;
     .add_plan(Plan) ;
-    +switchOff ;
+    !switchOff ;
     +Goal .
 
 { include("$jacamoJar/templates/common-cartago.asl") }

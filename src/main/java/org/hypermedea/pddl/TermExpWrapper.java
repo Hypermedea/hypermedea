@@ -1,6 +1,7 @@
 package org.hypermedea.pddl;
 
 import fr.uga.pddl4j.parser.*;
+import jason.asSyntax.Literal;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 import org.hypermedea.tools.Identifiers;
@@ -33,7 +34,8 @@ public class TermExpWrapper {
         if (!expTerm.isStructure()) this.expTerm = null;
         else this.expTerm = (Structure) expTerm;
 
-        parseTerm();
+        if (expTerm.equals(Literal.LTrue)) this.exp = new Exp(Connective.TRUE);
+        else parseTerm();
     }
 
     /**
@@ -93,29 +95,6 @@ public class TermExpWrapper {
                 exp.addChild(c.getExp());
             }
         }
-    }
-
-    /**
-     * List open variables in the PDDL logical expression.
-     *
-     * @return a list of (open) variables
-     */
-    public Set<Symbol> getOpenVariables() {
-        Set<Symbol> vars = new HashSet<>();
-
-        if (exp.getConnective().equals(Connective.ATOM)) {
-            for (Symbol s : exp.getAtom()) {
-                if (s.getKind().equals(Symbol.Kind.VARIABLE)) vars.add(s);
-            }
-        } else {
-            for (TermExpWrapper w : children) {
-                vars.addAll(w.getOpenVariables());
-            }
-
-            // TODO take quantified variables into account
-        }
-
-        return vars;
     }
 
     /**

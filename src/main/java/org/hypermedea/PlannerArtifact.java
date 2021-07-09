@@ -64,7 +64,7 @@ public class PlannerArtifact extends Artifact {
         }
 
         if (domain == null || pb == null) {
-            failed("The provided domain/problem definition is not valid");
+            failed("the provided domain/problem definition is not valid");
             return;
         }
 
@@ -74,6 +74,38 @@ public class PlannerArtifact extends Artifact {
 
         PlanJasonWrapper w = new PlanJasonWrapper(pb.getName().toString(), p, cpb);
         plan.set(w.toString());
+    }
+
+    /**
+     * operation to serialize a specification in the PDDL format (mostly useful for debugging).
+     *
+     * @param domainOrProblemStructure a Jason structure defining either a PDDL domain or a PDDL problem
+     * @param pddlString a PDDL serialization of the definition
+     */
+    @OPERATION
+    public void getAsPDDL(String domainOrProblemStructure, OpFeedbackParam<String> pddlString) {
+        Structure term = null;
+        try {
+            term = ASSyntax.parseStructure(domainOrProblemStructure);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            failed(String.format("not a valid structure: %s.", domainOrProblemStructure));
+        }
+
+        if (term != null) {
+            try {
+                Object def = null;
+
+                if (term.getFunctor().equals("domain")) def = new TermDomainWrapper(term).getDomain();
+                else if (term.getFunctor().equals("problem")) def = new TermProblemWrapper(term).getProblem();
+                else throw new TermWrapperException(term, "expected a domain or problem structure");
+
+                pddlString.set(def.toString());
+            } catch (TermWrapperException e) {
+                e.printStackTrace();
+                failed(String.format("not a valid domain or problem definition: %s.", term));
+            }
+        }
     }
 
 }
