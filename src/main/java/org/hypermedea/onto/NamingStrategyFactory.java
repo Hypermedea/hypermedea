@@ -87,13 +87,21 @@ public class NamingStrategyFactory {
                 properties.add(SKOS_PREFLABEL);
                 properties.add(RDFS_LABEL);
 
+                Map<OWLAnnotationProperty, List<String>> emptyLangMap = new HashMap<>();
                 Map<OWLAnnotationProperty, List<String>> langMap = new HashMap<>();
+
                 List<String> lang = new ArrayList<>();
+                lang.add("en"); // TODO make language tag configurable
 
-                //lang.add("en"); // TODO others? Make languages parameterizable?
-                for (OWLAnnotationProperty p : properties) langMap.put(p, lang);
+                for (OWLAnnotationProperty p : properties) {
+                    langMap.put(p, lang);
+                    emptyLangMap.put(p, new ArrayList<>());
+                }
 
-                return new AnnotationValueShortFormProvider(properties, langMap, m);
+                // if the OWL entity has a non-tagged label, label should still be taken
+                AnnotationValueShortFormProvider defaultProvider = new AnnotationValueShortFormProvider(properties, emptyLangMap, m);
+
+                return new AnnotationValueShortFormProvider(properties, langMap, m, defaultProvider);
 
             case BY_PREFERRED_NAMESPACE:
                 DefaultPrefixManager preferredPrefixManager = new DefaultPrefixManager();

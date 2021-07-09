@@ -7,7 +7,7 @@
                           vann:preferredNamespaceUri : .
 
 :C a owl:Class ;
-   rdfs:label "class" ;
+   rdfs:label "classe"@fr, "class"@en ;
    rdfs:isDefinedBy <http://example.org/test> .
 
 :P a owl:ObjectProperty ;
