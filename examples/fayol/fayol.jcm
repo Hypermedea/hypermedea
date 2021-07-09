@@ -1,0 +1,13 @@
+mas fayol_mas {
+
+    agent controller {
+        goals: start
+        join: fayol_workspace
+        focus: fayol_workspace.spider
+    }
+
+    workspace fayol_workspace  {
+        artifact spider : org.hypermedea.LinkedDataFuSpider("crawl.n3")
+    }
+
+}

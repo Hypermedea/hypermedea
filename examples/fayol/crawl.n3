@@ -1,0 +1,47 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix http: <http://www.w3.org/2011/http#> .
+@prefix httpm: <http://www.w3.org/2011/http-methods#> .
+@prefix voaf: <http://purl.org/vocommons/voaf#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix bot: <https://w3id.org/bot#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+# Logical rules
+
+# { ?zone bot:hasBuilding ?otherZone . } => { ?zone bot:containsZone ?otherZone . } .
+
+# { ?zone bot:hasStorey ?otherZone . } => { ?zone bot:containsZone ?otherZone . } .
+
+# { ?zone bot:hasSpace ?otherZone . } => { ?zone bot:containsZone ?otherZone . } .
+
+# Navigational rules
+
+{
+    ?zone bot:hasSpace ?otherZone .
+}
+=>
+{
+    [] a http:Request ;
+       http:mthd httpm:GET ;
+       http:requestURI ?otherZone .
+} .
+
+{
+    ?zone bot:hasStorey ?otherZone .
+
+    # append index.ttl at the end of the resource URI (until redirection is fixed)
+    ?otherZone log:uriToString ?otherZoneStr .
+    (?otherZoneStr "index.ttl") string:concatenation ?otherZoneIndexStr .
+    ?otherZoneIndexStr log:stringToUri ?otherZoneIndex .
+}
+=>
+{
+    [] a http:Request ;
+       http:mthd httpm:GET ;
+       http:requestURI ?otherZoneIndex .
+} .
+
+# TODO remove duplicated rule as soon as redirection is fixed
