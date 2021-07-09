@@ -14,10 +14,10 @@ import fr.uga.pddl4j.util.Plan;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Structure;
 import jason.asSyntax.parser.ParseException;
-import org.hypermedea.planning.TermDomainWrapper;
-import org.hypermedea.planning.TermProblemWrapper;
-import org.hypermedea.planning.PlanJasonWrapper;
-import org.hypermedea.planning.TermWrapperException;
+import org.hypermedea.pddl.TermDomainWrapper;
+import org.hypermedea.pddl.TermProblemWrapper;
+import org.hypermedea.pddl.PlanJasonWrapper;
+import org.hypermedea.pddl.TermWrapperException;
 
 /**
  * Artifact to help agents build plans based on PDDL abstractions. The PDDL language includes:

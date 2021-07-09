@@ -1,4 +1,4 @@
-package org.hypermedea.planning;
+package org.hypermedea.pddl;
 
 import fr.uga.pddl4j.encoding.CodedProblem;
 import fr.uga.pddl4j.planners.Planner;

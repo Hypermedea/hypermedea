@@ -1,4 +1,4 @@
-package org.hypermedea.planning;
+package org.hypermedea.pddl;
 
 import jason.asSyntax.Term;
 

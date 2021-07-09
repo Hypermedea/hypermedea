@@ -5,8 +5,8 @@ import jason.asSyntax.ASSyntax;
 import jason.asSyntax.parser.ParseException;
 import org.junit.Test;
 
-import static org.hypermedea.planning.TermDomainWrapperTest.TEST_DOMAIN_STRUCTURE;
-import static org.hypermedea.planning.TermProblemWrapperTest.TEST_PROBLEM_STRUCTURE;
+import static org.hypermedea.pddl.TermDomainWrapperTest.TEST_DOMAIN_STRUCTURE;
+import static org.hypermedea.pddl.TermProblemWrapperTest.TEST_PROBLEM_STRUCTURE;
 
 public class PlannerArtifactTest {
 

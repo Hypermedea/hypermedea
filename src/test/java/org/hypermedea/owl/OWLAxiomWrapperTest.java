@@ -1,4 +1,4 @@
-package org.hypermedea.onto;
+package org.hypermedea.owl;
 
 import org.junit.Test;
 import org.semanticweb.owlapi.apibinding.OWLManager;

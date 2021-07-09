@@ -1,4 +1,4 @@
-package org.hypermedea.onto;
+package org.hypermedea.owl;
 
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.AnnotationValueShortFormProvider;
@@ -13,8 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.hypermedea.onto.NamingStrategyFactory.NamingStrategyType.BY_IRI;
 
 /**
  * @author Victor Charpenay, Noé Saffaf
