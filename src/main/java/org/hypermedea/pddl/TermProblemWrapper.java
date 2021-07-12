@@ -15,9 +15,7 @@ import java.util.Set;
  *
  * @author Victor Charpenay
  */
-public class TermProblemWrapper {
-
-    private final Structure problemTerm;
+public class TermProblemWrapper extends TermWrapper {
 
     private Problem problem;
 
@@ -27,10 +25,11 @@ public class TermProblemWrapper {
      * @param problemTerm
      */
     public TermProblemWrapper(Term problemTerm) throws TermWrapperException {
-        if (!problemTerm.isStructure()) this.problemTerm = null;
-        else this.problemTerm = (Structure) problemTerm;
+        super(problemTerm);
 
-        parseTerm();
+        if (!problemTerm.isStructure()) throw new TermWrapperException(problemTerm, "expected structure");
+
+        parseTerm((Structure) problemTerm);
     }
 
     /**
@@ -42,7 +41,7 @@ public class TermProblemWrapper {
         return problem;
     }
 
-    private void parseTerm() throws TermWrapperException {
+    private void parseTerm(Structure problemTerm) throws TermWrapperException {
         if (!problemTerm.getFunctor().equals("problem")) {
             throw new TermWrapperException(problemTerm, "the structure is not defining a problem");
         }
@@ -57,8 +56,12 @@ public class TermProblemWrapper {
             throw new TermWrapperException(pbNameTerm, "problem name is expected to be a string or atom");
         }
 
+        pbNameTerm = normalize(pbNameTerm);
+
         Symbol pbName = new Symbol(Symbol.Kind.PROBLEM, Identifiers.getLexicalForm(pbNameTerm));
         problem = new Problem(pbName);
+
+        addSymbol(pbName, pbNameTerm);
 
         Term domainTerm = problemTerm.getTerm(1);
 
@@ -75,17 +78,12 @@ public class TermProblemWrapper {
 
         List<Term> initialFacts = ((ListTerm) problemTerm.getTerm(2)).getAsList();
 
-        Set<Symbol> objects = new HashSet<>();
-
         for (Term f : initialFacts) {
-            if (!f.isAtom()  && !f.isStructure()) {
-                throw new TermWrapperException(f, "initial fact is not well-defined");
-            }
-
             TermExpWrapper w = new TermExpWrapper(f);
 
             problem.addInitialFact(w.getExp());
-            objects.addAll(w.getConstants());
+
+            children.add(w);
         }
 
         if (!problemTerm.getTerm(3).isStructure()) {
@@ -95,10 +93,11 @@ public class TermProblemWrapper {
         TermExpWrapper w = new TermExpWrapper(problemTerm.getTerm(3));
 
         problem.setGoal(w.getExp());
-        objects.addAll(w.getConstants());
 
-        for (Symbol o : objects) {
-            problem.addObject(new TypedSymbol(o));
+        children.add(w);
+
+        for (Symbol o : getDictionary().keySet()) {
+            if (o.getKind().equals(Symbol.Kind.CONSTANT)) problem.addObject(new TypedSymbol(o));
         }
     }
 

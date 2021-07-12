@@ -7,17 +7,22 @@ import fr.uga.pddl4j.encoding.CodedProblem;
 import fr.uga.pddl4j.encoding.Encoder;
 import fr.uga.pddl4j.parser.Domain;
 import fr.uga.pddl4j.parser.Problem;
+import fr.uga.pddl4j.parser.Symbol;
 import fr.uga.pddl4j.planners.Planner;
 import fr.uga.pddl4j.planners.statespace.AbstractStateSpacePlanner;
 import fr.uga.pddl4j.planners.statespace.StateSpacePlannerFactory;
 import fr.uga.pddl4j.util.Plan;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Structure;
+import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
 import org.hypermedea.pddl.TermDomainWrapper;
 import org.hypermedea.pddl.TermProblemWrapper;
 import org.hypermedea.pddl.PlanJasonWrapper;
 import org.hypermedea.pddl.TermWrapperException;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Artifact to help agents build plans based on PDDL abstractions. The PDDL language includes:
@@ -52,12 +57,20 @@ public class PlannerArtifact extends Artifact {
         Domain domain = null;
         Problem pb = null;
 
+        Map<Symbol, Term> dictionary = new HashMap<>();
+
         try {
             Structure domainTerm = ASSyntax.parseStructure(domainStructure);
             Structure problemTerm = ASSyntax.parseStructure(problemStructure);
 
-            domain = new TermDomainWrapper(domainTerm).getDomain();
-            pb = new TermProblemWrapper(problemTerm).getProblem();
+            TermDomainWrapper domainWrapper = new TermDomainWrapper(domainTerm);
+            TermProblemWrapper problemWrapper = new TermProblemWrapper(problemTerm);
+
+            domain = domainWrapper.getDomain();
+            pb = problemWrapper.getProblem();
+
+            dictionary.putAll(domainWrapper.getDictionary());
+            dictionary.putAll(problemWrapper.getDictionary());
         } catch (ParseException | TermWrapperException e) {
             e.printStackTrace();
         }
@@ -71,9 +84,7 @@ public class PlannerArtifact extends Artifact {
 
         Plan p = planner.search(cpb);
 
-        // TODO build constant map
-
-        PlanJasonWrapper w = new PlanJasonWrapper(pb.getName().toString(), p, cpb);
+        PlanJasonWrapper w = new PlanJasonWrapper(p, cpb.getConstants(), dictionary);
         plan.set(w.toString());
     }
 

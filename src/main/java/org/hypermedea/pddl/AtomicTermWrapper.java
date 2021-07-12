@@ -7,20 +7,20 @@ import jason.asSyntax.*;
 import org.hypermedea.tools.Identifiers;
 
 /**
- * Wrapper for a Jason atom or string encoding a PDDL symbool (constant or variable).
+ * Wrapper for a Jason atom or string encoding a PDDL symbol (constant or variable).
  * If the input string starts with '?', the term is interpreted as a variable.
  *
  * @author Victor Charpenay
  */
-public class TermSymbolWrapper {
+public class AtomicTermWrapper {
 
-    public static String STRING_SUFFIX = "-str";
+    private static String STRING_SUFFIX = "-str";
 
     private final Term term;
 
     private Symbol symbol;
 
-    public TermSymbolWrapper(Term term) throws TermWrapperException {
+    public AtomicTermWrapper(Term term) throws TermWrapperException {
         if (!(term.isString() || term.isAtom())) throw new TermWrapperException(term, "expected atom or string");
 
         this.term = term;

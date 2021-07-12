@@ -1,19 +1,39 @@
 package org.hypermedea.pddl;
 
 import fr.uga.pddl4j.parser.*;
-import jason.asSyntax.ListTerm;
-import jason.asSyntax.Literal;
-import jason.asSyntax.Structure;
-import jason.asSyntax.Term;
+import jason.asSyntax.*;
 import org.hypermedea.tools.Identifiers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public class TermDomainWrapper {
+/**
+ * Wrapper for a PDDL domain.
+ *
+ * @author Victor Charpenay
+ */
+public class TermDomainWrapper extends TermWrapper {
 
-    private final Structure domainTerm;
+    /**
+     * recursively browse a PDDL expression and collect predicates (name and arity)
+     */
+    private class PredicateCollector {
+
+        private Map<Symbol, Integer> predicates = new HashMap<>();
+
+        public void visit(Exp exp) {
+            if (exp.getChildren() != null) {
+                for (Exp c : exp.getChildren()) visit(c);
+            }
+
+            List<Symbol> p = exp.getAtom();
+
+            if (p != null) predicates.put(p.get(0), p.size() - 1);
+        }
+
+        public Map<Symbol, Integer> getPredicates() {
+            return predicates;
+        }
+    }
 
     private Domain domain;
 
@@ -23,10 +43,11 @@ public class TermDomainWrapper {
      * @param domainTerm
      */
     public TermDomainWrapper(Term domainTerm) throws TermWrapperException {
-        if (!domainTerm.isStructure()) this.domainTerm = null;
-        else this.domainTerm = (Structure) domainTerm;
+        super(domainTerm);
 
-        parseTerm();
+        if (!domainTerm.isStructure()) throw new TermWrapperException(domainTerm, "expected structure");
+
+        parseTerm((Structure) term);
     }
 
     /**
@@ -38,7 +59,7 @@ public class TermDomainWrapper {
         return domain;
     }
 
-    private void parseTerm() throws TermWrapperException {
+    private void parseTerm(Structure domainTerm) throws TermWrapperException {
         if (!domainTerm.getFunctor().equals("domain")) {
             throw new TermWrapperException(domainTerm, "the structure is not defining a domain");
         }
@@ -53,82 +74,44 @@ public class TermDomainWrapper {
             throw new TermWrapperException(nameTerm, "domain name is expected to be a string or atom");
         }
 
-        Symbol domainName = new Symbol(Symbol.Kind.DOMAIN, Identifiers.getLexicalForm(domainTerm.getTerm(0)));
+        nameTerm = normalize(nameTerm);
+
+        Symbol domainName = new Symbol(Symbol.Kind.DOMAIN, Identifiers.getLexicalForm(nameTerm));
         domain = new Domain(domainName);
+
+        addSymbol(domainName, nameTerm);
 
         if (!domainTerm.getTerm(1).isList()) {
             throw new TermWrapperException(domainTerm.getTerm(1), "action declarations are not given as a list");
         }
 
+        PredicateCollector collector = new PredicateCollector();
+
         List<Term> declarations = ((ListTerm) domainTerm.getTerm(1)).getAsList();
 
         for (Term d : declarations) {
-            if (d.isStructure()) {
-                Structure s = (Structure) d;
+            TermActionWrapper w = new TermActionWrapper(d);
 
-                if (s.getFunctor().equals("action")) {
-                    if (s.getArity() < 4) {
-                        throw new TermWrapperException(s, "action declaration has missing arguments (name, parameters, precondition, effect)");
-                    }
+            children.add(w);
 
-                    Term actionNameTerm = s.getTerm(0);
-
-                    if (!actionNameTerm.isString() && !actionNameTerm.isAtom()) {
-                        throw new TermWrapperException(actionNameTerm, "action name is expected to be a string or atom");
-                    }
-
-                    Symbol actionName = new Symbol(Symbol.Kind.ACTION, Identifiers.getLexicalForm(actionNameTerm));
-
-                    if (!s.getTerm(1).isList()) {
-                        throw new TermWrapperException(s.getTerm(1), "action parameters are not a defined as a list");
-                    }
-
-                    List<TypedSymbol> params = new ArrayList<>();
-
-                    for (Term p : ((ListTerm) s.getTerm(1)).getAsList()) {
-                        Symbol v = new TermSymbolWrapper(p).getSymbol();
-                        params.add(new TypedSymbol(v));
-                    }
-
-                    Term precondTerm = s.getTerm(2);
-
-                    if (!precondTerm.isAtom() && !precondTerm.isStructure() && !precondTerm.equals(Literal.LTrue)) {
-                        throw new TermWrapperException(s.getTerm(2), "action precondition is not well-defined");
-                    }
-
-                    TermExpWrapper precondWrapper = new TermExpWrapper(precondTerm);
-                    Exp precond = precondWrapper.getExp();
-
-                    Term effectTerm = s.getTerm(3);
-
-                    if (!effectTerm.isAtom() && !effectTerm.isStructure() && !effectTerm.equals(Literal.LTrue)) {
-                        throw new TermWrapperException(s.getTerm(3), "action effect is not well-defined");
-                    }
-
-                    TermExpWrapper effectWrapper = new TermExpWrapper(effectTerm);
-                    Exp effect = effectWrapper.getExp();
-
-                    Map<Symbol, Integer> preds = precondWrapper.getPredicates();
-                    preds.putAll(effectWrapper.getPredicates());
-
-                    for (Symbol name : preds.keySet()) {
-                        NamedTypedList p = new NamedTypedList(name);
-
-                        for (int i = 0; i < preds.get(name); i++) {
-                            Symbol v = new Symbol(Symbol.Kind.VARIABLE, String.format("?var%d", i));
-                            p.add(new TypedSymbol(v));
-                        }
-
-                        domain.addPredicate(p);
-                    }
-
-                    Op action = new Op(actionName, params, precond, effect);
-                    domain.addOperator(action);
-                }
-                // TODO other declaration types (derived predicates, constraints)
-            } else {
-                //log(String.format("warning: ignoring domain declaration %s", d));
+            for (TermWrapper ew : w.children) {
+                if (ew instanceof TermExpWrapper) collector.visit(((TermExpWrapper) ew).getExp());
             }
+
+            domain.addOperator(w.getAction());
+        }
+
+        // TODO other declaration types (derived predicates, constraints)
+
+        for (Map.Entry<Symbol, Integer> entry : collector.getPredicates().entrySet()) {
+            NamedTypedList p = new NamedTypedList(entry.getKey());
+
+            for (int i = 0; i < entry.getValue(); i++) {
+                Symbol v = new Symbol(Symbol.Kind.VARIABLE, String.format("?var%d", i));
+                p.add(new TypedSymbol(v));
+            }
+
+            domain.addPredicate(p);
         }
     }
 

@@ -1,11 +1,9 @@
 package org.hypermedea.pddl;
 
 import fr.uga.pddl4j.parser.*;
-import jason.asSyntax.ASSyntax;
-import jason.asSyntax.Literal;
-import jason.asSyntax.Structure;
-import jason.asSyntax.Term;
+import jason.asSyntax.*;
 import jason.asSyntax.parser.ParseException;
+import org.hypermedea.tools.Identifiers;
 
 import java.util.*;
 
@@ -14,17 +12,11 @@ import java.util.*;
  *
  * @author Victor Charpenay
  */
-public class TermExpWrapper {
-
-    private final Structure expTerm;
+public class TermExpWrapper extends TermWrapper {
 
     private Exp exp;
 
-    private List<TermExpWrapper> children = new ArrayList<>();
-
     private List<Symbol> predicate = null;
-
-    private Set<Symbol> constants = null;
 
     /**
      * Construct a wrapper for a PDDL logical expression specified as a Jason term.
@@ -32,20 +24,13 @@ public class TermExpWrapper {
      * @param expTerm
      */
     public TermExpWrapper(Term expTerm) throws TermWrapperException {
-        if (!expTerm.isAtom() && !expTerm.isStructure()) throw new TermWrapperException(expTerm, "expected atom or structure");
+        super(expTerm);
 
-        if (expTerm.isAtom()) {
-            try {
-                this.expTerm = ASSyntax.parseStructure(expTerm.toString());
-            } catch (ParseException e) {
-                throw new TermWrapperException(expTerm, "the input atom has no valid name");
-            }
-        } else {
-            this.expTerm = (Structure) expTerm;
-        }
+        if (!expTerm.isAtom() && !expTerm.isStructure() && !expTerm.equals(Literal.LTrue)) throw new TermWrapperException(expTerm, "expected atom or structure");
 
         if (expTerm.equals(Literal.LTrue)) this.exp = new Exp(Connective.TRUE);
-        else parseTerm();
+        else if (expTerm.isAtom()) parseTerm(asAtomicStructure((Atom) expTerm));
+        else parseTerm((Structure) expTerm);
     }
 
     /**
@@ -57,7 +42,7 @@ public class TermExpWrapper {
         return this.exp;
     }
 
-    private void parseTerm() throws TermWrapperException {
+    private void parseTerm(Structure expTerm) throws TermWrapperException {
         Connective con = null;
 
         try {
@@ -73,16 +58,17 @@ public class TermExpWrapper {
             exp = new Exp(Connective.ATOM);
 
             predicate = new ArrayList<>();
-            constants = new HashSet<>();
 
             Symbol predicateName = new Symbol(Symbol.Kind.PREDICATE, expTerm.getFunctor());
+            addSymbol(predicateName, expTerm);
+
             predicate.add(predicateName);
 
             if (expTerm.hasTerm()) {
                 for (Term st : expTerm.getTerms()) {
-                    Symbol s = new TermSymbolWrapper(st).getSymbol();
+                    Symbol s = new AtomicTermWrapper(st).getSymbol();
 
-                    if (s.getKind().equals(Symbol.Kind.CONSTANT)) constants.add(s);
+                    if (s.getKind().equals(Symbol.Kind.CONSTANT)) addSymbol(s, st);
 
                     predicate.add(s);
                 }
@@ -114,26 +100,17 @@ public class TermExpWrapper {
         if (exp.getConnective().equals(Connective.ATOM)) {
             preds.put(predicate.get(0), predicate.size() - 1);
         } else {
-            for (TermExpWrapper w : children) preds.putAll(w.getPredicates());
+            for (TermWrapper w : children) preds.putAll(((TermExpWrapper) w).getPredicates());
         }
 
         return preds;
     }
 
-    /**
-     * List constants used in the PDDL logical expression
-     *
-     * @return a set of constants
-     */
-    public Set<Symbol> getConstants() {
-        if (exp.getConnective().equals(Connective.ATOM)) {
-            return constants;
-        } else {
-            Set<Symbol> constants = new HashSet<>();
-
-            for (TermExpWrapper w : children) constants.addAll(w.getConstants());
-
-            return constants;
+    private Structure asAtomicStructure(Atom atom) throws TermWrapperException {
+        try {
+            return ASSyntax.parseStructure(Identifiers.getLexicalForm(atom));
+        } catch (ParseException e) {
+            throw new TermWrapperException(atom, "the input atom has no valid name");
         }
     }
 

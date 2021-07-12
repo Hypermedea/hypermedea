@@ -1,11 +1,13 @@
 package org.hypermedea.pddl;
 
 import fr.uga.pddl4j.encoding.CodedProblem;
+import fr.uga.pddl4j.parser.Symbol;
 import fr.uga.pddl4j.planners.Planner;
 import fr.uga.pddl4j.planners.ProblemFactory;
 import fr.uga.pddl4j.planners.statespace.StateSpacePlanner;
 import fr.uga.pddl4j.planners.statespace.StateSpacePlannerFactory;
 import fr.uga.pddl4j.util.Plan;
+import jason.asSyntax.Term;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -13,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashMap;
 
 /**
  * Test domain taken from https://fai.cs.uni-saarland.de/hoffmann/ff-domains.html.
@@ -51,9 +54,9 @@ public class PlanJasonWrapperTest {
 
     @Test
     public void testToString() {
-        PlanJasonWrapper w = new PlanJasonWrapper("test", plan, problem);
+        PlanJasonWrapper w = new PlanJasonWrapper(plan, problem.getConstants(), new HashMap<Symbol, Term>());
 
-        assert w.toString().equals("+!test : true <- move(disk1, disk2, disk3) .");
+        assert w.toString().equals("+!runPlan : true <- move(disk1, disk2, disk3) .");
     }
 
 }
