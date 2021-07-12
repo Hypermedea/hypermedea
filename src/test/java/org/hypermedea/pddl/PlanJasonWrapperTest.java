@@ -53,7 +53,7 @@ public class PlanJasonWrapperTest {
     public void testToString() {
         PlanJasonWrapper w = new PlanJasonWrapper("test", plan, problem);
 
-        assert w.toString().equals("!test : true <- move(disk1, disk2, disk3) .");
+        assert w.toString().equals("+!test : true <- move(disk1, disk2, disk3) .");
     }
 
 }

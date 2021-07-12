@@ -1,14 +1,16 @@
 domain(domain(lighting, [
     action("readProperty", ["?property", "?value"],
         hasValue("?property", "?value"),
-        true),
+        nothing),
     action("writeProperty", ["?property", "?value"],
-        true,
+        nothing,
         hasValue("?property", "?value"))
 ])) .
 
-problem(problem(switchOff, lighting, Facts, Goal)) :- 
-    .findall(hasValue(Property, Value), hasValue(Property, Value), Facts) & goal(Goal) .
+problem(problem(switchoff, lighting, Facts, Goal)) :-
+    .findall(hasValue(Property, Value), hasValue(Property, Value), HasValueFacts)
+    & .concat(HasValueFacts, [nothing], Facts)
+    & goal(Goal) .
 
 goal(hasValue("status", false)) .
 
@@ -32,11 +34,11 @@ goal(hasValue("status", false)) .
     <-
     getAsPDDL(Domain, DomainStr) ;
     getAsPDDL(Pb, PbStr) ;
-    .print("planning with the following domain and problem: ", DomainStr, PbStr) ;
+    .print("planning with the following domain and problem: ", DomainStr, "\n", PbStr) ;
     buildPlan(Domain, Pb, Plan) ;
     .print("found the following Jason plan: ", Plan) ;
     .add_plan(Plan) ;
-    !switchOff ;
+    !switchoff ;
     +Goal .
 
 { include("$jacamoJar/templates/common-cartago.asl") }

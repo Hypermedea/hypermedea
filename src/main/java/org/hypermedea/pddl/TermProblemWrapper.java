@@ -78,7 +78,7 @@ public class TermProblemWrapper {
         Set<Symbol> objects = new HashSet<>();
 
         for (Term f : initialFacts) {
-            if (!f.isStructure()) {
+            if (!f.isAtom()  && !f.isStructure()) {
                 throw new TermWrapperException(f, "initial fact is not well-defined");
             }
 
@@ -88,17 +88,18 @@ public class TermProblemWrapper {
             objects.addAll(w.getConstants());
         }
 
-        for (Symbol o : objects) {
-            problem.addObject(new TypedSymbol(o));
-        }
-
         if (!problemTerm.getTerm(3).isStructure()) {
             throw new TermWrapperException(problemTerm, "goal state is not well-defined");
         }
 
-        problem.setGoal(new TermExpWrapper(problemTerm.getTerm(3)).getExp());
+        TermExpWrapper w = new TermExpWrapper(problemTerm.getTerm(3));
 
-        // TODO list objects from initialState
+        problem.setGoal(w.getExp());
+        objects.addAll(w.getConstants());
+
+        for (Symbol o : objects) {
+            problem.addObject(new TypedSymbol(o));
+        }
     }
 
 }

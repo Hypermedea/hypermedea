@@ -57,7 +57,6 @@ public class PlannerArtifact extends Artifact {
             Structure problemTerm = ASSyntax.parseStructure(problemStructure);
 
             domain = new TermDomainWrapper(domainTerm).getDomain();
-
             pb = new TermProblemWrapper(problemTerm).getProblem();
         } catch (ParseException | TermWrapperException e) {
             e.printStackTrace();
@@ -71,6 +70,8 @@ public class PlannerArtifact extends Artifact {
         CodedProblem cpb = Encoder.encode(domain, pb);
 
         Plan p = planner.search(cpb);
+
+        // TODO build constant map
 
         PlanJasonWrapper w = new PlanJasonWrapper(pb.getName().toString(), p, cpb);
         plan.set(w.toString());

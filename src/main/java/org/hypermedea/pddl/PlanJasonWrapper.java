@@ -34,6 +34,12 @@ public class PlanJasonWrapper {
 
                 for (int j = 0; j < op.getArity(); j++) {
                     String arg = problem.getConstants().get(op.getValueOfParameter(j));
+
+                    if (arg.endsWith(TermSymbolWrapper.STRING_SUFFIX)) {
+                        arg = arg.replace(TermSymbolWrapper.STRING_SUFFIX, "");
+                        arg = String.format("\"%s\"", arg);
+                    }
+
                     args.append(arg);
 
                     if (j < op.getArity() - 1) args.append(", ");

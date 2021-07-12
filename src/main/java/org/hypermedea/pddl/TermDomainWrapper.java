@@ -86,15 +86,13 @@ public class TermDomainWrapper {
                     List<TypedSymbol> params = new ArrayList<>();
 
                     for (Term p : ((ListTerm) s.getTerm(1)).getAsList()) {
-                        if (!p.isString()) throw new TermWrapperException(p, "action parameter is expected to be a string");
-
-                        Symbol v = new Symbol(Symbol.Kind.VARIABLE, Identifiers.getLexicalForm(p));
+                        Symbol v = new TermSymbolWrapper(p).getSymbol();
                         params.add(new TypedSymbol(v));
                     }
 
                     Term precondTerm = s.getTerm(2);
 
-                    if (!precondTerm.isStructure() && !precondTerm.equals(Literal.LTrue)) {
+                    if (!precondTerm.isAtom() && !precondTerm.isStructure() && !precondTerm.equals(Literal.LTrue)) {
                         throw new TermWrapperException(s.getTerm(2), "action precondition is not well-defined");
                     }
 
@@ -103,7 +101,7 @@ public class TermDomainWrapper {
 
                     Term effectTerm = s.getTerm(3);
 
-                    if (!effectTerm.isStructure() && !effectTerm.equals(Literal.LTrue)) {
+                    if (!effectTerm.isAtom() && !effectTerm.isStructure() && !effectTerm.equals(Literal.LTrue)) {
                         throw new TermWrapperException(s.getTerm(3), "action effect is not well-defined");
                     }
 

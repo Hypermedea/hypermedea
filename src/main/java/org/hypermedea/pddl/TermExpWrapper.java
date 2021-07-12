@@ -1,10 +1,11 @@
 package org.hypermedea.pddl;
 
 import fr.uga.pddl4j.parser.*;
+import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Literal;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
-import org.hypermedea.tools.Identifiers;
+import jason.asSyntax.parser.ParseException;
 
 import java.util.*;
 
@@ -31,8 +32,17 @@ public class TermExpWrapper {
      * @param expTerm
      */
     public TermExpWrapper(Term expTerm) throws TermWrapperException {
-        if (!expTerm.isStructure()) this.expTerm = null;
-        else this.expTerm = (Structure) expTerm;
+        if (!expTerm.isAtom() && !expTerm.isStructure()) throw new TermWrapperException(expTerm, "expected atom or structure");
+
+        if (expTerm.isAtom()) {
+            try {
+                this.expTerm = ASSyntax.parseStructure(expTerm.toString());
+            } catch (ParseException e) {
+                throw new TermWrapperException(expTerm, "the input atom has no valid name");
+            }
+        } else {
+            this.expTerm = (Structure) expTerm;
+        }
 
         if (expTerm.equals(Literal.LTrue)) this.exp = new Exp(Connective.TRUE);
         else parseTerm();
@@ -68,18 +78,14 @@ public class TermExpWrapper {
             Symbol predicateName = new Symbol(Symbol.Kind.PREDICATE, expTerm.getFunctor());
             predicate.add(predicateName);
 
-            for (Term st : expTerm.getTerms()) {
-                if (!(st.isString() || st.isAtom())) throw new TermWrapperException(st, "predicate is not well-formed");
+            if (expTerm.hasTerm()) {
+                for (Term st : expTerm.getTerms()) {
+                    Symbol s = new TermSymbolWrapper(st).getSymbol();
 
-                Symbol.Kind kind = null;
+                    if (s.getKind().equals(Symbol.Kind.CONSTANT)) constants.add(s);
 
-                if (st.isString()) kind = Symbol.Kind.VARIABLE;
-                else if (st.isAtom()) kind = Symbol.Kind.CONSTANT;
-
-                Symbol arg = new Symbol(kind, Identifiers.getLexicalForm(st));
-                if (arg.getKind().equals(Symbol.Kind.CONSTANT)) constants.add(arg);
-
-                predicate.add(arg);
+                    predicate.add(s);
+                }
             }
 
             exp.setAtom(predicate);
@@ -104,8 +110,6 @@ public class TermExpWrapper {
      */
     public Map<Symbol, Integer> getPredicates() {
         Map<Symbol, Integer> preds = new HashMap<>();
-
-        // TODO deal with predicates with same name but different arities
 
         if (exp.getConnective().equals(Connective.ATOM)) {
             preds.put(predicate.get(0), predicate.size() - 1);
