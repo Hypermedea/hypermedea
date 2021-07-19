@@ -1,13 +1,13 @@
-mas fayol_mas {
+mas itm_factory_mas {
 
     agent controller {
         goals: start
-        join: fayol_workspace
+        join: itm_factory_workspace
+        focus: itm_factory_workspace.dx10
     }
 
-    workspace fayol_workspace  {
-        // TODO parser doesn't accept boolean arguments?
-        // artifact spider : org.hypermedea.LinkedDataFuSpider("crawl.n3")
+    workspace itm_factory_workspace  {
+        artifact dx10 : org.hypermedea.ThingArtifact("https://ci.mines-stetienne.fr/kg/itmfactory/dx10")
     }
 
 }
