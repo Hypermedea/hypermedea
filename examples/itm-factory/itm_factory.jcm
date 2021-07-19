@@ -1,0 +1,13 @@
+mas fayol_mas {
+
+    agent controller {
+        goals: start
+        join: fayol_workspace
+    }
+
+    workspace fayol_workspace  {
+        // TODO parser doesn't accept boolean arguments?
+        // artifact spider : org.hypermedea.LinkedDataFuSpider("crawl.n3")
+    }
+
+}

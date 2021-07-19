@@ -19,8 +19,11 @@ import ch.unisg.ics.interactions.wot.td.vocabularies.TD;
 import ch.unisg.ics.interactions.wot.td.vocabularies.WoTSec;
 import jason.asSyntax.*;
 import jason.asSyntax.parser.ParseException;
+import org.checkerframework.checker.nullness.Opt;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Optional;
 
 /**
@@ -37,6 +40,8 @@ public class ThingArtifact extends Artifact {
     private ThingDescription td;
 
     private Optional<String> apiKey;
+
+    private Optional<String> basicAuth;
 
     private boolean dryRun;
 
@@ -58,6 +63,7 @@ public class ThingArtifact extends Artifact {
         }
 
         this.apiKey = Optional.empty();
+        this.basicAuth = Optional.empty();
         this.dryRun = false;
     }
 
@@ -187,6 +193,21 @@ public class ThingArtifact extends Artifact {
     @OPERATION
     public void invokeAction(String actionName) {
         invokeAction(actionName, null);
+    }
+
+    /**
+     * CArtAgO operation that defines credentials to include in a <code>Authorization</code> header (for HTTP bindings).
+     *
+     * @param username a username
+     * @param password a password
+     */
+    @OPERATION
+    public void setAuthCredentials(String username, String password) {
+        if (username != null && password != null) {
+            String creds = String.format("%s:%s", username, password);
+            String val = Base64.getEncoder().encodeToString(creds.getBytes(StandardCharsets.UTF_8));
+            this.basicAuth = Optional.of(val);
+        }
     }
 
     /**
@@ -335,10 +356,16 @@ public class ThingArtifact extends Artifact {
     }
 
     private Optional<TDHttpResponse> issueRequest(TDHttpRequest request) {
-        Optional<SecurityScheme> scheme = td.getFirstSecuritySchemeByType(WoTSec.APIKeySecurityScheme);
+        if (apiKey.isPresent()) {
+            Optional<SecurityScheme> scheme = td.getFirstSecuritySchemeByType(WoTSec.APIKeySecurityScheme);
+            if (scheme.isPresent()) request.setAPIKey((APIKeySecurityScheme) scheme.get(), apiKey.get());
+        }
 
-        if (scheme.isPresent() && apiKey.isPresent()) {
-            request.setAPIKey((APIKeySecurityScheme) scheme.get(), apiKey.get());
+        if (basicAuth.isPresent()) {
+            // TODO if future version of wot-td-java includes the whole vocab, replace string with constant
+            Optional<SecurityScheme> scheme = td.getFirstSecuritySchemeByType("BasicSecurityScheme");
+            //if (scheme.isPresent())
+                request.addHeader("Authorization", "Basic " + basicAuth.get());
         }
 
         // Set a header with the id of the operating agent
