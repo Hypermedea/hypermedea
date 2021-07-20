@@ -7,7 +7,7 @@ domain(domain(lighting, [
         hasValue("?property", "?value"))
 ])) .
 
-problem(problem(switchoff, lighting, Facts, Goal)) :-
+problem(problem(switchOff, lighting, Facts, Goal)) :-
     .findall(hasValue(Property, Value), hasValue(Property, Value), HasValueFacts)
     & .concat(HasValueFacts, [nothing], Facts)
     & goal(Goal) .
@@ -38,7 +38,7 @@ goal(hasValue("status", false)) .
     buildPlan(Domain, Pb, Plan) ;
     .print("found the following Jason plan: ", Plan) ;
     .add_plan(Plan) ;
-    !switchoff ;
+    !switchOff ;
     +Goal .
 
 { include("$jacamoJar/templates/common-cartago.asl") }
