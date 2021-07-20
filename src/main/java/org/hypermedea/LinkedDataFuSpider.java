@@ -26,7 +26,7 @@ import jason.asSyntax.StringTerm;
 import jason.asSyntax.Structure;
 import org.hypermedea.owl.NamingStrategyFactory;
 import org.hypermedea.owl.OWLAxiomWrapper;
-import org.semanticweb.HermiT.Reasoner.ReasonerFactory;
+import org.semanticweb.HermiT.ReasonerFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.reasoner.InferenceType;
@@ -64,7 +64,7 @@ public class LinkedDataFuSpider extends Artifact {
 	 * Manager that listens to changes in the underlying root ontology
 	 * and adds/removes corresponding observable properties.
 	 */
-	private class ObsPropertyManager extends OWLOntologyChangeVisitorAdapter implements OWLOntologyChangeListener {
+	private class ObsPropertyManager implements OWLOntologyChangeListener, OWLOntologyChangeVisitor {
 
 		private final Map<OWLOntology, Set<ObsProperty>> propertiesByOntology = new HashMap<>();
 
@@ -138,7 +138,7 @@ public class LinkedDataFuSpider extends Artifact {
 			// TODO are owl:sameAs and owl:differentFrom included?
 
 			for (InferredAxiomGenerator<? extends OWLAxiom> gen : generators) {
-				Set<? extends OWLAxiom> axioms = gen.createAxioms(ontologyManager, reasoner);
+				Set<? extends OWLAxiom> axioms = gen.createAxioms(ontologyManager.getOWLDataFactory(), reasoner);
 				inferredProperties.addAll(definePropertiesForAxioms((Set<OWLAxiom>) axioms));
 			}
 
@@ -280,13 +280,20 @@ public class LinkedDataFuSpider extends Artifact {
 					// or is assumed to be available online/in the file system
 					: ontologyManager.loadOntologyFromOntologyDocument(iri);
 
-			IRI ontologyIRI = o.getOntologyID().getOntologyIRI();
+			if (o.getOntologyID().isAnonymous()) {
+				// set the document's IRI as ontology ID
+				OWLOntologyID id = new OWLOntologyID(iri);
+				ontologyManager.applyChange(new SetOntologyID(o, id));
+			}
+
+			IRI ontologyIRI = o.getOntologyID().getOntologyIRI().get();
 
 			OWLImportsDeclaration decl = dataFactory.getOWLImportsDeclaration(ontologyIRI);
 			AddImport change = new AddImport(rootOntology, decl);
 			ontologyManager.applyChange(change);
 		} catch (OWLOntologyCreationException e) {
-			failed(String.format("Couldn't register ontology <%s>: %s", documentIRI, e.getMessage()));
+			e.printStackTrace();
+			failed(String.format("Couldn't register ontology <%s>", documentIRI));
 			// TODO keep track of stack trace
 			return;
 		}

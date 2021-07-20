@@ -4,7 +4,6 @@ package org.hypermedea.owl;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Atom;
 import org.semanticweb.owlapi.model.*;
-import org.semanticweb.owlapi.util.OWLAxiomVisitorAdapter;
 import org.semanticweb.owlapi.util.ShortFormProvider;
 import org.hypermedea.tools.Identifiers;
 
@@ -22,7 +21,7 @@ public class OWLAxiomWrapper {
      * Visitor that extracts a property's name and arguments from an axiom, along with the source IRI for the name
      * (to allow for disambiguation in case two IRIs map to the same short form).
      */
-    protected class WrapperVisitor extends OWLAxiomVisitorAdapter {
+    protected class WrapperVisitor implements OWLAxiomVisitor {
 
         private String name;
 

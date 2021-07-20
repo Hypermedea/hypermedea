@@ -19,7 +19,6 @@ import ch.unisg.ics.interactions.wot.td.vocabularies.TD;
 import ch.unisg.ics.interactions.wot.td.vocabularies.WoTSec;
 import jason.asSyntax.*;
 import jason.asSyntax.parser.ParseException;
-import org.checkerframework.checker.nullness.Opt;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
