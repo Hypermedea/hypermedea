@@ -72,9 +72,8 @@ public class LinkedDataFuSpider extends Artifact {
 
 		@Override
 		public void ontologiesChanged(List<? extends OWLOntologyChange> list) {
-			for (OWLOntologyChange c : list) {
-				c.accept(this);
-			}
+			for (OWLOntologyChange c : list) c.accept(this);
+			updateInferredProperties();
 		}
 
 		// FIXME if imported ontologies themselves import other ontologies, do their axioms get defined as ObsProps?
@@ -86,7 +85,6 @@ public class LinkedDataFuSpider extends Artifact {
 
 			Set<ObsProperty> properties = definePropertiesForAxioms(o.getAxioms());
 			propertiesByOntology.put(o, properties);
-			updateInferredProperties();
 		}
 
 		@Override
@@ -94,10 +92,7 @@ public class LinkedDataFuSpider extends Artifact {
 			IRI ontologyIRI = removeImport.getImportDeclaration().getIRI();
 			OWLOntology o = ontologyManager.getOntology(ontologyIRI);
 
-			if (propertiesByOntology.containsKey(o)) {
-				removeProperties(propertiesByOntology.get(o));
-				updateInferredProperties();
-			}
+			if (propertiesByOntology.containsKey(o)) removeProperties(propertiesByOntology.get(o));
 		}
 
 		@Override
@@ -121,14 +116,13 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 
 		private void updateInferredProperties() {
-			if (!reasoner.isConsistent()) return;
+			if (!reasoner.isConsistent()) {
+				log("warning: the set of crawled statements is inconsistent...");
+				return;
+			}
 
 			removeProperties(inferredProperties);
 			inferredProperties.clear();
-
-			reasoner.precomputeInferences(InferenceType.CLASS_ASSERTIONS);
-			reasoner.precomputeInferences(InferenceType.OBJECT_PROPERTY_ASSERTIONS);
-			reasoner.precomputeInferences(InferenceType.DATA_PROPERTY_ASSERTIONS);
 
 			List<InferredAxiomGenerator<? extends OWLAxiom>> generators = new ArrayList<>();
 
@@ -355,11 +349,13 @@ public class LinkedDataFuSpider extends Artifact {
 			e.printStackTrace();
 		}
 
-		if (hasObsProperty("rdf")) removeObsProperty("rdf"); // TODO only if crawl succeeded
+		if (hasObsProperty("rdf")) removeObsProperty("rdf"); // FIXME does not remove properties with parameters
 
 		// TODO clear axioms in root ontology?
 
 		definePropertiesForBindings(this.triples.getCollection());
+
+		List<OWLOntologyChange> changes = new ArrayList<>();
 
 		for (Binding binding : this.triples.getCollection()) {
 			Node[] st = binding.getNodes().getNodeArray();
@@ -367,9 +363,11 @@ public class LinkedDataFuSpider extends Artifact {
 
 			if (axiom != null) {
 				AddAxiom addAxiom = new AddAxiom(rootOntology, axiom);
-				ontologyManager.applyChange(addAxiom);
+				changes.add(addAxiom);
 			}
 		}
+
+		ontologyManager.applyChanges(changes);
 	}
 
 	/**

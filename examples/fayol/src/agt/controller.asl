@@ -1,4 +1,5 @@
-knownVocabulary("https://w3id.org/bot#") .
+// note: the BOT ontology (https://w3id.org/bot#) includes DL-unsafe axioms.
+knownVocabulary("bot.ttl") .
 
 +!start :
     true
