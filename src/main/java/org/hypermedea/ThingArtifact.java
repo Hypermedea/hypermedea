@@ -107,12 +107,16 @@ public class ThingArtifact extends Artifact {
     /**
      * CArtAgO operation for subscribing to a property of a Thing.
      *
+     * TODO cartago.Artifact already includes an observeProperty operation. Add a 3rd parameter to distinguish the two
+     * TODO replace stubLabel with an outputParam with a ref to the property and override the parent operation
+     *
      * TODO implement WebSub instead of long polling?
      *
      * @param propertyName The property's name (which will also be the name of the observable property created in the Artifact).
+     * @param timer a time interval in ms between each property read
      */
     @OPERATION
-    public void observeProperty(String propertyName, int timer) {
+    public void observeProperty(String propertyName, String stubLabel, int timer) {
         Thread t = new Thread(() -> {
             OpFeedbackParam<Object> output = new OpFeedbackParam<>();
             while (true) {
