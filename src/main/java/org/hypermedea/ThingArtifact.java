@@ -124,7 +124,7 @@ public class ThingArtifact extends Artifact {
                 readProperty(propertyName, output);
                 if (hasObsProperty(propertyName)) {
                     try {
-                        if (!getObsProperty(propertyName).equals(output.get())) {
+                        if (!getObsProperty(propertyName).getValue().equals(output.get())) {
                             getObsProperty(propertyName).updateValues(output.get());
                         }
                     } catch (IllegalArgumentException e) {
