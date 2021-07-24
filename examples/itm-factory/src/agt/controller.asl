@@ -4,7 +4,7 @@ knownVocabulary("https://www.w3.org/2019/wot/security#") .
 +?workshopRunning :
     true
     <-
-    readProperty("conveyorSpeed", Speed) ;
+    readProperty("conveyorSpeed", Speed)[artifact_name(dx10)] ;
     .print("conveyor speed: ", Speed) .
 
 +!start :
@@ -19,8 +19,10 @@ knownVocabulary("https://www.w3.org/2019/wot/security#") .
     true
     <-
     ?workshopRunning ;
-    writeProperty("conveyorSpeed", 1) ;
-    .print("conveyor speed set to 1") .
+    writeProperty("conveyorSpeed", 1)[artifact_name(dx10)] ;
+    .print("conveyor speed set to 1") ;
+    invokeAction("moveTo", json([kv(x, 0), kv(y, 0), kv(z, 0)]))[artifact_name(apas)] ;
+    .print("robotic arm reset to position (0, 0, 0)").
 
 { include("$jacamoJar/templates/common-cartago.asl") }
 { include("$jacamoJar/templates/common-moise.asl") }

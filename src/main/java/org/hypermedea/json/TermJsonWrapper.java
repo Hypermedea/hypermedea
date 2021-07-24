@@ -41,7 +41,7 @@ public class TermJsonWrapper {
     }
 
     public boolean isJsonNumber() {
-        return value != null && value instanceof Double;
+        return value != null && (value instanceof Double || value instanceof Long);
     }
 
     public boolean isJsonString() {
@@ -61,8 +61,9 @@ public class TermJsonWrapper {
         else return null;
     }
 
-    public Double getJsonNumber() {
-        if (isJsonNumber()) return (Double) value;
+    public Number getJsonNumber() {
+        if (isJsonNumber() && value instanceof Double) return (Double) value;
+        else if (isJsonNumber() && value instanceof Long) return (Long) value;
         else return null;
     }
 

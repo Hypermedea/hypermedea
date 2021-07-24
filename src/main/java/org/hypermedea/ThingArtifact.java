@@ -305,9 +305,16 @@ public class ThingArtifact extends Artifact {
 
     TDHttpRequest setPrimitivePayload(TDHttpRequest request, DataSchema schema, TermJsonWrapper w) {
         try {
-            if (w.isJsonBoolean()) return request.setPrimitivePayload(schema, w.getJsonBoolean());
-            else if (w.isJsonNumber()) return request.setPrimitivePayload(schema, w.getJsonNumber());
-            else if (w.isJsonString()) return request.setPrimitivePayload(schema, w.getJsonString());
+            if (w.isJsonBoolean()) {
+                return request.setPrimitivePayload(schema, w.getJsonBoolean());
+            } else if (w.isJsonNumber()) {
+                Number nb = w.getJsonNumber();
+
+                if (nb instanceof Double) return request.setPrimitivePayload(schema, (double) nb);
+                else if (nb instanceof Long) return request.setPrimitivePayload(schema, (long) nb);
+            } else if (w.isJsonString()) {
+                return request.setPrimitivePayload(schema, w.getJsonString());
+            }
 
             failed("Unable to detect the primitive datatype of payload: " + w.getJsonValue());
         } catch (IllegalArgumentException e) {
