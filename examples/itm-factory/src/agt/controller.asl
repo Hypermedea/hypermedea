@@ -10,8 +10,9 @@ knownVocabulary("https://www.w3.org/2019/wot/security#") .
 +!start :
     true
     <-
-    // set credentials to access the Thing (DX10 workshop of the IT'm factory)
-    setAuthCredentials("simu1", "simu1") ;
+    // set credentials to access the Things of the IT'm factory
+    setAuthCredentials("simu1", "simu1")[artifact_name(dx10)] ;
+    setAuthCredentials("simu1", "simu1")[artifact_name(apas)] ;
     // check the status of the conveyor and starts it if it is idling
     !run .
 
