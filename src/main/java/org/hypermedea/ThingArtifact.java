@@ -22,6 +22,7 @@ import ch.unisg.ics.interactions.wot.td.vocabularies.WoTSec;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
+import org.hypermedea.json.JsonTermWrapper;
 import org.hypermedea.json.TermJsonWrapper;
 
 import java.io.IOException;
@@ -247,27 +248,9 @@ public class ThingArtifact extends Artifact {
         return property.get();
     }
 
-    @SuppressWarnings("unchecked")
     private void readPayloadWithSchema(TDHttpResponse response, DataSchema schema, OpFeedbackParam<Object> output) {
-        switch (schema.getDatatype()) {
-            case DataSchema.BOOLEAN:
-                output.set(response.getPayloadAsBoolean());
-                break;
-            case DataSchema.STRING:
-                output.set(response.getPayloadAsString());
-                break;
-            case DataSchema.INTEGER:
-                output.set(response.getPayloadAsInteger());
-                break;
-            case DataSchema.NUMBER:
-                output.set(response.getPayloadAsDouble());
-                break;
-            case DataSchema.OBJECT:
-            case DataSchema.ARRAY:
-                throw new RuntimeException("Not implemented"); // TODO
-            default:
-                break;
-        }
+        Object value = response.getPayloadWithSchema(schema);
+        output.set(new JsonTermWrapper(value).getTerm());
     }
 
     private Optional<TDHttpResponse> executeRequest(InteractionAffordance affordance, String operationType, Optional<DataSchema> schema, Object payload) {
