@@ -20,6 +20,7 @@ import ch.unisg.ics.interactions.wot.td.security.SecurityScheme;
 import ch.unisg.ics.interactions.wot.td.vocabularies.TD;
 import ch.unisg.ics.interactions.wot.td.vocabularies.WoTSec;
 import jason.asSyntax.ASSyntax;
+import jason.asSyntax.ListTerm;
 import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
 import org.hypermedea.json.JsonTermWrapper;
@@ -265,7 +266,7 @@ public class ThingArtifact extends Artifact {
             TDHttpRequest request = new TDHttpRequest(form.get(), operationType);
 
             if (schema.isPresent() && payload != null) {
-                Term p = ASSyntax.parseTerm(payload.toString());
+                Term p = parseCArtAgOObject(payload);
 
                 TermJsonWrapper w = new TermJsonWrapper(p);
 
@@ -355,6 +356,25 @@ public class ThingArtifact extends Artifact {
         }
 
         return Optional.empty();
+    }
+
+    /**
+     * Retrieve a Jason term from a Java object processed by CArtAgO
+     *
+     * @param obj an object holding a Jason term mapped to Java by CArtAgo
+     * @return the original Jason term (if known)
+     */
+    private Term parseCArtAgOObject(Object obj) throws ParseException {
+        if (obj.getClass().isArray()) {
+            ListTerm l = ASSyntax.createList();
+
+            for (Object m : (Object[]) obj) l.add(parseCArtAgOObject(m));
+
+            return l;
+        } else {
+            // TODO take arbitrary objects (cobj_XXX) into account
+            return ASSyntax.parseTerm(obj.toString());
+        }
     }
 
 }
