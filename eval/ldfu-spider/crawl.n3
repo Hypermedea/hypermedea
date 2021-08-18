@@ -1,0 +1,53 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix http: <http://www.w3.org/2011/http#> .
+@prefix httpm: <http://www.w3.org/2011/http-methods#> .
+@prefix voaf: <http://purl.org/vocommons/voaf#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+<#space> a voaf:VocabularySpace ;
+         rdfs:comment "vocabularies known to the Linked-Data-Fu spider; every link with a relation type belonging to a known vocabulary will be followed" ;
+         dct:hasPart <http://www.w3.org/ns/sosa/> ,
+                     <http://www.w3.org/ns/ssn/> ,
+                     <https://w3id.org/bot#> ,
+                     <http://www.w3.org/2003/01/geo/wgs84_pos#> ,
+                     <https://www.w3.org/2019/wot/td#> ,
+                     <https://ci.mines-stetienne.fr/kg/ontology#> .
+
+{
+  # triples are interpreted as link with anchor, target and relation type
+  ?anchor ?rel ?target .
+
+  # a relation type belongs to some vocabulary if it is prefixed by it
+  <#space> dct:hasPart ?vocab .
+  ?vocab log:uriToString ?vocabStr .
+  ?rel string:startsWith ?vocabStr .
+}
+=>
+{
+  [] http:mthd httpm:GET ;
+     http:requestURI ?target .
+} .
+
+{
+  # special handling of 'see also'
+  <https://ci.mines-stetienne.fr/kg/> rdfs:seeAlso ?target .
+}
+=>
+{
+  [] http:mthd httpm:GET ;
+     http:requestURI ?target .
+} .
+
+{
+  # a vocabulary may define axioms under its namespace
+  <#space> dct:hasPart ?vocab .
+}
+=>
+{
+  [] http:mthd httpm:GET ;
+     http:requestURI ?vocab .
+} .

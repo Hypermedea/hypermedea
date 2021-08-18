@@ -1,0 +1,10 @@
+mas ldfu_mas {
+
+    agent evaluator {
+        goals: evaluate
+        join: ldfu_workspace
+    }
+
+    workspace ldfu_workspace  {}
+
+}
