@@ -3,11 +3,8 @@ mas planning_mas {
     agent evaluator {
         goals: evaluate
         join: planning_workspace
-        focus: planning_workspace.planner
     }
 
-    workspace planning_workspace  {
-        artifact planner : org.hypermedea.PlannerArtifact()
-    }
+    workspace planning_workspace  {}
 
 }

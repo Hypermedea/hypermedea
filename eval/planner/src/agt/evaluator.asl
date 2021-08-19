@@ -66,14 +66,29 @@ domain(domain("itm-factory", [
 //   isAt(item1, storageRack)
 // ], isAt(item1, conveyor1Head))) .
 
+planner("HSP") .
+// planner("FF") .
+
 goal(isAt(item, conveyor1Head)) .
 
+average([Val], Val) .
+average([Val1 | Sublist], Avg) :- average(Sublist, Val2) & Avg = (Val1 + Val2) / 2 .
+
 +!evaluate :
-    true
+    planner(P)
     <-
-    !buildProblem(1) ;
-    !printProblem ;
-    !printPlan ;
+    makeArtifact("planner", "org.hypermedea.PlannerArtifact", [P], ArtId) ;
+    focus(ArtId) ;
+    for (.range(Size, 1, 20)) {
+      !buildProblem(Size) ;
+      for (.range(I, 1, 10)) {
+        !plan(_, T) ;
+        +planningTime(T) ;
+      }
+      !showResult ;
+      !clean ;
+    }
+    disposeArtifact(ArtId) ;
   .
 
 +!buildProblem(Size) :
@@ -82,34 +97,45 @@ goal(isAt(item, conveyor1Head)) .
     .concat("problem", Size, Name) ;
     +fact(item(item)) ;
     +fact(isAt(item, storageRack)) ;
-    // for (.range(I, 1, Size)) {
-    //   // create AGV
-    //   .concat("device", I, DeviceName) ;
-    //   .term2string(Device, DeviceName) ;
-    //   +fact(agv(Device)) ;
-    //   +fact(transportationDevice(Device)) ;
-    //   +fact(isAt(Device, storageRack)) ;
-    //   // create conveyor
-    //   .concat("conveyor", I, ConveyorName) ;
-    //   .term2string(Conveyor, ConveyorName) ;
-    //   +fact(transportationDevice(Conveyor)) ;
-    //   +fact(conveyor(Conveyor)) ;
-    //   // create conveyor tail/head with reachability statements
-    //   .concat(Conveyor, "Tail", TailName) ;
-    //   .term2string(Tail, TailName) ;
-    //   .concat(Conveyor, "Head", HeadName) ;
-    //   .term2string(Head, HeadName) ;
-    //   +fact(isAt(Conveyor, Tail)) ;
-    //   +fact(canReach(Conveyor, Tail)) ;
-    //   +fact(canReach(Conveyor, Head)) ;
-    // } ;
-    for (fact(agv(Device)) & fact(conveyor(Conveyor)) & fact(isAt(Conveyor, Tail))) {
+    for (.range(I, 1, Size)) {
+      // create AGV
+      .concat("device", I, DeviceName) ;
+      .term2string(Device, DeviceName) ;
+      +optionalFact(agv(Device)) ;
+      +fact(transportationDevice(Device)) ;
+      +fact(isAt(Device, storageRack)) ;
+      // create conveyor
+      .concat("conveyor", I, ConveyorName) ;
+      .term2string(Conveyor, ConveyorName) ;
+      +optionalFact(conveyor(Conveyor)) ;
+      +fact(transportationDevice(Conveyor)) ;
+      // create conveyor tail/head with reachability statements
+      .concat(Conveyor, "Tail", TailName) ;
+      .term2string(Tail, TailName) ;
+      .concat(Conveyor, "Head", HeadName) ;
+      .term2string(Head, HeadName) ;
+      +fact(isAt(Conveyor, Tail)) ;
+      +fact(canReach(Conveyor, Tail)) ;
+      +fact(canReach(Conveyor, Head)) ;
+    } ;
+    for (optionalFact(agv(Device)) & optionalFact(conveyor(Conveyor)) & fact(isAt(Conveyor, Tail))) {
       // an AGV can reach any conveyor tail
       +fact(canReach(Device, Tail))
     } ;
     .findall(F, fact(F), Facts) ;
     +problem(problem(Name, "itm-factory", Facts, Goal)) ;
   .
+
++!plan(Plan, T) :
+    domain(Domain) & problem(Problem)
+    <-
+    !t(T1) ;
+    buildPlan(Domain, Problem, Plan) ;
+    !t(T2) ;
+    T = T2 - T1 ;
+  .
+
+////////////////////////////////////////////////////////////////////// utilities
 
 +!printProblem :
     problem(Problem)
@@ -118,10 +144,35 @@ goal(isAt(item, conveyor1Head)) .
   .
 
 +!printPlan :
-    domain(Domain) & problem(Problem)
+    plan(Plan)
     <-
-    buildPlan(Domain, Problem, Plan) ;
     .print(Plan) ;
+  .
+
++!showResult :
+    true
+    <-
+    .count(fact(_), Nb) ;
+    .findall(T, planningTime(T), List) ;
+    ?average(List, Avg) ;
+    .min(List, Min) ;
+    .max(List, Max) ;
+    .print(Nb, ",", Avg, ",", Min, ",", Max) ;
+  .
+
++!clean :
+    true
+    <-
+    .abolish(fact(_)) ;
+    .abolish(optionalFact(_)) ;
+    .abolish(planningTime(_)) ;
+  .
+
++!t(T) :
+    true
+    <-
+    .time(H, M, S, MS) ;
+    T = MS + (S + (M + H * 60) * 60) * 1000;
   .
 
 { include("$jacamoJar/templates/common-cartago.asl") }
