@@ -24,4 +24,20 @@ public class PlannerArtifactTest {
         ASSyntax.parsePlan(plan); // should parse
     }
 
+    @Test
+    public void testNonDefaultPlanner() throws ParseException {
+        PlannerArtifact a1 = new PlannerArtifact("HSP");
+        PlannerArtifact a2 = new PlannerArtifact("FF");
+
+        OpFeedbackParam<String> res = new OpFeedbackParam<>();
+
+        a1.buildPlan(TEST_DOMAIN_STRUCTURE, TEST_PROBLEM_STRUCTURE, res);
+        String plan1 = res.get();
+
+        a2.buildPlan(TEST_DOMAIN_STRUCTURE, TEST_PROBLEM_STRUCTURE, res);
+        String plan2 = res.get();
+
+        assert plan1 != null && plan2 != null && plan1.equals(plan2);
+    }
+
 }

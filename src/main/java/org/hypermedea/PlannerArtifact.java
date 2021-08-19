@@ -35,13 +35,30 @@ import java.util.Map;
  */
 public class PlannerArtifact extends Artifact {
 
+    public static final String DEFAULT_PLANNER_NAME = AbstractStateSpacePlanner.DEFAULT_PLANNER.toString();
+
     private final Planner planner;
 
+    /**
+     * create a planner artifact with the default planner.
+     */
     public PlannerArtifact() {
-        final StateSpacePlannerFactory stateSpacePlannerFactory = StateSpacePlannerFactory.getInstance();
-        final Planner.Name plannerName = AbstractStateSpacePlanner.DEFAULT_PLANNER;
-        planner = stateSpacePlannerFactory.getPlanner(plannerName);
-        // TODO parameterize choice of planner
+        this(DEFAULT_PLANNER_NAME);
+    }
+
+    /**
+     * create a planner artifact with a specific planner.
+     *
+     * @param name the name of one of the planners implemented by PDDL4J (FF, HSP, ...)
+     */
+    public PlannerArtifact(String name) {
+        try {
+            final StateSpacePlannerFactory stateSpacePlannerFactory = StateSpacePlannerFactory.getInstance();
+            final Planner.Name plannerName = Planner.Name.valueOf(name);
+            planner = stateSpacePlannerFactory.getPlanner(plannerName);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(String.format("Unknown planner name: %", name));
+        }
     }
 
     /**

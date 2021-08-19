@@ -381,6 +381,9 @@ public class LinkedDataFuSpider extends Artifact {
 
 		BindingConsumerCollection triples = new BindingConsumerCollection();
 
+		// TODO start get in a worker thread and return
+		// TODO check if resource already visited (boolean parameter to overwrite?)
+
 		EvaluateRequestOrigin eval = new EvaluateRequestOrigin();
 		eval.setTripleCallback(new BindingConsumerSink(triples));
 		try {

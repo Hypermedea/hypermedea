@@ -82,27 +82,27 @@ goal(isAt(item, conveyor1Head)) .
     .concat("problem", Size, Name) ;
     +fact(item(item)) ;
     +fact(isAt(item, storageRack)) ;
-    for (.range(I, 1, Size)) {
-      // create AGV
-      .concat("device", I, DeviceName) ;
-      .term2string(Device, DeviceName) ;
-      +fact(agv(Device)) ;
-      +fact(transportationDevice(Device)) ;
-      +fact(isAt(Device, storageRack)) ;
-      // create conveyor
-      .concat("conveyor", I, ConveyorName) ;
-      .term2string(Conveyor, ConveyorName) ;
-      +fact(transportationDevice(Conveyor)) ;
-      +fact(conveyor(Conveyor)) ;
-      // create conveyor tail/head with reachability statements
-      .concat(Conveyor, "Tail", TailName) ;
-      .term2string(Tail, TailName) ;
-      .concat(Conveyor, "Head", HeadName) ;
-      .term2string(Head, HeadName) ;
-      +fact(isAt(Conveyor, Tail)) ;
-      +fact(canReach(Conveyor, Tail)) ;
-      +fact(canReach(Conveyor, Head)) ;
-    } ;
+    // for (.range(I, 1, Size)) {
+    //   // create AGV
+    //   .concat("device", I, DeviceName) ;
+    //   .term2string(Device, DeviceName) ;
+    //   +fact(agv(Device)) ;
+    //   +fact(transportationDevice(Device)) ;
+    //   +fact(isAt(Device, storageRack)) ;
+    //   // create conveyor
+    //   .concat("conveyor", I, ConveyorName) ;
+    //   .term2string(Conveyor, ConveyorName) ;
+    //   +fact(transportationDevice(Conveyor)) ;
+    //   +fact(conveyor(Conveyor)) ;
+    //   // create conveyor tail/head with reachability statements
+    //   .concat(Conveyor, "Tail", TailName) ;
+    //   .term2string(Tail, TailName) ;
+    //   .concat(Conveyor, "Head", HeadName) ;
+    //   .term2string(Head, HeadName) ;
+    //   +fact(isAt(Conveyor, Tail)) ;
+    //   +fact(canReach(Conveyor, Tail)) ;
+    //   +fact(canReach(Conveyor, Head)) ;
+    // } ;
     for (fact(agv(Device)) & fact(conveyor(Conveyor)) & fact(isAt(Conveyor, Tail))) {
       // an AGV can reach any conveyor tail
       +fact(canReach(Device, Tail))
