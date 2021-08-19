@@ -1,5 +1,6 @@
 package org.hypermedea;
 
+import cartago.ArtifactConfigurationFailedException;
 import cartago.OpFeedbackParam;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.parser.ParseException;
@@ -25,9 +26,11 @@ public class PlannerArtifactTest {
     }
 
     @Test
-    public void testNonDefaultPlanner() throws ParseException {
-        PlannerArtifact a1 = new PlannerArtifact("HSP");
-        PlannerArtifact a2 = new PlannerArtifact("FF");
+    public void testNonDefaultPlanner() throws ParseException, ArtifactConfigurationFailedException {
+        PlannerArtifact a1 = new PlannerArtifact();
+        a1.init("HSP");
+        PlannerArtifact a2 = new PlannerArtifact();
+        a2.init("FF");
 
         OpFeedbackParam<String> res = new OpFeedbackParam<>();
 
