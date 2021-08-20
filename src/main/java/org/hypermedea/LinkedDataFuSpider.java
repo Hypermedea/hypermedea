@@ -5,9 +5,10 @@ import cartago.OPERATION;
 import cartago.ObsProperty;
 import cartago.OpFeedbackParam;
 import edu.kit.aifb.datafu.*;
+import edu.kit.aifb.datafu.collections.Pile;
+import edu.kit.aifb.datafu.consumer.BindingConsumer;
 import edu.kit.aifb.datafu.consumer.impl.BindingConsumerCollection;
 import edu.kit.aifb.datafu.engine.EvaluateProgram;
-import edu.kit.aifb.datafu.io.input.request.EvaluateRequestOrigin;
 import edu.kit.aifb.datafu.io.origins.FileOrigin;
 import edu.kit.aifb.datafu.io.origins.InputOrigin;
 import edu.kit.aifb.datafu.io.origins.InternalOrigin;
@@ -17,6 +18,7 @@ import edu.kit.aifb.datafu.io.sinks.BindingConsumerSink;
 import edu.kit.aifb.datafu.parser.ProgramConsumerImpl;
 import edu.kit.aifb.datafu.parser.QueryConsumerImpl;
 import edu.kit.aifb.datafu.parser.notation3.Notation3Parser;
+import edu.kit.aifb.datafu.parser.sparql.ParseException;
 import edu.kit.aifb.datafu.parser.sparql.SparqlParser;
 import edu.kit.aifb.datafu.planning.EvaluateProgramConfig;
 import edu.kit.aifb.datafu.planning.EvaluateProgramGenerator;
@@ -26,18 +28,20 @@ import jason.asSyntax.StringTerm;
 import jason.asSyntax.Structure;
 import org.hypermedea.owl.NamingStrategyFactory;
 import org.hypermedea.owl.OWLAxiomWrapper;
+import org.hypermedea.tools.Identifiers;
 import org.semanticweb.HermiT.ReasonerFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
-import org.semanticweb.owlapi.reasoner.InferenceType;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import org.semanticweb.owlapi.reasoner.structural.StructuralReasonerFactory;
-import org.semanticweb.owlapi.util.*;
+import org.semanticweb.owlapi.util.InferredAxiomGenerator;
+import org.semanticweb.owlapi.util.InferredClassAssertionAxiomGenerator;
+import org.semanticweb.owlapi.util.InferredPropertyAssertionGenerator;
+import org.semanticweb.owlapi.util.ShortFormProvider;
 import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
 import org.semanticweb.yars.nx.*;
 import org.semanticweb.yars.nx.namespace.XSD;
-import org.hypermedea.tools.Identifiers;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
 import java.io.File;
@@ -64,7 +68,7 @@ public class LinkedDataFuSpider extends Artifact {
 	 * Manager that listens to changes in the underlying root ontology
 	 * and adds/removes corresponding observable properties.
 	 */
-	private class ObsPropertyManager implements OWLOntologyChangeListener, OWLOntologyChangeVisitor {
+	private class OWLObsPropertyManager implements OWLOntologyChangeListener, OWLOntologyChangeVisitor {
 
 		private final Map<OWLOntology, Set<ObsProperty>> propertiesByOntology = new HashMap<>();
 
@@ -144,6 +148,39 @@ public class LinkedDataFuSpider extends Artifact {
 
 	}
 
+	/**
+	 * Manager that listens to incoming bindings from the Linked-Data-Fu program
+	 * and adds corresponding observable properties.
+	 */
+	private class RDFObsPropertyManager implements BindingConsumer {
+
+		@Override
+		public void consume(Binding binding) throws InterruptedException {
+			Node[] st = binding.getNodes().getNodeArray();
+
+			String subject = st[0].getLabel();
+			String predicate = st[1].getLabel();
+			String object = st[2].getLabel();
+
+			ObsProperty p = defineObsProperty("rdf", subject, predicate, object);
+
+			OWLAxiom axiom = asOwlAxiom(st);
+
+			if (axiom != null) {
+				AddAxiom addAxiom = new AddAxiom(rootOntology, axiom);
+				// FIXME do in batch, for faster reasoning (if inference is on)
+				ontologyManager.applyChange(addAxiom);
+			}
+		}
+
+		@Override
+		public void consume(Collection<Binding> collection) throws InterruptedException {
+			for (Binding b : collection) consume(b);
+		}
+
+	}
+
+	// TODO replace with a select query with quad, to get a triple's origin (same BindingConsumer interface)
 	private static final String COLLECT_QUERY = "construct { ?s ?p ?o . } where { ?s ?p ?o . }";
 
 	private static final String RDF_TYPE = OWLRDFVocabulary.RDF_TYPE.toString();
@@ -153,6 +190,8 @@ public class LinkedDataFuSpider extends Artifact {
 	private Pattern tripleTermPattern = Pattern.compile("rdf\\((.*),(.*),(.*)\\)");
 
 	private Program program;
+
+	private EvaluateProgram evaluation; // TODO more explicit name?
 
 	private BindingConsumerCollection triples;
 
@@ -176,12 +215,28 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
+	 * Initialize the artifact without program file (crawl/1 disabled).
+	 */
+	public void init() {
+		init(null, false);
+	}
+
+	/**
 	 * Initialize the artifact by passing a program file name to the ldfu engine.
 	 *
 	 * @param programFile name of a Linked Data program file
 	 */
 	public void init(String programFile) {
 		init(programFile, false);
+	}
+
+	/**
+	 * Initialize the artifact without program file (crawl/1 disabled).
+	 *
+	 * @param withInference whether a reasoner should perform inference or not
+	 */
+	public void init(boolean withInference) {
+		init(null, withInference);
 	}
 
 	/**
@@ -192,7 +247,8 @@ public class LinkedDataFuSpider extends Artifact {
 	 * @param withInference whether a reasoner should perform inference or not
 	 */
 	public void init(String programFile, boolean withInference) {
-		initProgram(programFile);
+		initKeepAliveProgram();
+		if (programFile != null) initProgram(programFile);
 		initOntology(withInference);
 	}
 
@@ -224,6 +280,33 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 	}
 
+	private void initKeepAliveProgram() {
+		Origin base = new InternalOrigin("");
+
+		try {
+			// FIXME duplicate code with initProgram
+			QueryConsumerImpl queryConsumer = new QueryConsumerImpl(base);
+			SparqlParser sparqlParser = new SparqlParser(new StringReader(COLLECT_QUERY));
+			sparqlParser.parse(queryConsumer, base);
+
+			ConstructQuery query = queryConsumer.getConstructQueries().iterator().next();
+
+			Program program = new Program(base); // empty program
+
+			BindingConsumerSink sink = new BindingConsumerSink(new RDFObsPropertyManager());
+			program.registerConstructQuery(query, sink);
+
+			EvaluateProgramConfig config = new EvaluateProgramConfig();
+			evaluation = new EvaluateProgramGenerator(program, config).getEvaluateProgram();
+			evaluation.start();
+		} catch (ParseException e) {
+			e.printStackTrace();
+			// TODO log error
+
+			evaluation = null;
+		}
+	}
+
 	/**
 	 * Initialize the artifact's ontology manager.
 	 */
@@ -233,7 +316,7 @@ public class LinkedDataFuSpider extends Artifact {
 
 			OWLOntologyChangeBroadcastStrategy filter = new SpecificOntologyChangeBroadcastStrategy(rootOntology);
 
-			ObsPropertyManager m = new ObsPropertyManager();
+			OWLObsPropertyManager m = new OWLObsPropertyManager();
 			ontologyManager.addOntologyChangeListener(m, filter);
 
 			OWLReasonerFactory f = withInference
@@ -371,48 +454,29 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
+	 * gives the idle state of the spider, i.e. whether the spider has processed all agent requests (idling) or not.
+	 *
+	 * @param state <code>true</code> if the spider is idling, <code>false</code> otherwise
+	 */
+	@OPERATION
+	public void getIdleState(OpFeedbackParam<Boolean> state) {
+		Pile<InputOrigin> p = evaluation.getQueues().getInputOriginsQueue();
+		state.set(p.isEmpty());
+	}
+
+	/**
 	 * performs a GET request and updates the belief base as the result.
 	 */
 	@OPERATION
 	public void get(String originURI) {
 		InputOrigin origin = asOrigin(originURI);
 
-		if (origin == null || !(origin instanceof RequestOrigin)) return;
+		if (origin == null) return;
 
-		BindingConsumerCollection triples = new BindingConsumerCollection();
-
-		// TODO start get in a worker thread and return
-		// TODO check if resource already visited (boolean parameter to overwrite?)
-
-		EvaluateRequestOrigin eval = new EvaluateRequestOrigin();
-		eval.setTripleCallback(new BindingConsumerSink(triples));
 		try {
-			eval.consume((RequestOrigin) origin);
-			eval.shutdown();
+			evaluation.getInputOriginConsumer().consume(origin);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			return;
-		}
-
-		// authoritative subject
-		// TODO graph name available?
-		if (hasObsPropertyByTemplate("rdf", originURI, null, null)) {
-			removeObsPropertyByTemplate("rdf", originURI, null, null);
-		}
-
-		definePropertiesForBindings(triples.getCollection());
-
-		// FIXME duplicate code wrt crawl()
-
-		for (Binding binding : triples.getCollection()) {
-			Node[] st = binding.getNodes().getNodeArray();
-
-			OWLAxiom axiom = asOwlAxiom(st);
-
-			if (axiom != null) {
-				AddAxiom addAxiom = new AddAxiom(rootOntology, axiom);
-				ontologyManager.applyChange(addAxiom);
-			}
 		}
 	}
 

@@ -2,13 +2,19 @@
  * @author Noé SAFFAF
  */
 
++!create_artifact_ldfu : true <-
+     .my_name(NAME);
+     .concat("ldfu_artifact_",NAME, NAME_ART);
+     makeArtifact(NAME_ART,"org.hypermedea.LinkedDataFuSpider",[],ART_ID);
+     focus(ART_ID);
+     .
+
 +!create_artifact_ldfu(INFERRED_BOOL) : true <-
      .my_name(NAME);
      .concat("ldfu_artifact_",NAME, NAME_ART);
      makeArtifact(NAME_ART,"org.hypermedea.LinkedDataFuSpider",["get.n3",INFERRED_BOOL],ART_ID);
      focus(ART_ID);
      .
-
 
 +!getPlan : true <-
     for (entryPointGet(IRI,LOCAL)){
