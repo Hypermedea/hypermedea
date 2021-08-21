@@ -119,6 +119,9 @@ public class LinkedDataFuSpider extends Artifact {
 			}
 		}
 
+		/**
+		 * TODO perform this method in a worker thread
+		 */
 		private void updateInferredProperties() {
 			if (!reasoner.isConsistent()) {
 				log("warning: the set of crawled statements is inconsistent...");
@@ -154,15 +157,28 @@ public class LinkedDataFuSpider extends Artifact {
 	 */
 	private class RDFObsPropertyManager implements BindingConsumer {
 
+		private Boolean hasConsumed = false;
+
 		@Override
-		public void consume(Binding binding) throws InterruptedException {
-			Node[] st = binding.getNodes().getNodeArray();
+		public void consume(Binding binding) {
+			definePropertyForBinding(binding);
+			commit(); // FIXME should be executed by the thread calling the origin operation?
+		}
+
+		@Override
+		public void consume(Collection<Binding> collection) {
+			for (Binding b : collection) definePropertyForBinding(b);
+			commit();
+		}
+
+		private void definePropertyForBinding(Binding b) {
+			Node[] st = b.getNodes().getNodeArray();
 
 			String subject = st[0].getLabel();
 			String predicate = st[1].getLabel();
 			String object = st[2].getLabel();
 
-			ObsProperty p = defineObsProperty("rdf", subject, predicate, object);
+			defineObsProperty("rdf", subject, predicate, object);
 
 			OWLAxiom axiom = asOwlAxiom(st);
 
@@ -171,11 +187,6 @@ public class LinkedDataFuSpider extends Artifact {
 				// FIXME do in batch, for faster reasoning (if inference is on)
 				ontologyManager.applyChange(addAxiom);
 			}
-		}
-
-		@Override
-		public void consume(Collection<Binding> collection) throws InterruptedException {
-			for (Binding b : collection) consume(b);
 		}
 
 	}
@@ -231,15 +242,6 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
-	 * Initialize the artifact without program file (crawl/1 disabled).
-	 *
-	 * @param withInference whether a reasoner should perform inference or not
-	 */
-	public void init(boolean withInference) {
-		init(null, withInference);
-	}
-
-	/**
 	 * Initialize the artifact by passing a program file name to the ldfu engine.
 	 * Attach a reasoner to the knowledge base if <code>withInference</code> is set to true.
 	 *
@@ -272,6 +274,9 @@ public class LinkedDataFuSpider extends Artifact {
 
 			triples = new BindingConsumerCollection();
 			program.registerConstructQuery(query, new BindingConsumerSink(triples));
+
+			// TODO use the following instead of a SPARQL query?
+			// evaluation.getEvaluateInputOrigin().setTripleCallback(new RDFObsPropertyManager());
 		} catch (Exception e) {
 			e.printStackTrace();
 			// TODO report error
@@ -455,6 +460,7 @@ public class LinkedDataFuSpider extends Artifact {
 
 	/**
 	 * gives the idle state of the spider, i.e. whether the spider has processed all agent requests (idling) or not.
+	 * FIXME should take responses into account, not requests
 	 *
 	 * @param state <code>true</code> if the spider is idling, <code>false</code> otherwise
 	 */

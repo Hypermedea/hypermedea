@@ -11,6 +11,15 @@ hasPart(vocabularySpace, "https://ci.mines-stetienne.fr/kg/ontology#") .
     +crawling ;
     get(URI) ;
     for (hasPart(vocabularySpace, Vocab)) { get(Vocab) } ;
+    !debug ;
+  .
+
++!debug :
+    true
+    <-
+    .wait(5000) ;
+    .count(rdf(_, _, _), Nb) ;
+    .print("found triples: ", Nb) ;
   .
 
 +rdf(Anchor, Rel, Target) :

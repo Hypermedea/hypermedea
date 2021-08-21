@@ -10,7 +10,8 @@ origin("ttl/instances_sosa.ttl").
     .wait(1000);
 	.print("Test Assertion : GET operation test");
     getIdleState(Idling);
-    if(Idling) {
+    .count(rdf(_, _, _), Nb);
+    if(Idling & Nb = 7) {
         .print("Test Consistency: Passed");
     } else {
         .print("Test GET: Failed");

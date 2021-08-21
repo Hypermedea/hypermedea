@@ -20,7 +20,7 @@ entryPoint("https://ci.mines-stetienne.fr/kg/") .
 +!start(Task) :
     iterations(I) & I > 0
     <-
-    !setUp("crawl", "crawl.n3") ;
+    !setUp("spider") ;
     !t(T); +startedAt(Task, T) ;
     !Task ;
   .
@@ -66,10 +66,10 @@ entryPoint("https://ci.mines-stetienne.fr/kg/") .
 
 ////////////////////////////////////////////////////////////////////// utilities
 
-+!setUp(Name, Program) :
++!setUp(Name) :
     true
     <-
-    makeArtifact(Name, "org.hypermedea.LinkedDataFuSpider", [Program], ArtId) ;
+    makeArtifact(Name, "org.hypermedea.LinkedDataFuSpider", ["crawl.n3"], ArtId) ;
     focus(ArtId) ;
   .
 
