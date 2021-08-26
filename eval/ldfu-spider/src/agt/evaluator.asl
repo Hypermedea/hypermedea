@@ -7,7 +7,7 @@
 //task(evaluateCrawlOp) .
 task(evaluateCrawlGoal) .
 
-iterations(20) .
+iterations(1) .
 
 entryPoint("https://ci.mines-stetienne.fr/kg/") .
 
@@ -36,8 +36,8 @@ entryPoint("https://ci.mines-stetienne.fr/kg/") .
     <-
     !t(T); +endedAt(Task, T) ;
     -ended(Task) ;
-    !clean("crawl") ;
     !showResult(Task) ;
+    !clean("spider") ;
     !inc ;
     !!start(Task) ;
   .

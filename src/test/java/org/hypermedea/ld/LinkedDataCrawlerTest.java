@@ -6,6 +6,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Collection;
 
 public class LinkedDataCrawlerTest {
@@ -25,15 +26,14 @@ public class LinkedDataCrawlerTest {
         }
 
         @Override
-        public void requestComplete(Resource res) {
+        public void requestCompleted(Resource res) {
             resources.add(res);
         }
 
     }
 
-
     @Test
-    public void testSingleRequest() throws IOException, InterruptedException {
+    public void testSingleRequest() throws IOException, InterruptedException, URISyntaxException {
         LinkedDataCrawler c = new LinkedDataCrawler();
         ResourceCollector collector = new ResourceCollector();
 
@@ -51,7 +51,7 @@ public class LinkedDataCrawlerTest {
     }
 
     @Test
-    public void testRequestChain() throws IOException, InterruptedException {
+    public void testRequestChain() throws IOException, InterruptedException, URISyntaxException {
         LinkedDataCrawler c = new LinkedDataCrawler();
         ResourceCollector collector = new ResourceCollector();
 
@@ -64,7 +64,7 @@ public class LinkedDataCrawlerTest {
                 m.listObjectsOfProperty(p).forEach(o -> {
                     try {
                         c.get(o.asResource().getURI());
-                    } catch (IOException e) {
+                    } catch (IOException | URISyntaxException e) {
                         e.printStackTrace();
                     }
                 });

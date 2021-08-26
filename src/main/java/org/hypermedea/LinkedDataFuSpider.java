@@ -5,8 +5,6 @@ import cartago.OPERATION;
 import cartago.ObsProperty;
 import cartago.OpFeedbackParam;
 import edu.kit.aifb.datafu.*;
-import edu.kit.aifb.datafu.collections.Pile;
-import edu.kit.aifb.datafu.consumer.BindingConsumer;
 import edu.kit.aifb.datafu.consumer.impl.BindingConsumerCollection;
 import edu.kit.aifb.datafu.engine.EvaluateProgram;
 import edu.kit.aifb.datafu.io.origins.FileOrigin;
@@ -18,14 +16,14 @@ import edu.kit.aifb.datafu.io.sinks.BindingConsumerSink;
 import edu.kit.aifb.datafu.parser.ProgramConsumerImpl;
 import edu.kit.aifb.datafu.parser.QueryConsumerImpl;
 import edu.kit.aifb.datafu.parser.notation3.Notation3Parser;
-import edu.kit.aifb.datafu.parser.sparql.ParseException;
 import edu.kit.aifb.datafu.parser.sparql.SparqlParser;
 import edu.kit.aifb.datafu.planning.EvaluateProgramConfig;
 import edu.kit.aifb.datafu.planning.EvaluateProgramGenerator;
-import jason.asSyntax.ASSyntax;
-import jason.asSyntax.Atom;
-import jason.asSyntax.StringTerm;
-import jason.asSyntax.Structure;
+import jason.asSyntax.*;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Statement;
+import org.hypermedea.ld.LinkedDataCrawler;
+import org.hypermedea.ld.RequestListener;
 import org.hypermedea.owl.NamingStrategyFactory;
 import org.hypermedea.owl.OWLAxiomWrapper;
 import org.hypermedea.tools.Identifiers;
@@ -40,14 +38,12 @@ import org.semanticweb.owlapi.util.InferredClassAssertionAxiomGenerator;
 import org.semanticweb.owlapi.util.InferredPropertyAssertionGenerator;
 import org.semanticweb.owlapi.util.ShortFormProvider;
 import org.semanticweb.owlapi.vocab.OWLRDFVocabulary;
+import org.semanticweb.yars.nx.Literal;
 import org.semanticweb.yars.nx.*;
 import org.semanticweb.yars.nx.namespace.XSD;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.StringReader;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -152,41 +148,62 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
-	 * Manager that listens to incoming bindings from the Linked-Data-Fu program
+	 * Manager that listens to incoming resources from the Linked Data crawler
 	 * and adds corresponding observable properties.
 	 */
-	private class RDFObsPropertyManager implements BindingConsumer {
-
-		private Boolean hasConsumed = false;
+	private class RDFObsPropertyManager implements RequestListener {
 
 		@Override
-		public void consume(Binding binding) {
-			definePropertyForBinding(binding);
-			commit(); // FIXME should be executed by the thread calling the origin operation?
-		}
+		public void requestCompleted(org.hypermedea.ld.Resource res) {
+			setStatusProperty(crawler.isActive());
 
-		@Override
-		public void consume(Collection<Binding> collection) {
-			for (Binding b : collection) definePropertyForBinding(b);
-			commit();
-		}
+			defineObsProperty("resource", res.getURI());
+			// TODO check URI isn't already a resource
 
-		private void definePropertyForBinding(Binding b) {
-			Node[] st = b.getNodes().getNodeArray();
+			if (res.getRepresentation() != null && !res.isCached()) {
+				List<OWLOntologyChange> changes = new ArrayList<>();
 
-			String subject = st[0].getLabel();
-			String predicate = st[1].getLabel();
-			String object = st[2].getLabel();
+				res.getRepresentation().listStatements().forEach(st -> {
+					RDFNode s = st.getSubject();
+					RDFNode p = st.getPredicate();
+					RDFNode o = st.getObject();
 
-			defineObsProperty("rdf", subject, predicate, object);
+					Term subject = getRDFNodeTerm(s);
+					Term predicate = getRDFNodeTerm(p);
+					Term object = getRDFNodeTerm(o);
 
-			OWLAxiom axiom = asOwlAxiom(st);
+					ObsProperty prop = defineObsProperty("rdf", subject, predicate, object);
 
-			if (axiom != null) {
-				AddAxiom addAxiom = new AddAxiom(rootOntology, axiom);
-				// FIXME do in batch, for faster reasoning (if inference is on)
-				ontologyManager.applyChange(addAxiom);
+					StringTerm origin = ASSyntax.createString(res.getURI());
+					prop.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, origin));
+
+					Atom subjectType = getRDFTypeAtom(s);
+					Atom predicateType = getRDFTypeAtom(p);
+					Atom objectType = getRDFTypeAtom(o);
+					prop.addAnnot(ASSyntax.createStructure(RDF_TYPE_MAP_FUNCTOR, subjectType, predicateType, objectType));
+
+					OWLAxiom axiom = asOWLAxiom(st);
+
+					if (axiom != null) changes.add(new AddAxiom(rootOntology, axiom));
+				});
+
+				ontologyManager.applyChanges(changes); // TODO reasoning scalability if changes by resource?
 			}
+
+			commit(); // FIXME commit should be executed by the thread calling the origin operation?
+		}
+
+		private Term getRDFNodeTerm(RDFNode n) {
+			if (n.isURIResource()) return ASSyntax.createString(n.asResource().getURI());
+			else if (n.isAnon()) return ASSyntax.createAtom(n.asResource().getId().toString());
+			else if (n.asLiteral().getValue() instanceof Number) return ASSyntax.createNumber(n.asLiteral().getDouble());
+			else return ASSyntax.createString(n.asLiteral().getString());
+		}
+
+		private Atom getRDFTypeAtom(RDFNode n) {
+			if (n.isURIResource()) return RDF_TYPE_URI_ATOM;
+			else if (n.isAnon()) return RDF_TYPE_BNODE_ATOM;
+			else return RDF_TYPE_LITERAL_ATOM;
 		}
 
 	}
@@ -196,13 +213,27 @@ public class LinkedDataFuSpider extends Artifact {
 
 	private static final String RDF_TYPE = OWLRDFVocabulary.RDF_TYPE.toString();
 
+	private static final String CRAWLER_STATUS_FUNCTOR = "crawler_status";
+
 	private static final String PREDICATE_IRI_FUNCTOR = "predicate_uri";
+
+	private static final String SOURCE_FUNCTOR = "crawler_source";
+
+	private static final String RDF_TYPE_MAP_FUNCTOR = "rdf_type_map";
+
+	private static final Atom RDF_TYPE_URI_ATOM = ASSyntax.createAtom("uri");
+
+	private static final Atom RDF_TYPE_BNODE_ATOM = ASSyntax.createAtom("bnode");
+
+	private static final Atom RDF_TYPE_LITERAL_ATOM = ASSyntax.createAtom("literal");
 
 	private Pattern tripleTermPattern = Pattern.compile("rdf\\((.*),(.*),(.*)\\)");
 
 	private Program program;
 
 	private EvaluateProgram evaluation; // TODO more explicit name?
+
+	private LinkedDataCrawler crawler;
 
 	private BindingConsumerCollection triples;
 
@@ -252,6 +283,8 @@ public class LinkedDataFuSpider extends Artifact {
 		initKeepAliveProgram();
 		if (programFile != null) initProgram(programFile);
 		initOntology(withInference);
+
+		setStatusProperty(false);
 	}
 
 	private void initProgram(String programFile) {
@@ -288,28 +321,32 @@ public class LinkedDataFuSpider extends Artifact {
 	private void initKeepAliveProgram() {
 		Origin base = new InternalOrigin("");
 
-		try {
-			// FIXME duplicate code with initProgram
-			QueryConsumerImpl queryConsumer = new QueryConsumerImpl(base);
-			SparqlParser sparqlParser = new SparqlParser(new StringReader(COLLECT_QUERY));
-			sparqlParser.parse(queryConsumer, base);
+//		try {
+//			// FIXME duplicate code with initProgram
+//			QueryConsumerImpl queryConsumer = new QueryConsumerImpl(base);
+//			SparqlParser sparqlParser = new SparqlParser(new StringReader(COLLECT_QUERY));
+//			sparqlParser.parse(queryConsumer, base);
+//
+//			ConstructQuery query = queryConsumer.getConstructQueries().iterator().next();
+//
+//			Program program = new Program(base); // empty program
+//
+//			BindingConsumerSink sink = new BindingConsumerSink(new RDFObsPropertyManager());
+//			program.registerConstructQuery(query, sink);
+//
+//			EvaluateProgramConfig config = new EvaluateProgramConfig();
+//			evaluation = new EvaluateProgramGenerator(program, config).getEvaluateProgram();
+//			evaluation.getEvaluateInputOrigin().setTripleCallback(sink);
+//			evaluation.start();
+//		} catch (ParseException e) {
+//			e.printStackTrace();
+//			// TODO log error
+//
+//			evaluation = null;
+//		}
 
-			ConstructQuery query = queryConsumer.getConstructQueries().iterator().next();
-
-			Program program = new Program(base); // empty program
-
-			BindingConsumerSink sink = new BindingConsumerSink(new RDFObsPropertyManager());
-			program.registerConstructQuery(query, sink);
-
-			EvaluateProgramConfig config = new EvaluateProgramConfig();
-			evaluation = new EvaluateProgramGenerator(program, config).getEvaluateProgram();
-			evaluation.start();
-		} catch (ParseException e) {
-			e.printStackTrace();
-			// TODO log error
-
-			evaluation = null;
-		}
+		crawler = new LinkedDataCrawler();
+		crawler.addListener(new RDFObsPropertyManager());
 	}
 
 	/**
@@ -459,30 +496,17 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
-	 * gives the idle state of the spider, i.e. whether the spider has processed all agent requests (idling) or not.
-	 * FIXME should take responses into account, not requests
-	 *
-	 * @param state <code>true</code> if the spider is idling, <code>false</code> otherwise
-	 */
-	@OPERATION
-	public void getIdleState(OpFeedbackParam<Boolean> state) {
-		Pile<InputOrigin> p = evaluation.getQueues().getInputOriginsQueue();
-		state.set(p.isEmpty());
-	}
-
-	/**
 	 * performs a GET request and updates the belief base as the result.
 	 */
 	@OPERATION
 	public void get(String originURI) {
-		InputOrigin origin = asOrigin(originURI);
-
-		if (origin == null) return;
-
 		try {
-			evaluation.getInputOriginConsumer().consume(origin);
-		} catch (InterruptedException e) {
+			setStatusProperty(true);
+			crawler.get(originURI);
+		} catch (IOException | URISyntaxException e) {
 			e.printStackTrace();
+			// TODO improve logging
+			failed(e.getMessage());
 		}
 	}
 
@@ -576,6 +600,15 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 	}
 
+	private void setStatusProperty(Boolean isActive) {
+		if (!hasObsProperty(CRAWLER_STATUS_FUNCTOR)) {
+			defineObsProperty(CRAWLER_STATUS_FUNCTOR, isActive);
+		}
+
+		ObsProperty p = getObsProperty(CRAWLER_STATUS_FUNCTOR);
+		if (!p.getValue().equals(isActive)) p.updateValue(isActive);
+	}
+
 	private Set<ObsProperty> definePropertiesForBindings(Collection<Binding> bindings) {
 		Set<ObsProperty> properties = new HashSet<>();
 
@@ -642,6 +675,11 @@ public class LinkedDataFuSpider extends Artifact {
 	private InputOrigin asOrigin(String uriOrFilename) {
 		if (uriOrFilename.startsWith("http")) return new RequestOrigin(URI.create(uriOrFilename), Request.Method.GET);
 		else return new FileOrigin(new File(uriOrFilename), FileOrigin.Mode.READ, null);
+	}
+
+	private OWLAxiom asOWLAxiom(Statement st) {
+		// TODO
+		return null;
 	}
 
 	private OWLAxiom asOwlAxiom(Node[] t) {
