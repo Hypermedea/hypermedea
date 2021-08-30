@@ -175,6 +175,7 @@ public class LinkedDataFuSpider extends Artifact {
 					ObsProperty prop = defineObsProperty("rdf", subject, predicate, object);
 
 					StringTerm origin = ASSyntax.createString(res.getURI());
+					// FIXME the origin is not the resource's URI
 					prop.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, origin));
 
 					Atom subjectType = getRDFTypeAtom(s);

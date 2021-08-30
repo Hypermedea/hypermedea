@@ -36,6 +36,7 @@ barrier_resource(Target) :-
     -toRequest(URI) ;
     // TODO requested/1 redundant with resource/1 ?
     +requested(URI) ;
+    // TODO proceed with base resource URI as parameter (match only on source URI)?
     !!proceed ;
   .
 

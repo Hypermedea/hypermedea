@@ -41,7 +41,7 @@ public class LinkedDataCrawler {
             if (g == null) {
                 try {
                     // TODO or use RDFParser.source(resourceURI).parse(StreamRDF);
-                    // TODO check whether caching is implemented
+                    // TODO check whether HTTP caching is implemented
                     g = RDFDataMgr.loadModel(resourceURI);
                 } catch (Exception e) {
                     // TODO log error
