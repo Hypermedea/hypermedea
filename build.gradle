@@ -6,7 +6,6 @@
 plugins {
     id 'java'
     id 'application'
-    id 'maven-publish'
 }
 
 version '0.1'
@@ -21,13 +20,17 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.13.1'
-    implementation group: 'org.jacamo', name: 'jacamo', version: '0.9'
     implementation group: 'edu.kit.aifb.linkeddatafu', name: 'linked-data-fu-standalone', version: '0.9.12'
+    implementation group: 'org.apache.jena', name: 'apache-jena-libs', version: '4.1.0'
     implementation group: 'net.sourceforge.owlapi', name: 'org.semanticweb.hermit', version: '1.4.5.519'
     // TODO include newer version of wot-td-java
     implementation group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
     implementation fileTree(dir: 'lib', include: 'pddl4j-*.jar')
+
+    testImplementation 'junit:junit:4.13.1'
+
+    // JaCaMo is used for compiling artifacts and then for distributing a full application
+    implementation group: 'org.jacamo', name: 'jacamo', version: '0.9'
 }
 
 sourceSets {
@@ -43,16 +46,18 @@ sourceSets {
 
 mainClassName = 'jacamo.infra.JaCaMoLauncher'
 
-publishing {
-    publications {
-        lib(MavenPublication) {
-            from components.java
-        }
-    }
-
-    // TODO add Maven Central repo with auth
-    // see https://docs.gradle.org/4.4.1/userguide/publishing_maven.html
-}
+/**
+ * modified jar task to include all dependencies to the produced artifact,
+ * to then be added as lib of the standard JaCaMo distribution
+ */
+//task libJar(type: Jar) {
+//    archiveAppendix = 'lib'
+//    from {
+//        // TODO filter out jacamo and dependencies
+//        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+//    }
+//    with jar
+//}
 
 /**
  * integration tests of artifacts with Jason agents
@@ -68,7 +73,6 @@ task testAgt (type: JavaExec, dependsOn: 'classes') {
     classpath sourceSets.main.runtimeClasspath
 }
 
-// Clean up
 clean {
     delete 'bin'
     delete 'build'

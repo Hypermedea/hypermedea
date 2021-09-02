@@ -6,9 +6,7 @@ import cartago.OPERATION;
 import cartago.OpFeedbackParam;
 import fr.uga.pddl4j.encoding.CodedProblem;
 import fr.uga.pddl4j.encoding.Encoder;
-import fr.uga.pddl4j.parser.Domain;
-import fr.uga.pddl4j.parser.Problem;
-import fr.uga.pddl4j.parser.Symbol;
+import fr.uga.pddl4j.parser.*;
 import fr.uga.pddl4j.planners.Planner;
 import fr.uga.pddl4j.planners.statespace.AbstractStateSpacePlanner;
 import fr.uga.pddl4j.planners.statespace.StateSpacePlannerFactory;
@@ -95,6 +93,8 @@ public class PlannerArtifact extends Artifact {
             domain = domainWrapper.getDomain();
             pb = problemWrapper.getProblem();
 
+            lint(domain, pb);
+
             dictionary.putAll(domainWrapper.getDictionary());
             dictionary.putAll(problemWrapper.getDictionary());
         } catch (ParseException | TermWrapperException e) {
@@ -144,6 +144,20 @@ public class PlannerArtifact extends Artifact {
                 failed(String.format("not a valid domain or problem definition: %s.", term));
             }
         }
+    }
+
+    private boolean lint(Domain domain, Problem pb) {
+        ErrorManager manager = new ErrorManager();
+        Linter linter = new Linter(manager);
+
+        linter.setDomain(domain, null);
+        linter.setProblem(pb, null);
+
+        boolean checked = linter.checkDomain() && linter.checkProblem();
+
+        for (Message m : manager.getMessages()) log(m.toString());
+
+        return checked;
     }
 
 }
