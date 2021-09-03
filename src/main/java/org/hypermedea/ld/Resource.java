@@ -10,16 +10,9 @@ public class Resource {
 
     private final Model representation;
 
-    private final Boolean isCached;
-
     public Resource(String uri, Model representation) {
-        this(uri, representation, false);
-    }
-
-    public Resource(String uri, Model representation, Boolean isCached) {
         this.uri = uri;
         this.representation = representation;
-        this.isCached = isCached;
     }
 
     public String getURI() {
@@ -28,10 +21,6 @@ public class Resource {
 
     public Model getRepresentation() {
         return representation;
-    }
-
-    public Boolean isCached() {
-        return isCached;
     }
 
     @Override

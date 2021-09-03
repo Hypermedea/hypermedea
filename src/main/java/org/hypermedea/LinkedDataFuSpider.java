@@ -155,12 +155,10 @@ public class LinkedDataFuSpider extends Artifact {
 
 		@Override
 		public void requestCompleted(org.hypermedea.ld.Resource res) {
-			setStatusProperty(crawler.isActive());
-
 			defineObsProperty("resource", res.getURI());
 			// TODO check URI isn't already a resource
 
-			if (res.getRepresentation() != null && !res.isCached()) {
+			if (res.getRepresentation() != null) {
 				List<OWLOntologyChange> changes = new ArrayList<>();
 
 				res.getRepresentation().listStatements().forEach(st -> {
@@ -191,12 +189,16 @@ public class LinkedDataFuSpider extends Artifact {
 				ontologyManager.applyChanges(changes); // TODO reasoning scalability if changes by resource?
 			}
 
+			commit();
+
+			setStatusProperty(crawler.isActive());
+
 			commit(); // FIXME commit should be executed by the thread calling the origin operation?
 		}
 
 		private Term getRDFNodeTerm(RDFNode n) {
 			if (n.isURIResource()) return ASSyntax.createString(n.asResource().getURI());
-			else if (n.isAnon()) return ASSyntax.createAtom(n.asResource().getId().toString());
+			else if (n.isAnon()) return ASSyntax.createAtom("bnode_" + n.asResource().getId());
 			else if (n.asLiteral().getValue() instanceof Number) return ASSyntax.createNumber(n.asLiteral().getDouble());
 			else return ASSyntax.createString(n.asLiteral().getString());
 		}

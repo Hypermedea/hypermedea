@@ -24,43 +24,28 @@ public class LinkedDataCrawler {
 
         private final String resourceURI;
 
-        private final String normalizedURI;
-
-        public RequestTask(String resourceURI) throws URISyntaxException {
+        public RequestTask(String resourceURI) {
             this.resourceURI = resourceURI;
-            this.normalizedURI = withoutFragment(resourceURI);
         }
 
         @Override
         public void run() {
             nbActiveRequests++;
 
-            Model g = requestedRepresentations.get(normalizedURI);
-            Boolean cacheHit = g != null;
-
-            if (g == null) {
-                try {
-                    // TODO or use RDFParser.source(resourceURI).parse(StreamRDF);
-                    // TODO check whether HTTP caching is implemented
-                    g = RDFDataMgr.loadModel(resourceURI);
-                } catch (Exception e) {
-                    // TODO log error
-                    g = null;
-                }
-
-                requestedRepresentations.put(resourceURI, g);
+            Model g;
+            try {
+                // TODO or use RDFParser.source(resourceURI).parse(StreamRDF);
+                // TODO check whether HTTP caching is implemented
+                g = RDFDataMgr.loadModel(resourceURI);
+            } catch (Exception e) {
+                // TODO log error
+                g = null;
             }
 
             synchronized (resourceQueue) {
-                resourceQueue.add(new Resource(resourceURI, g, cacheHit));
+                resourceQueue.add(new Resource(resourceURI, g));
                 resourceQueue.notify();
             }
-        }
-
-        private String withoutFragment(String resourceURI) throws URISyntaxException {
-            URI parsedURI = new URI(resourceURI);
-            String fragment = "#" + parsedURI.getFragment();
-            return resourceURI.replace(fragment, "");
         }
 
     }
@@ -99,7 +84,7 @@ public class LinkedDataCrawler {
 
     private final Queue<Resource> resourceQueue = new ConcurrentLinkedQueue<>();
 
-    private final Map<String, Model> requestedRepresentations = new HashMap<>();
+    private final Set<String> requestedRepresentations = new HashSet<>();
 
     private int nbActiveRequests = 0;
 
@@ -114,12 +99,24 @@ public class LinkedDataCrawler {
     }
 
     public void get(String resourceURI) throws IOException, URISyntaxException {
-        RequestTask t = new RequestTask(resourceURI);
-        pool.submit(t);
+        String requestedURI = withoutFragment(resourceURI);
+
+        if (!requestedRepresentations.contains(requestedURI)) {
+            RequestTask t = new RequestTask(requestedURI);
+            pool.submit(t);
+
+            requestedRepresentations.add(requestedURI);
+        }
     }
 
     public boolean isActive() {
         return nbActiveRequests > 0;
+    }
+
+    private static String withoutFragment(String resourceURI) throws URISyntaxException {
+        URI parsedURI = new URI(resourceURI);
+        String fragment = "#" + parsedURI.getFragment();
+        return resourceURI.replace(fragment, "");
     }
 
 }
