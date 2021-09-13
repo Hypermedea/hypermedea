@@ -5,21 +5,14 @@ hasPart(vocabularySpace, "http://www.w3.org/2003/01/geo/wgs84_pos#") .
 hasPart(vocabularySpace, "https://www.w3.org/2019/wot/td#") .
 hasPart(vocabularySpace, "https://ci.mines-stetienne.fr/kg/ontology#") .
 
-withoutFragment(URI, URIp) :-
-    (.nth(I, URI, "#") & .substring(URIp, URI, 0, I)) |
-    (URIp = URI)
-  .
-
 barrier_resource(Anchor, Target) :-
-    rdf(S, P, O)[rdf_type_map(_, _, uri), crawler_source(Anchor)] &
+    rdf(S, P, Target)[rdf_type_map(_, _, uri), crawler_source(Anchor)] &
     hasPart(vocabularySpace, Vocab) & .substring(Vocab, P, 0) &
-    withoutFragment(O, Target) &
     not resource(Target)
   .
 
 barrier_resource("https://ci.mines-stetienne.fr/kg/", Target) :-
-    rdf("https://ci.mines-stetienne.fr/kg/", "http://www.w3.org/2000/01/rdf-schema#seeAlso", URI) &
-    withoutFragment(URI, Target) &
+    rdf("https://ci.mines-stetienne.fr/kg/", "http://www.w3.org/2000/01/rdf-schema#seeAlso", Target) &
     not resource(Target)
   .
 
@@ -41,12 +34,24 @@ barrier_resource("https://ci.mines-stetienne.fr/kg/", Target) :-
 +!expandCrawl(Anchor) :
     crawling
     <-
-    for (barrier_resource(Anchor, URI)) { get(URI) } ;
+    .print("Expanding crawl") ;
+    for (barrier_resource(Anchor, URI)) {
+        getParentURI(URI, URIp) ;
+        get(URIp) ;
+    }
+    !checkEndCrawl ;
   .
 
 +crawler_status(false) :
     crawling
     <-
+    !checkEndCrawl ;
+  .
+
++!checkEndCrawl :
+    crawling
+    <-
+    .print("Checking end crawl") ;
     if (not barrier_resource(_, _)) { !endCrawl }
     else {
         ?barrier_resource(Anchor, Target) ;

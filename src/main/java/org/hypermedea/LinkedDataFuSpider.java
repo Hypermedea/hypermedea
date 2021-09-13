@@ -499,6 +499,22 @@ public class LinkedDataFuSpider extends Artifact {
 	}
 
 	/**
+	 * exposes the transformation function from a resource URI to its parent resource URI (without fragment, if any).
+	 *
+	 * @param resourceURI a resource URI
+	 * @param parentResourceURI the URI of the parent resource
+	 */
+	@OPERATION
+	public void getParentURI(String resourceURI, OpFeedbackParam<String> parentResourceURI) {
+		try {
+			parentResourceURI.set(LinkedDataCrawler.withoutFragment(resourceURI));
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+			failed(e.getReason());
+		}
+	}
+
+	/**
 	 * performs a GET request and updates the belief base as the result.
 	 */
 	@OPERATION

@@ -63,6 +63,9 @@ public class LinkedDataCrawler {
                             nbActiveRequests--;
 
                             Resource res = resourceQueue.remove();
+
+                            // TODO duplicated with artifact's list of obsProperties
+                            // requestedRepresentations.remove(res.getURI());
                             for (RequestListener l : listeners) l.requestCompleted(res);
                         }
                     } catch (InterruptedException e) {
@@ -113,7 +116,7 @@ public class LinkedDataCrawler {
         return nbActiveRequests > 0;
     }
 
-    private static String withoutFragment(String resourceURI) throws URISyntaxException {
+    public static String withoutFragment(String resourceURI) throws URISyntaxException {
         URI parsedURI = new URI(resourceURI);
         String fragment = "#" + parsedURI.getFragment();
         return resourceURI.replace(fragment, "");
