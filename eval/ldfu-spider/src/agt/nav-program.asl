@@ -7,13 +7,11 @@ hasPart(vocabularySpace, "https://ci.mines-stetienne.fr/kg/ontology#") .
 
 barrier_resource(Anchor, Target) :-
     rdf(S, P, Target)[rdf_type_map(_, _, uri), crawler_source(Anchor)] &
-    hasPart(vocabularySpace, Vocab) & .substring(Vocab, P, 0) &
-    not resource(Target)
+    hasPart(vocabularySpace, Vocab) & .substring(Vocab, P, 0)
   .
 
 barrier_resource("https://ci.mines-stetienne.fr/kg/", Target) :-
-    rdf("https://ci.mines-stetienne.fr/kg/", "http://www.w3.org/2000/01/rdf-schema#seeAlso", Target) &
-    not resource(Target)
+    rdf("https://ci.mines-stetienne.fr/kg/", "http://www.w3.org/2000/01/rdf-schema#seeAlso", Target)
   .
 
 +!crawl(URI) :
@@ -24,7 +22,7 @@ barrier_resource("https://ci.mines-stetienne.fr/kg/", Target) :-
     //for (hasPart(vocabularySpace, Vocab)) { get(Vocab) } ;
   .
 
-+resource(URI) :
++visited(URI) :
     crawling
     <-
     .print("Retrieved representation of ", URI) ;
@@ -34,35 +32,25 @@ barrier_resource("https://ci.mines-stetienne.fr/kg/", Target) :-
 +!expandCrawl(Anchor) :
     crawling
     <-
-    .print("Expanding crawl") ;
+    //.print("Expanding crawl") ;
     for (barrier_resource(Anchor, URI)) {
         getParentURI(URI, URIp) ;
-        get(URIp) ;
+        if (not visited(URIp)) { get(URIp) }
     }
-    !checkEndCrawl ;
-  .
-
-+crawler_status(false) :
-    crawling
-    <-
-    !checkEndCrawl ;
+    !!checkEndCrawl ;
   .
 
 +!checkEndCrawl :
     crawling
     <-
-    .print("Checking end crawl") ;
-    if (not barrier_resource(_, _)) { !endCrawl }
-    else {
-        ?barrier_resource(Anchor, Target) ;
-        .print("still missing link ", Anchor, " -> ", Target)
-    }
+    //.print("Checking end crawl") ;
+    if (crawler_status(false) & not .intend(expandCrawl(_))) { !endCrawl }
   .
 
 +!endCrawl :
     crawling
     <-
     -crawling ;
-    .print("End crawling...") ;
+    //.print("End crawling...") ;
     +ended(evaluateCrawlGoal) ;
   .

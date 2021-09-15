@@ -62,11 +62,11 @@ public class LinkedDataCrawler {
                         while (!resourceQueue.isEmpty()) {
                             nbActiveRequests--;
 
+                            // TODO remove from queue only after notifications completed?
                             Resource res = resourceQueue.remove();
 
-                            // TODO duplicated with artifact's list of obsProperties
-                            // requestedRepresentations.remove(res.getURI());
                             for (RequestListener l : listeners) l.requestCompleted(res);
+                            resourceURIQueue.remove(res.getURI());
                         }
                     } catch (InterruptedException e) {
                         // TODO do nothing?
@@ -87,7 +87,7 @@ public class LinkedDataCrawler {
 
     private final Queue<Resource> resourceQueue = new ConcurrentLinkedQueue<>();
 
-    private final Set<String> requestedRepresentations = new HashSet<>();
+    private final Queue<String> resourceURIQueue = new ConcurrentLinkedQueue<>();
 
     private int nbActiveRequests = 0;
 
@@ -104,11 +104,11 @@ public class LinkedDataCrawler {
     public void get(String resourceURI) throws IOException, URISyntaxException {
         String requestedURI = withoutFragment(resourceURI);
 
-        if (!requestedRepresentations.contains(requestedURI)) {
+        if (!resourceURIQueue.contains(requestedURI)) {
             RequestTask t = new RequestTask(requestedURI);
             pool.submit(t);
 
-            requestedRepresentations.add(requestedURI);
+            resourceURIQueue.add(requestedURI);
         }
     }
 

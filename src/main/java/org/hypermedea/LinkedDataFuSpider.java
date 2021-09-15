@@ -155,8 +155,15 @@ public class LinkedDataFuSpider extends Artifact {
 
 		@Override
 		public void requestCompleted(org.hypermedea.ld.Resource res) {
-			defineObsProperty("resource", res.getURI());
-			// TODO check URI isn't already a resource
+			if (visited(res.getURI())) {
+				// TODO warn: this shouldn't have happened
+				return;
+			}
+
+			beginExternalSession();
+
+			removeObsPropertyByTemplate(TO_VISIT_FUNCTOR, res.getURI());
+			defineObsProperty(VISITED_FUNCTOR, res.getURI());
 
 			if (res.getRepresentation() != null) {
 				List<OWLOntologyChange> changes = new ArrayList<>();
@@ -189,11 +196,9 @@ public class LinkedDataFuSpider extends Artifact {
 				ontologyManager.applyChanges(changes); // TODO reasoning scalability if changes by resource?
 			}
 
-			commit();
+			updateCrawlerStatus();
 
-			setStatusProperty(crawler.isActive());
-
-			commit(); // FIXME commit should be executed by the thread calling the origin operation?
+			endExternalSession(true);
 		}
 
 		private Term getRDFNodeTerm(RDFNode n) {
@@ -224,6 +229,10 @@ public class LinkedDataFuSpider extends Artifact {
 
 	private static final String RDF_TYPE_MAP_FUNCTOR = "rdf_type_map";
 
+	private static final String VISITED_FUNCTOR = "visited";
+
+	private static final String TO_VISIT_FUNCTOR = "to_visit";
+
 	private static final Atom RDF_TYPE_URI_ATOM = ASSyntax.createAtom("uri");
 
 	private static final Atom RDF_TYPE_BNODE_ATOM = ASSyntax.createAtom("bnode");
@@ -237,6 +246,8 @@ public class LinkedDataFuSpider extends Artifact {
 	private EvaluateProgram evaluation; // TODO more explicit name?
 
 	private LinkedDataCrawler crawler;
+
+	private ObsProperty crawlerStatus;
 
 	private BindingConsumerCollection triples;
 
@@ -287,7 +298,7 @@ public class LinkedDataFuSpider extends Artifact {
 		if (programFile != null) initProgram(programFile);
 		initOntology(withInference);
 
-		setStatusProperty(false);
+		crawlerStatus = defineObsProperty(CRAWLER_STATUS_FUNCTOR, false);
 	}
 
 	private void initProgram(String programFile) {
@@ -520,8 +531,14 @@ public class LinkedDataFuSpider extends Artifact {
 	@OPERATION
 	public void get(String originURI) {
 		try {
-			setStatusProperty(true);
-			crawler.get(originURI);
+			updateCrawlerStatus();
+
+			if (!visited(originURI) && !toVisit(originURI)) {
+				defineObsProperty(TO_VISIT_FUNCTOR, originURI);
+				crawler.get(originURI);
+			} else {
+				updateCrawlerStatus();
+			}
 		} catch (IOException | URISyntaxException e) {
 			e.printStackTrace();
 			// TODO improve logging
@@ -619,13 +636,28 @@ public class LinkedDataFuSpider extends Artifact {
 		}
 	}
 
-	private void setStatusProperty(Boolean isActive) {
-		if (!hasObsProperty(CRAWLER_STATUS_FUNCTOR)) {
-			defineObsProperty(CRAWLER_STATUS_FUNCTOR, isActive);
+	private boolean visited(String originURI) {
+		return hasObsPropertyByTemplate(VISITED_FUNCTOR, originURI);
+	}
+
+	private boolean toVisit(String originURI) {
+		return hasObsPropertyByTemplate(TO_VISIT_FUNCTOR, originURI);
+	}
+
+	private void updateCrawlerStatus() {
+		Boolean isActive = crawler.isActive();
+
+		Boolean hasToVisit;
+		try {
+			// TODO try/catch shouldn't be here, fix bug upstream in CArtAgO
+			hasToVisit = hasObsProperty(TO_VISIT_FUNCTOR);
+		} catch (IndexOutOfBoundsException e) {
+			hasToVisit = false;
 		}
 
-		ObsProperty p = getObsProperty(CRAWLER_STATUS_FUNCTOR);
-		if (!p.getValue().equals(isActive)) p.updateValue(isActive);
+		Boolean status = isActive || hasToVisit ;
+
+		if (!crawlerStatus.getValue().equals(status)) crawlerStatus.updateValue(status);
 	}
 
 	private Set<ObsProperty> definePropertiesForBindings(Collection<Binding> bindings) {
