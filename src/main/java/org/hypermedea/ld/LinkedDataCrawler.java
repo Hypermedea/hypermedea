@@ -4,9 +4,10 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.RDFDataMgr;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -102,24 +103,16 @@ public class LinkedDataCrawler {
     }
 
     public void get(String resourceURI) throws IOException, URISyntaxException {
-        String requestedURI = withoutFragment(resourceURI);
-
-        if (!resourceURIQueue.contains(requestedURI)) {
-            RequestTask t = new RequestTask(requestedURI);
+        if (!resourceURIQueue.contains(resourceURI)) {
+            RequestTask t = new RequestTask(resourceURI);
             pool.submit(t);
 
-            resourceURIQueue.add(requestedURI);
+            resourceURIQueue.add(resourceURI);
         }
     }
 
     public boolean isActive() {
         return nbActiveRequests > 0;
-    }
-
-    public static String withoutFragment(String resourceURI) throws URISyntaxException {
-        URI parsedURI = new URI(resourceURI);
-        String fragment = "#" + parsedURI.getFragment();
-        return resourceURI.replace(fragment, "");
     }
 
 }

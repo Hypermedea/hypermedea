@@ -518,7 +518,7 @@ public class LinkedDataFuSpider extends Artifact {
 	@OPERATION
 	public void getParentURI(String resourceURI, OpFeedbackParam<String> parentResourceURI) {
 		try {
-			parentResourceURI.set(LinkedDataCrawler.withoutFragment(resourceURI));
+			parentResourceURI.set(withoutFragment(resourceURI));
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 			failed(e.getReason());
@@ -533,10 +533,13 @@ public class LinkedDataFuSpider extends Artifact {
 		try {
 			updateCrawlerStatus();
 
-			if (!visited(originURI) && !toVisit(originURI)) {
-				defineObsProperty(TO_VISIT_FUNCTOR, originURI);
-				crawler.get(originURI);
+			String requestedURI = withoutFragment(originURI);
+
+			if (!visited(requestedURI) && !toVisit(requestedURI)) {
+				defineObsProperty(TO_VISIT_FUNCTOR, requestedURI);
+				crawler.get(requestedURI);
 			} else {
+				// TODO necessary?
 				updateCrawlerStatus();
 			}
 		} catch (IOException | URISyntaxException e) {
@@ -778,6 +781,12 @@ public class LinkedDataFuSpider extends Artifact {
 	private boolean isRegistered(OWLEntity e) {
 		OWLAxiom decl = dataFactory.getOWLDeclarationAxiom(e);
 		return !ontologyManager.getOntologies(decl).isEmpty();
+	}
+
+	private static String withoutFragment(String resourceURI) throws URISyntaxException {
+		URI parsedURI = new URI(resourceURI);
+		String fragment = "#" + parsedURI.getFragment();
+		return resourceURI.replace(fragment, "");
 	}
 
 	private Object asBuiltIn(Node n) {

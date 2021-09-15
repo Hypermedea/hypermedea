@@ -35,7 +35,7 @@ barrier_resource("https://ci.mines-stetienne.fr/kg/", Target) :-
     //.print("Expanding crawl") ;
     for (barrier_resource(Anchor, URI)) {
         getParentURI(URI, URIp) ;
-        if (not visited(URIp)) { get(URIp) }
+        if (not visited(URIp) | to_visit(URIp)) { get(URIp) }
     }
     !!checkEndCrawl ;
   .

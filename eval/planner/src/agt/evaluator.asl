@@ -71,18 +71,24 @@ planner("HSP") .
 
 goal(isAt(item, conveyor1Head)) .
 
+iterations(1) .
+maxSize(20) .
+
 average([Val], Val) .
 average([Val1 | Sublist], Avg) :- average(Sublist, Val2) & Avg = (Val1 + Val2) / 2 .
 
 +!evaluate :
-    planner(P)
+    planner(P) & iterations(IMax) & maxSize(SizeMax)
     <-
     makeArtifact("planner", "org.hypermedea.PlannerArtifact", [P], ArtId) ;
     focus(ArtId) ;
-    for (.range(Size, 1, 20)) {
+    for (.range(Size, 1, SizeMax)) {
       !buildProblem(Size) ;
-      for (.range(I, 1, 10)) {
-        !plan(_, T) ;
+      for (.range(I, 1, IMax)) {
+        !plan(Plan, T) ;
+        if (.substring("fail", Plan)) {
+            .print("no plan found for size ", Size)
+        }
         +planningTime(T) ;
       }
       !showResult ;
