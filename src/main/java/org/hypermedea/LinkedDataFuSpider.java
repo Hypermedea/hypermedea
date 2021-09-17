@@ -162,9 +162,6 @@ public class LinkedDataFuSpider extends Artifact {
 
 			beginExternalSession();
 
-			removeObsPropertyByTemplate(TO_VISIT_FUNCTOR, res.getURI());
-			defineObsProperty(VISITED_FUNCTOR, res.getURI());
-
 			if (res.getRepresentation() != null) {
 				List<OWLOntologyChange> changes = new ArrayList<>();
 
@@ -195,6 +192,9 @@ public class LinkedDataFuSpider extends Artifact {
 
 				ontologyManager.applyChanges(changes); // TODO reasoning scalability if changes by resource?
 			}
+
+			removeObsPropertyByTemplate(TO_VISIT_FUNCTOR, res.getURI());
+			defineObsProperty(VISITED_FUNCTOR, res.getURI());
 
 			updateCrawlerStatus();
 

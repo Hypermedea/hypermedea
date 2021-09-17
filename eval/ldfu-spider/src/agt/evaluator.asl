@@ -4,10 +4,9 @@
  *  - with rdf/3 vs. with derived predicates
  *  - native ldfu reasoning vs. Prolog reasoning vs. OWL reasoning
  */
-//task(evaluateCrawlOp) .
 task(evaluateCrawlGoal) .
 
-iterations(1) .
+iterations(20) .
 
 entryPoint("https://ci.mines-stetienne.fr/kg/") .
 
@@ -97,11 +96,12 @@ entryPoint("https://ci.mines-stetienne.fr/kg/") .
     startedAt(Task, T1) & endedAt(Task, T2)
     <-
     .count(rdf(S, P, O), Nb) ;
-    .print(Task, ",", Nb, ",", T2 - T1) ;
+    .print(Nb, ",", T2 - T1) ;
     -startedAt(Task, T1) ; -endedAt(Task, T2) ;
   .
 
-{ include("nav-program.asl") }
+//{ include("nav-program.asl") }
+{ include("better-nav-program.asl") }
 
 { include("$jacamoJar/templates/common-cartago.asl") }
 { include("$jacamoJar/templates/common-moise.asl") }
