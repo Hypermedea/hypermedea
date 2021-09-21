@@ -25,7 +25,7 @@ barrier_resource("https://ci.mines-stetienne.fr/kg/", Target) :-
 +visited(URI) :
     crawling
     <-
-    .print("Retrieved representation of ", URI) ;
+    //.print("Retrieved representation of ", URI) ;
     !expandCrawl(URI) ;
   .
 

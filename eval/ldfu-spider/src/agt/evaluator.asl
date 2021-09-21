@@ -6,7 +6,7 @@
  */
 task(evaluateCrawlGoal) .
 
-iterations(20) .
+iterations(3) .
 
 entryPoint("https://ci.mines-stetienne.fr/kg/") .
 
@@ -100,8 +100,8 @@ entryPoint("https://ci.mines-stetienne.fr/kg/") .
     -startedAt(Task, T1) ; -endedAt(Task, T2) ;
   .
 
-//{ include("nav-program.asl") }
-{ include("better-nav-program.asl") }
+{ include("nav-program.asl") }
+//{ include("better-nav-program.asl") }
 
 { include("$jacamoJar/templates/common-cartago.asl") }
 { include("$jacamoJar/templates/common-moise.asl") }
