@@ -32,6 +32,18 @@ dependencies {
     implementation fileTree(dir: 'lib', include: 'pddl4j-*.jar')
 }
 
+/**
+ * task to create a all-in-one jar that can be used as JaCaMo library
+ */
+task jacamoJar(type: Jar) {
+    archiveBaseName = 'hypermedea-jacamo-lib'
+    from {
+        configurations.runtimeClasspath
+            .filter { !it.name.endsWith('pom') }
+            .collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 publishing {
     publications {
         lib(MavenPublication) {
@@ -57,7 +69,6 @@ task testAgt (type: JavaExec, dependsOn: 'classes') {
     classpath sourceSets.main.runtimeClasspath
 }
 
-// Clean up
 clean {
     delete 'bin'
     delete 'build'
