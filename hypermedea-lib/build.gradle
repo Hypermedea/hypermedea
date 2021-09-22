@@ -1,11 +1,10 @@
 /*
- * Hypermedea build file
+ * Build file for Hypermedea as a software library (a set of CArtAgO components)
  *
  */
-
 plugins {
     id 'java'
-    id 'application'
+    id 'java-library'
     id 'maven-publish'
 }
 
@@ -21,27 +20,17 @@ repositories {
 }
 
 dependencies {
+    compileOnly group: 'org.jacamo', name: 'jacamo', version: '0.9'
+
+    testImplementation group: 'org.jacamo', name: 'jacamo', version: '0.9'
     testImplementation 'junit:junit:4.13.1'
-    implementation group: 'org.jacamo', name: 'jacamo', version: '0.9'
+
     implementation group: 'edu.kit.aifb.linkeddatafu', name: 'linked-data-fu-standalone', version: '0.9.12'
     implementation group: 'net.sourceforge.owlapi', name: 'org.semanticweb.hermit', version: '1.4.5.519'
     // TODO include newer version of wot-td-java
     implementation group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
     implementation fileTree(dir: 'lib', include: 'pddl4j-*.jar')
 }
-
-sourceSets {
-    main {
-        java {
-            srcDir 'src/java'
-        }
-        resources {
-            srcDir 'src/resources'
-        }
-    }
-}
-
-mainClassName = 'jacamo.infra.JaCaMoLauncher'
 
 publishing {
     publications {
