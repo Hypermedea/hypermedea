@@ -1,0 +1,27 @@
+/*
+ * Build file for Hypermedea as an application (with startup scripts)
+ *
+ */
+plugins {
+    id 'application'
+}
+
+version '0.1'
+group   'org.hypermedea'
+
+startScripts.applicationName 'hypermedea'
+
+repositories {
+    mavenCentral()
+    // artifact repository for JaCaMo-related project
+    maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
+    // artifact repository for Linked-Data-Fu
+    maven { url 'https://paul.ti.rw.fau.de/maven/repository/' }
+}
+
+dependencies {
+    implementation project(':hypermedea-lib')
+    implementation group: 'org.jacamo', name: 'jacamo', version: '0.9'
+}
+
+mainClassName = 'jacamo.infra.JaCaMoLauncher'
