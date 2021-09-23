@@ -26,7 +26,7 @@ entryPointRegister("ttl/example_ontology.ttl").
 
 /*
     .puts("get.n3",S)
-     makeArtifact(ArtName, "org.hypermedea.LinkedDataFuSpider", [S], ArtId);
+     makeArtifact(ArtName, "org.hypermedea.LinkedDataArtifact", [S], ArtId);
      focus(ArtId);
      { include("$jasonJar/test/jason/inc/tester_agent.asl") }
        @[test]

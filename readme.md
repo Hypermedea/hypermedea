@@ -17,7 +17,7 @@ To run example agents, go to the corresponding folder under `examples`.
 ## Documentation
 
 Artifacts:
-- `LinkedDataFuSpider`: read/write Linked Data browser
+- `LinkedDataArtifact`: Linked Data crawler and reasoner
 - `ThingArtifact`: wrapper for WoT 'things'
 - `PlannerArtifact`: PDDL planner (to handle WoT affordances, among others)
 

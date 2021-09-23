@@ -25,3 +25,17 @@ dependencies {
 }
 
 mainClassName = 'jacamo.infra.JaCaMoLauncher'
+
+/**
+ * integration tests of artifacts with Jason agents
+ */
+task testAgt (type: JavaExec, dependsOn: 'classes') {
+    description 'runs the JaCaMo application'
+    doFirst {
+        mkdir 'log'
+    }
+    main = 'jacamo.infra.JaCaMoLauncher'
+    args 'test.jcm'
+    workingDir = 'src/test/jacamo/'
+    classpath sourceSets.main.runtimeClasspath
+}

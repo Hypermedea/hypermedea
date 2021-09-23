@@ -1,7 +1,7 @@
 package org.hypermedea.owl;
 
+import com.github.owlcs.ontapi.OntManagers;
 import org.junit.Test;
-import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.util.ShortFormProvider;
 
@@ -10,7 +10,7 @@ import java.net.URL;
 
 public class OWLAxiomWrapperTest {
 
-    private final OWLOntologyManager ontologyManager = OWLManager.createOWLOntologyManager();
+    private final OWLOntologyManager ontologyManager = OntManagers.createManager();
 
     private final OWLOntology ontology;
 

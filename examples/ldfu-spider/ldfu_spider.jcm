@@ -10,7 +10,7 @@ mas ldfu_mas {
 
     // creates a Linked-Data-Fu spider, that will crawl RDF resources as specified in the Linked Data program "get.n3"
     workspace ldfu_workspace  {
-        artifact ldfu_spider : org.hypermedea.LinkedDataFuSpider("get.n3")
+        artifact ldfu_spider : org.hypermedea.LinkedDataArtifact("get.n3")
     }
 
 }

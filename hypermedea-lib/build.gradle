@@ -25,10 +25,15 @@ dependencies {
     testImplementation group: 'org.jacamo', name: 'jacamo', version: '0.9'
     testImplementation 'junit:junit:4.13.1'
 
-    implementation group: 'edu.kit.aifb.linkeddatafu', name: 'linked-data-fu-standalone', version: '0.9.12'
+    // Linked Data (LD) and Web Ontology Language (OWL) dependencies
+    implementation group: 'com.github.owlcs', name: 'ontapi', version: '2.1.0'
     implementation group: 'net.sourceforge.owlapi', name: 'org.semanticweb.hermit', version: '1.4.5.519'
+
+    // Thing Description (TD) client dependencies
     // TODO include newer version of wot-td-java
     implementation group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
+
+    // Planning Domain Description Language (PDDL) dependencies
     implementation fileTree(dir: 'lib', include: 'pddl4j-*.jar')
 }
 
@@ -53,20 +58,6 @@ publishing {
 
     // TODO add Maven Central repo with auth
     // see https://docs.gradle.org/4.4.1/userguide/publishing_maven.html
-}
-
-/**
- * integration tests of artifacts with Jason agents
- */
-task testAgt (type: JavaExec, dependsOn: 'classes') {
-    description 'runs the JaCaMo application'
-    doFirst {
-        mkdir 'log'
-    }
-    main = 'jacamo.infra.JaCaMoLauncher'
-    args 'test.jcm'
-    workingDir = 'src/test/jacamo/'
-    classpath sourceSets.main.runtimeClasspath
 }
 
 clean {

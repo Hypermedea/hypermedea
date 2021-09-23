@@ -5,7 +5,7 @@ knownVocabulary("bot.ttl") .
     true
     <-
     // create ldfu spider
-    makeArtifact(spider, "org.hypermedea.LinkedDataFuSpider", ["crawl.n3", true], ArtId) ;
+    makeArtifact(spider, "org.hypermedea.LinkedDataArtifact", ["crawl.n3", true], ArtId) ;
     focus(ArtId) ;
     // register OWL vocabularies/ontologies for idiomatic programming
     for (knownVocabulary(Vocab)) { register(Vocab) } ;
