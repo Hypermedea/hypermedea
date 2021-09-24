@@ -11,10 +11,9 @@ test(testRegisterGet) .
 
 +!testRegisterGet
     <-
-    register("http://www.w3.org/ns/sosa/") ;
+    get("http://www.w3.org/ns/sosa/") ;
     get("ttl/instances_sosa.ttl") ;
-    .wait(1000) ;
-    ?platform(_) .
+    .wait({ +platform(_) }, 2000) .
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

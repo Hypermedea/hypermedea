@@ -18,6 +18,7 @@ import org.hypermedea.owl.OWLAxiomWrapper;
 import org.hypermedea.tools.Identifiers;
 import org.semanticweb.HermiT.ReasonerFactory;
 import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.model.parameters.Imports;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import org.semanticweb.owlapi.reasoner.structural.StructuralReasonerFactory;
@@ -162,15 +163,15 @@ public class LinkedDataArtifact extends Artifact {
 					prop.addAnnot(ASSyntax.createStructure(RDF_TYPE_MAP_FUNCTOR, subjectType, predicateType, objectType));
 				});
 
-				List<OWLOntologyChange> changes = new ArrayList<>();
+				// TODO include model instead of merging it (for later removal)
+				rootOntology.asGraphModel().add(res.getRepresentation());
 
-				Ontology tmp = ontologyManager.createOntology();
-				tmp.asGraphModel().add(res.getRepresentation());
+				Collection<OWLAxiom> delta = rootOntology.getABoxAxioms(Imports.INCLUDED);
+				delta.removeAll(processedAxioms);
 
-				for (OWLAxiom ax : tmp.getAxioms()) changes.add(new AddAxiom(rootOntology, ax));
+				definePropertiesForAxioms(delta);
 
-				ontologyManager.applyChanges(changes);
-				// TODO reasoning scalability if changes by resource?
+				processedAxioms.addAll(delta);
 			}
 
 			removeObsPropertyByTemplate(TO_VISIT_FUNCTOR, res.getURI());
@@ -226,9 +227,9 @@ public class LinkedDataArtifact extends Artifact {
 
 	private Ontology rootOntology;
 
-	private Map<OWLAxiomWrapper, ObsProperty> observablePropertyTripleMap = new HashMap<>();
-
 	private ShortFormProvider namingStrategy;
+
+	private Set<OWLAxiom> processedAxioms = new HashSet<>();
 
 	/**
 	 * Initialize the artifact without program file (crawl/1 disabled).
