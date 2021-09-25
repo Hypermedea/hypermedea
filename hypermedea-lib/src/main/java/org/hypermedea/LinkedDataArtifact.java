@@ -168,23 +168,20 @@ public class LinkedDataArtifact extends Artifact {
 
 				if (!res.getRepresentation().contains(null, RDF.type, OWL.Ontology)) {
 					// assuming ABox statements, add signature of closure in ontology definition
-					Set<OWLEntity> signature = new HashSet<>();
-
-					for (OWLEntity op : rootOntology.getClassesInSignature(true)) signature.add(op);
-					for (OWLEntity op : rootOntology.getObjectPropertiesInSignature(true)) signature.add(op);
-					for (OWLEntity dp : rootOntology.getDataPropertiesInSignature(true)) signature.add(dp);
-					for (OWLEntity i : rootOntology.getIndividualsInSignature(true)) signature.add(i);
-
-					for (OWLEntity e : signature) o.add(dataFactory.getOWLDeclarationAxiom(e));
+					for (OWLEntity e : kbSignature) o.add(dataFactory.getOWLDeclarationAxiom(e));
 
 					o.asGraphModel().add(res.getRepresentation());
 				} else {
-					// TODO TBox axioms: create signature incrementally
+					// assuming TBox axioms, build signature incrementally
+					o.asGraphModel().add(res.getRepresentation());
+
+					kbSignature.addAll(o.getClassesInSignature());
+					kbSignature.addAll(o.getObjectPropertiesInSignature());
+					kbSignature.addAll(o.getDataPropertiesInSignature());
+					kbSignature.addAll(o.getIndividualsInSignature());
 
 					// TODO add predicates for the signature?
 				}
-
-				o.asGraphModel().add(res.getRepresentation());
 
 				List<OWLOntologyChange> changes = new ArrayList<>();
 
@@ -254,6 +251,8 @@ public class LinkedDataArtifact extends Artifact {
 	private OWLDataFactory dataFactory = ontologyManager.getOWLDataFactory();
 
 	private Ontology rootOntology;
+
+	private Set<OWLEntity> kbSignature = new HashSet<>();
 
 	private ShortFormProvider namingStrategy;
 
