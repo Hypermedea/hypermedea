@@ -1,4 +1,4 @@
-timeout(50000) .
+timeout(5000) .
 
 test(testABox) .
 test(testABoxAndTBox) .
@@ -27,7 +27,7 @@ test(testInconsistentTBox) .
 
 +!testConsistentTBox : timeout(T)
     <-
-    get("ttl/example-ontology.ttl") ;
+    get("ttl/example_ontology.ttl") ;
     !awaitEndCrawl ;
     ?(not kb_inconsistent) .
 

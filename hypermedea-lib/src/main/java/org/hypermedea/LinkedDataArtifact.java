@@ -165,45 +165,39 @@ public class LinkedDataArtifact extends Artifact {
 				});
 
 				Ontology o = ontologyManager.createOntology();
-				o.asGraphModel().add(res.getRepresentation());
-
-				IRI iri = IRI.create(res.getURI());
-
-				List<OWLOntologyChange> changes = new ArrayList<>();
-				changes.add(new SetOntologyID(o, iri));
-
-				Set<OWLAxiom> addedAxioms = new HashSet<>();
 
 				if (!res.getRepresentation().contains(null, RDF.type, OWL.Ontology)) {
 					// assuming ABox statements, add signature of closure in ontology definition
-					Ontology tmp = ontologyManager.createOntology();
-
 					Set<OWLEntity> signature = new HashSet<>();
+
 					for (OWLEntity op : rootOntology.getClassesInSignature(true)) signature.add(op);
 					for (OWLEntity op : rootOntology.getObjectPropertiesInSignature(true)) signature.add(op);
 					for (OWLEntity dp : rootOntology.getDataPropertiesInSignature(true)) signature.add(dp);
 					for (OWLEntity i : rootOntology.getIndividualsInSignature(true)) signature.add(i);
 
-					for (OWLEntity e : signature) tmp.add(dataFactory.getOWLDeclarationAxiom(e));
+					for (OWLEntity e : signature) o.add(dataFactory.getOWLDeclarationAxiom(e));
 
-					tmp.asGraphModel().add(res.getRepresentation());
-
-					addedAxioms = tmp.getABoxAxioms(Imports.EXCLUDED);
-
-					for (OWLAxiom assertion : addedAxioms) changes.add(new AddAxiom(o, assertion));
+					o.asGraphModel().add(res.getRepresentation());
 				} else {
 					// TODO TBox axioms: create signature incrementally
 
 					// TODO add predicates for the signature?
 				}
 
+				o.asGraphModel().add(res.getRepresentation());
+
+				List<OWLOntologyChange> changes = new ArrayList<>();
+
+				IRI iri = IRI.create(res.getURI());
+				changes.add(new SetOntologyID(o, iri));
 				changes.add(new AddImport(rootOntology, dataFactory.getOWLImportsDeclaration(iri)));
 
 				ontologyManager.applyChanges(changes);
 
+				reasoner.flush();
 				updateKbInconsistent(reasoner.isConsistent());
 
-				definePropertiesForAxioms(addedAxioms);
+				definePropertiesForAxioms(o.getABoxAxioms(Imports.EXCLUDED));
 			}
 
 			removeObsPropertyByTemplate(TO_VISIT_FUNCTOR, res.getURI());
@@ -297,7 +291,7 @@ public class LinkedDataArtifact extends Artifact {
 				// no reasoner (no implicit axiom inferred from the ontology's structure)
 				: new StructuralReasonerFactory();
 
-		reasoner = f.createNonBufferingReasoner(rootOntology);
+		reasoner = f.createReasoner(rootOntology);
 
 		namingStrategy = NamingStrategyFactory.createDefaultNamingStrategy(ontologyManager);
 	}
