@@ -9,13 +9,13 @@ import com.github.owlcs.ontapi.Ontology;
 import com.github.owlcs.ontapi.OntologyManager;
 import jason.asSyntax.*;
 import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.vocabulary.OWL;
+import org.apache.jena.vocabulary.RDF;
 import org.hypermedea.ld.LinkedDataCrawler;
 import org.hypermedea.ld.RequestListener;
 import org.hypermedea.ld.Resource;
 import org.hypermedea.owl.NamingStrategyFactory;
 import org.hypermedea.owl.OWLAxiomWrapper;
-import org.hypermedea.tools.Identifiers;
 import org.semanticweb.HermiT.ReasonerFactory;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.model.parameters.Imports;
@@ -42,6 +42,8 @@ public class LinkedDataArtifact extends Artifact {
 	/**
 	 * Manager that listens to changes in the underlying root ontology
 	 * and adds/removes corresponding observable properties.
+	 *
+	 * TODO remove once inference is included in the RDFObsPropertyManager
 	 */
 	private class OWLObsPropertyManager implements OWLOntologyChangeListener, OWLOntologyChangeVisitor {
 
@@ -154,7 +156,6 @@ public class LinkedDataArtifact extends Artifact {
 					ObsProperty prop = defineObsProperty("rdf", subject, predicate, object);
 
 					StringTerm origin = ASSyntax.createString(res.getURI());
-					// FIXME the origin is not the resource's URI
 					prop.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, origin));
 
 					Atom subjectType = getRDFTypeAtom(s);
@@ -163,15 +164,46 @@ public class LinkedDataArtifact extends Artifact {
 					prop.addAnnot(ASSyntax.createStructure(RDF_TYPE_MAP_FUNCTOR, subjectType, predicateType, objectType));
 				});
 
-				// TODO include model instead of merging it (for later removal)
-				rootOntology.asGraphModel().add(res.getRepresentation());
+				Ontology o = ontologyManager.createOntology();
+				o.asGraphModel().add(res.getRepresentation());
 
-				Collection<OWLAxiom> delta = rootOntology.getABoxAxioms(Imports.INCLUDED);
-				delta.removeAll(processedAxioms);
+				IRI iri = IRI.create(res.getURI());
 
-				definePropertiesForAxioms(delta);
+				List<OWLOntologyChange> changes = new ArrayList<>();
+				changes.add(new SetOntologyID(o, iri));
 
-				processedAxioms.addAll(delta);
+				Set<OWLAxiom> addedAxioms = new HashSet<>();
+
+				if (!res.getRepresentation().contains(null, RDF.type, OWL.Ontology)) {
+					// assuming ABox statements, add signature of closure in ontology definition
+					Ontology tmp = ontologyManager.createOntology();
+
+					Set<OWLEntity> signature = new HashSet<>();
+					for (OWLEntity op : rootOntology.getClassesInSignature(true)) signature.add(op);
+					for (OWLEntity op : rootOntology.getObjectPropertiesInSignature(true)) signature.add(op);
+					for (OWLEntity dp : rootOntology.getDataPropertiesInSignature(true)) signature.add(dp);
+					for (OWLEntity i : rootOntology.getIndividualsInSignature(true)) signature.add(i);
+
+					for (OWLEntity e : signature) tmp.add(dataFactory.getOWLDeclarationAxiom(e));
+
+					tmp.asGraphModel().add(res.getRepresentation());
+
+					addedAxioms = tmp.getABoxAxioms(Imports.EXCLUDED);
+
+					for (OWLAxiom assertion : addedAxioms) changes.add(new AddAxiom(o, assertion));
+				} else {
+					// TODO TBox axioms: create signature incrementally
+
+					// TODO add predicates for the signature?
+				}
+
+				changes.add(new AddImport(rootOntology, dataFactory.getOWLImportsDeclaration(iri)));
+
+				ontologyManager.applyChanges(changes);
+
+				updateKbInconsistent(reasoner.isConsistent());
+
+				definePropertiesForAxioms(addedAxioms);
 			}
 
 			removeObsPropertyByTemplate(TO_VISIT_FUNCTOR, res.getURI());
@@ -209,6 +241,8 @@ public class LinkedDataArtifact extends Artifact {
 
 	private static final String TO_VISIT_FUNCTOR = "to_visit";
 
+	private static final String KB_INCONSISTENT_FUNCTOR = "kb_inconsistent";
+
 	private static final Atom RDF_TYPE_URI_ATOM = ASSyntax.createAtom("uri");
 
 	private static final Atom RDF_TYPE_BNODE_ATOM = ASSyntax.createAtom("bnode");
@@ -228,8 +262,6 @@ public class LinkedDataArtifact extends Artifact {
 	private Ontology rootOntology;
 
 	private ShortFormProvider namingStrategy;
-
-	private Set<OWLAxiom> processedAxioms = new HashSet<>();
 
 	/**
 	 * Initialize the artifact without program file (crawl/1 disabled).
@@ -259,11 +291,6 @@ public class LinkedDataArtifact extends Artifact {
 	private void initOntologyManager(boolean withInference) {
 		rootOntology = ontologyManager.createOntology();
 
-		OWLOntologyChangeBroadcastStrategy filter = new SpecificOntologyChangeBroadcastStrategy(rootOntology);
-
-		OWLObsPropertyManager m = new OWLObsPropertyManager();
-		ontologyManager.addOntologyChangeListener(m, filter);
-
 		OWLReasonerFactory f = withInference
 				// HermiT reasoner (OWL DL)
 				? new ReasonerFactory()
@@ -273,79 +300,6 @@ public class LinkedDataArtifact extends Artifact {
 		reasoner = f.createNonBufferingReasoner(rootOntology);
 
 		namingStrategy = NamingStrategyFactory.createDefaultNamingStrategy(ontologyManager);
-	}
-
-	/**
-	 * Register an ontology declared in the document given as argument (the IRI of the ontology may differ from the IRI
-	 * of the given document, e.g. if the document is a local copy of an online ontology).
-	 *
-	 * After successful registration, the ontology's vocabulary (class and property names) will then be used to
-	 * generate unary and binary predicate in subsequent RDF crawls and the ontology's axioms will be used for
-	 * automated reasoning on the crawled RDF.
-	 *
-	 * @param documentIRI (relative) IRI of an ontology document
-	 */
-	@OPERATION
-	public void register(String documentIRI) {
-		IRI iri = IRI.create(documentIRI);
-
-		if (!iri.isAbsolute()) iri = Identifiers.getFileIRI(documentIRI);
-
-		try {
-			OWLOntology o = ontologyManager.contains(iri)
-					// the ontology has either been manually created beforehand
-					? ontologyManager.getOntology(iri)
-					// or is assumed to be available online/in the file system
-					: ontologyManager.loadOntologyFromOntologyDocument(iri);
-
-			if (o.getOntologyID().isAnonymous()) {
-				// set the document's IRI as ontology ID
-				OWLOntologyID id = new OWLOntologyID(iri);
-				ontologyManager.applyChange(new SetOntologyID(o, id));
-			}
-
-			IRI ontologyIRI = o.getOntologyID().getOntologyIRI().get();
-
-			OWLImportsDeclaration decl = dataFactory.getOWLImportsDeclaration(ontologyIRI);
-			AddImport change = new AddImport(rootOntology, decl);
-			ontologyManager.applyChange(change);
-		} catch (OWLOntologyCreationException e) {
-			e.printStackTrace();
-			failed(String.format("Couldn't register ontology <%s>", documentIRI));
-			// TODO keep track of stack trace
-			return;
-		}
-	}
-
-	/**
-	 * External action to unregister an ontology by key, it recalculate all axioms with the removed ontology and compare
-	 * it to the previous ones, and removes from the observable ontology database the delta difference
-	 */
-	@OPERATION
-	public void unregister(String documentIRI) {
-		for (OWLImportsDeclaration decl : rootOntology.getImportsDeclarations()) {
-			IRI ontologyIRI = decl.getIRI();
-
-			if (documentIRI.equals(ontologyIRI.toString())) {
-				RemoveImport change = new RemoveImport(rootOntology, decl);
-				ontologyManager.applyChange(change);
-			}
-
-			// TODO check document IRI instead of ontology IRI
-		}
-	}
-
-	/**
-	 * External Action to check if the ontology is consistent (no individual instance of owl:Nothing).
-	 *
-	 * TODO replace with an ObsProperty (updated after each update in the KB)
-	 *
-	 * @param b A boolean parameter to unify with the response of the External action
-	 */
-	@OPERATION
-	public void isConsistent(OpFeedbackParam<Boolean> b){
-		if (rootOntology == null) b.set(true);
-		else b.set(reasoner.isConsistent());
 	}
 
 	/**
@@ -370,7 +324,8 @@ public class LinkedDataArtifact extends Artifact {
 	@OPERATION
 	public void get(String originURI) {
 		try {
-			updateCrawlerStatus();
+			// force crawler status to true
+			updateCrawlerStatus(true);
 
 			String requestedURI = withoutFragment(originURI);
 
@@ -407,9 +362,16 @@ public class LinkedDataArtifact extends Artifact {
 			hasToVisit = false;
 		}
 
-		Boolean status = isActive || hasToVisit ;
+		updateCrawlerStatus(isActive || hasToVisit);
+	}
 
+	private void updateCrawlerStatus(Boolean status) {
 		if (!crawlerStatus.getValue().equals(status)) crawlerStatus.updateValue(status);
+	}
+
+	private void updateKbInconsistent(Boolean consistent) {
+		if (consistent && hasObsProperty(KB_INCONSISTENT_FUNCTOR)) removeObsProperty(KB_INCONSISTENT_FUNCTOR);
+		else if (!consistent && !hasObsProperty(KB_INCONSISTENT_FUNCTOR)) defineObsProperty(KB_INCONSISTENT_FUNCTOR);
 	}
 
 	private Set<ObsProperty> definePropertiesForAxioms(Collection<OWLAxiom> axioms) {
@@ -450,16 +412,6 @@ public class LinkedDataArtifact extends Artifact {
 			if (args.length == 1) removeObsPropertyByTemplate(name, args[0]);
 			else if (args.length == 2) removeObsPropertyByTemplate(name, args[0], args[1]);
 		}
-	}
-
-	private OWLAxiom asOWLAxiom(Statement st) {
-		// TODO
-		return null;
-	}
-
-	private boolean isRegistered(OWLEntity e) {
-		OWLAxiom decl = dataFactory.getOWLDeclarationAxiom(e);
-		return !ontologyManager.getOntologies(decl).isEmpty();
 	}
 
 	private static String withoutFragment(String resourceURI) throws URISyntaxException {
