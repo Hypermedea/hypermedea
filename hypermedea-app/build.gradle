@@ -15,8 +15,6 @@ repositories {
     mavenCentral()
     // artifact repository for JaCaMo-related project
     maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
-    // artifact repository for Linked-Data-Fu
-    maven { url 'https://paul.ti.rw.fau.de/maven/repository/' }
 }
 
 dependencies {
