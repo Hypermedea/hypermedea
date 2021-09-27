@@ -195,6 +195,28 @@ public class LinkedDataArtifact extends Artifact {
 				updateKbInconsistent(reasoner.isConsistent());
 
 				definePropertiesForAxioms(o.getABoxAxioms(Imports.EXCLUDED));
+
+				if (reasoner.isConsistent()) {
+					// TODO remove previously inferred obsProperties
+					List<InferredAxiomGenerator<? extends OWLAxiom>> generators = new ArrayList<>();
+
+					generators.add(new InferredClassAssertionAxiomGenerator());
+					generators.add(new InferredPropertyAssertionGenerator());
+
+					// TODO are owl:sameAs and owl:differentFrom included?
+
+					Set<ObsProperty> inferredProperties = new HashSet<>();
+
+					for (InferredAxiomGenerator<? extends OWLAxiom> gen : generators) {
+						Set<? extends OWLAxiom> axioms = gen.createAxioms(dataFactory, reasoner);
+						inferredProperties.addAll(definePropertiesForAxioms((Set<OWLAxiom>) axioms));
+					}
+
+					for (ObsProperty p : inferredProperties) {
+						Atom annotation = ASSyntax.createAtom("inferred");
+						p.addAnnot(annotation);
+					}
+				}
 			}
 
 			removeObsPropertyByTemplate(TO_VISIT_FUNCTOR, res.getURI());

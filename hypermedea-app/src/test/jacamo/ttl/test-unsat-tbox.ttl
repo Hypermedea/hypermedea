@@ -1,0 +1,26 @@
+@prefix : <http://example.org/test#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
+
+<http://example.org/test> a owl:Ontology ;
+                          vann:preferredNamespaceUri : .
+
+:C a owl:Class ;
+   rdfs:label "class" ;
+   rdfs:subClassOf :D ;
+   rdfs:isDefinedBy <http://example.org/test> .
+
+:P a owl:ObjectProperty ;
+   rdfs:label "objectProperty" ;
+   rdfs:range :E ;
+   rdfs:isDefinedBy <http://example.org/test> .
+
+:D a owl:Class ;
+   rdfs:label "upper class" ;
+   rdfs:isDefinedBy <http://example.org/test> .
+
+:E a owl:Class ;
+   rdfs:label "other class" ;
+   owl:disjointWith :D ;
+   rdfs:isDefinedBy <http://example.org/test> .

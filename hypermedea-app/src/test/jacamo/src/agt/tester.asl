@@ -4,7 +4,7 @@ test(testABox) .
 test(testABoxAndTBox) .
 test(testConsistentTBox) .
 test(testInconsistentTBox) .
-//test(testABoxAndTBoxWithInference) .
+test(testABoxAndTBoxWithInference) .
 
 +!awaitEndCrawl : timeout(T)
     <-
@@ -12,38 +12,40 @@ test(testInconsistentTBox) .
 
 +!testABox : timeout(T)
     <-
-    get("ttl/instances_sosa.ttl") ;
+    get("ttl/test-abox.ttl") ;
     !awaitEndCrawl ;
     .count(rdf(S, P, O), L) ;
-    ?(L = 7) .
+    ?(L = 5) .
 
 +!testABoxAndTBox : timeout(T)
     <-
-    get("ttl/sosa.ttl") ;
+    get("ttl/test-tbox.ttl") ;
     !awaitEndCrawl ;
-    get("ttl/instances_sosa.ttl") ;
+    get("ttl/test-abox.ttl") ;
     !awaitEndCrawl ;
-    ?platform(_) .
+    ?class(_) .
 
 +!testConsistentTBox : timeout(T)
     <-
-    get("ttl/example_ontology.ttl") ;
+    get("ttl/test-tbox.ttl") ;
     !awaitEndCrawl ;
     ?(not kb_inconsistent) .
 
 +!testInconsistentTBox : timeout(T)
     <-
-    get("ttl/unsatisfiable_ontology.ttl") ;
-    get("ttl/instances_sosa.ttl") ;
+    get("ttl/test-unsat-tbox.ttl") ;
+    !awaitEndCrawl ;
+    get("ttl/test-abox.ttl") ;
     !awaitEndCrawl ;
     ?kb_inconsistent .
 
 +!testABoxAndTBoxWithInference : timeout(T)
     <-
-    get("ttl/sosa.ttl") ;
-    get("ttl/instances_sosa.ttl") ;
+    get("ttl/test-tbox.ttl") ;
     !awaitEndCrawl ;
-    ?system(_) .
+    get("ttl/test-abox.ttl") ;
+    !awaitEndCrawl ;
+    ?upper_class(_) .
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
