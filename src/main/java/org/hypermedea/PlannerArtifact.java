@@ -20,6 +20,8 @@ import org.hypermedea.pddl.TermProblemWrapper;
 import org.hypermedea.pddl.PlanJasonWrapper;
 import org.hypermedea.pddl.TermWrapperException;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -117,11 +119,11 @@ public class PlannerArtifact extends Artifact {
     /**
      * operation to serialize a specification in the PDDL format (mostly useful for debugging).
      *
+     * @param filename name of the file that will contain the PDDL serialization of the specification
      * @param domainOrProblemStructure a Jason structure defining either a PDDL domain or a PDDL problem
-     * @param pddlString a PDDL serialization of the definition
      */
     @OPERATION
-    public void getAsPDDL(String domainOrProblemStructure, OpFeedbackParam<String> pddlString) {
+    public void writePDDL(String filename, String domainOrProblemStructure) {
         Structure term = null;
         try {
             term = ASSyntax.parseStructure(domainOrProblemStructure);
@@ -138,12 +140,21 @@ public class PlannerArtifact extends Artifact {
                 else if (term.getFunctor().equals("problem")) def = new TermProblemWrapper(term).getProblem();
                 else throw new TermWrapperException(term, "expected a domain or problem structure");
 
-                pddlString.set(def.toString());
+                FileWriter w = new FileWriter(filename);
+                w.write(def.toString());
+                w.close();
             } catch (TermWrapperException e) {
                 e.printStackTrace();
                 failed(String.format("not a valid domain or problem definition: %s.", term));
+            } catch (IOException e) {
+                failed(String.format("couldn't open file: %s.", filename));
             }
         }
+    }
+
+    @OPERATION
+    public void readPDDL(String filename, OpFeedbackParam<Object> pddl) {
+        // TODO
     }
 
     private boolean lint(Domain domain, Problem pb) {
