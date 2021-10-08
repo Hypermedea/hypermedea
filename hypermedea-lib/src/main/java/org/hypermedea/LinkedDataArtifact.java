@@ -33,7 +33,86 @@ import java.net.URISyntaxException;
 import java.util.*;
 
 /**
- * A CArtAgO artifact for browsing Linked Data.
+ * <p>
+ *   Artifact for browsing Linked Data.
+ * </p>
+ *
+ * <h4>Browsing Linked Data</h4>
+ *
+ * <p>
+ *   The main operation of the <code>ThingArtifact</code> is {@link #get(String) get}, to look a Web resource up.
+ *   The resource may be identified by an <code>http</code>, <code>https</code> or <code>file</code> URI. If a
+ *   relative URI is given as argument, it is assumed to be a <code>file</code> URI relative to the JaCaMo
+ *   project's directory.
+ * </p>
+ *
+ * <p>
+ *   The <code>LinkedDataArtifact</code> performs lookups in an asynchronous fashion, that is: a
+ *   {@link #get(String) get} operation returns before the RDF representation of the resource is fully downloaded.
+ *   Several observable properties are exposed by the <code>LinkedDataArtifact</code> to manage pending lookups:
+ * </p>
+ * <ul>
+ *     <li><code>to_visit(URI)</code> is added after a call to {@link #get(String) get(URI)} and removed after the lookup has ended.</li>
+ *     <li><code>visited(URI)</code> is added once a lookup has ended.</li>
+ *     <li><code>crawler_status(idling|crawling|error)</code> is updated depending on whether lookups are pending or not.</li>
+ * </ul>
+ *
+ * <p>
+ *   Once a resource is visited, the RDF statements found under its URI are added as observable properties of the
+ *   <code>LinkedDataArtifact</code>. RDF statements have the form
+ * </p>
+ * <pre>rdf(S, P, O)[ crawler_source(URI) ] .</pre>
+ * <p>
+ *   where <code>S</code>, <code>P</code> and <code>O</code> are the subject, predicate and object of
+ *   the RDF statement. The <code>crawler_source</code> annotation (within square brackets) holds the URI of the
+ *   source for that statement, i.e. the URI given as argument of {@link #get(String) get(URI)}. A further annotation
+ *   (<code>rdf_type_map</code>) gives the node type of each element of the triple (see {@link RDFTripleWrapper}
+ *   for more details).
+ * </p>
+ *
+ * <h4>Processing OWL and Reasoning</h4>
+ *
+ * <p>
+ *   Moreover, the <code>LinkedDataArtifact</code> keeps track of OWL ontologies that are being crawled.
+ *   Whenever an OWL ontology is crawled, subsequent lookups may yield more predicates. For instance, if an OWL
+ *   definition for the class <code>ex:Person</code> is found, any RDF statement
+ * </p>
+ * <pre>&lt;x&gt; a ex:Person .</pre>
+ * <p>
+ *   will yield the observable property
+ * </p>
+ * <pre>person("x") .</pre>
+ * <p>
+ *   based on the OWL definition of <code>ex:Person</code>. The naming strategy exist to map OWL class/property
+ *   definitions to predicate names. See {@link NamingStrategyFactory} for more details.
+ * </p>
+ *
+ * <p>
+ *   <em>Note: <code>person("X")</code> won't be defined as an observable property if the RDF statement is crawled
+ *   <u>before</u> the OWL definition of <code>ex:Person</code>, however.</em>
+ * </p>
+ *
+ * <p>
+ *   OWL ontologies may also include axioms from which new predicates can be derived. For instance,
+ * </p>
+ * <pre>ex:Person rdfs:subClassOf ex:LivingBeing .</pre>
+ * <p>
+ *   stating that every person is also a living being. The <code>LinkedDataArtifact</code> can be
+ *   initialized with an OWL reasoner that would assert derived predicates with an annotation, as follows:
+ * </p>
+ * <pre>livingBeing("x")[ inferred ] .</pre>
+ *
+ * <p>
+ *   If the <code>LinkedDataArtifact</code> uses an OWL reasoner, it may happen that the set of crawled statements
+ *   is logically inconsistent (meaning that no derivation is possible). In this case, the observable property
+ *   <code>kb_inconsistent</code> is added.
+ * </p>
+ *
+ * <p>
+ *     See <a href="https://github.com/Hypermedea/hypermedea/tree/master/examples/fayol"><code>examples/fayol</code></a>
+ *     for an example with Linked Data browsing.
+ *     TODO update example
+ * </p>
  *
  * @author Victor Charpenay, Noé Saffaf
  */
@@ -117,7 +196,7 @@ public class LinkedDataArtifact extends Artifact {
 					}
 
 					for (ObsProperty p : inferredProperties) {
-						Atom annotation = ASSyntax.createAtom("inferred");
+						Atom annotation = ASSyntax.createAtom(INFERRED_FUNCTOR);
 						p.addAnnot(annotation);
 					}
 				}
@@ -133,17 +212,19 @@ public class LinkedDataArtifact extends Artifact {
 
 	}
 
-	private static final String CRAWLER_STATUS_FUNCTOR = "crawler_status";
+	public static final String CRAWLER_STATUS_FUNCTOR = "crawler_status";
 
-	private static final String PREDICATE_IRI_FUNCTOR = "predicate_uri";
+	public static final String PREDICATE_IRI_FUNCTOR = "predicate_uri";
 
-	private static final String SOURCE_FUNCTOR = "crawler_source";
+	public static final String SOURCE_FUNCTOR = "crawler_source";
 
-	private static final String VISITED_FUNCTOR = "visited";
+	public static final String VISITED_FUNCTOR = "visited";
 
-	private static final String TO_VISIT_FUNCTOR = "to_visit";
+	public static final String TO_VISIT_FUNCTOR = "to_visit";
 
-	private static final String KB_INCONSISTENT_FUNCTOR = "kb_inconsistent";
+	public static final String INFERRED_FUNCTOR = "inferred";
+
+	public static final String KB_INCONSISTENT_FUNCTOR = "kb_inconsistent";
 
 	private LinkedDataCrawler crawler;
 
@@ -201,7 +282,13 @@ public class LinkedDataArtifact extends Artifact {
 	}
 
 	/**
-	 * exposes the transformation function from a resource URI to its parent resource URI (without fragment, if any).
+	 * <p>
+	 *   Expose the transformation function from a resource URI to its parent resource URI (without fragment, if any).
+	 *   For instance, the parent resource of
+	 * </p>
+	 * <pre>http://example.org/alice#me</pre>
+	 * <p>is</p>
+	 * <pre>http://example.org/alice</pre>
 	 *
 	 * @param resourceURI a resource URI
 	 * @param parentResourceURI the URI of the parent resource
@@ -217,15 +304,16 @@ public class LinkedDataArtifact extends Artifact {
 	}
 
 	/**
-	 * performs a GET request and updates the belief base as the result.
+	 * Perform a GET request to retrieve an RDF representation of the provided resource.
+	 * Add (asynchronously) the found RDF representation to the belief base.
 	 */
 	@OPERATION
-	public void get(String originURI) {
+	public void get(String resourceURI) {
 		try {
 			// force crawler status to true
 			updateCrawlerStatus(true);
 
-			String requestedURI = withoutFragment(originURI);
+			String requestedURI = withoutFragment(resourceURI);
 
 			if (!visited(requestedURI) && !toVisit(requestedURI)) {
 				defineObsProperty(TO_VISIT_FUNCTOR, requestedURI);

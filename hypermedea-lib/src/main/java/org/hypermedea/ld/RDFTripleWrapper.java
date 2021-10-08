@@ -8,17 +8,68 @@ import org.apache.jena.rdf.model.Statement;
 
 import java.util.Objects;
 
+/**
+ * <p>
+ *   Maps an RDF statement (triple) to a Jason term of the form
+ * </p>
+ * <pre>rdf(S, P, O)[ rdf_type_map(uri|bnode, uri, uri|bnode|literal) ]</pre>
+ *
+ * <p>
+ *   The mapping from RDF to Jason is as follows:
+ * </p>
+ * <table>
+ *   <tr>
+ *       <th>RDF type</th>
+ *       <th>Jason type</th>
+ *       <th>Value of <code>rdf_type_map</code></th>
+ *   </tr>
+ *   <tr>
+ *       <td>Named resource (URI)</td>
+ *       <td>String</td>
+ *       <td><code>uri</code></td>
+ *   </tr>
+ *   <tr>
+ *       <td>Blank node</td>
+ *       <td>Atom</td>
+ *       <td><code>bnode</code></td>
+ *   </tr>
+ *   <tr>
+ *       <td>Literal (number)</td>
+ *       <td>Number</td>
+ *       <td><code>literal</code></td>
+ *   </tr>
+ *   <tr>
+ *       <td>Literal (any other type)</td>
+ *       <td>String</td>
+ *       <td><code>literal</code></td>
+ *   </tr>
+ * </table>
+ *
+ * <p>
+ *     For example, the RDF graph and Jason belief base given below are equivalent:
+ * </p>
+ * <pre>ex:alice a ex:Person .
+ *ex:alice ex:name "Alice" .
+ *ex:alice ex:age 42 .
+ *ex:alice ex:knows _:someone .</pre>
+ * <pre>rdf("http://example.org/alice", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://example.org/Person") [ rdf_type_map(uri, uri, uri) ] .
+ *rdf("http://example.org/alice", "http://example.org/name", "Alice") [ rdf_type_map(uri, uri, literal) ] .
+ *rdf("http://example.org/alice", "http://example.org/age", 42) [ rdf_type_map(uri, uri, literal) ] .
+ *rdf("http://example.org/alice", "http://example.org/knows", someone) [ rdf_type_map(uri, uri, bnode) ] .</pre>
+ *
+ * @author Victor Charpenay
+ */
 public class RDFTripleWrapper {
 
     public static final String RDF_FUNCTOR = "rdf";
 
     public static final String RDF_TYPE_MAP_FUNCTOR = "rdf_type_map";
 
-    private static final Atom RDF_TYPE_URI_ATOM = ASSyntax.createAtom("uri");
+    public static final Atom RDF_TYPE_URI_ATOM = ASSyntax.createAtom("uri");
 
-    private static final Atom RDF_TYPE_BNODE_ATOM = ASSyntax.createAtom("bnode");
+    public static final Atom RDF_TYPE_BNODE_ATOM = ASSyntax.createAtom("bnode");
 
-    private static final Atom RDF_TYPE_LITERAL_ATOM = ASSyntax.createAtom("literal");
+    public static final Atom RDF_TYPE_LITERAL_ATOM = ASSyntax.createAtom("literal");
 
     private Statement triple;
 

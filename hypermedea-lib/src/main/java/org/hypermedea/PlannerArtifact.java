@@ -25,11 +25,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Artifact to help agents build plans based on PDDL abstractions. The PDDL language includes:
+ * <p>
+ *   Artifact to help agents build plans based on PDDL abstractions. The PDDL language includes definitions for:
+ * </p>
  * <ul>
- *     <li>a domain definition, including a list of (durative) actions, (derived) predicates and optional constraints</li>
- *     <li>a problem definition, including a reference to one or more domain definitions, an initial state and a goal state</li>
+ *     <li>planning domains, including a list of (durative) actions, (derived) predicates and optional constraints</li>
+ *     <li>planning problems, including a reference to one or more domain definitions, an initial state and a goal state</li>
  * </ul>
+ *
+ * <p>
+ *   The main operation of the <code>PlannerArtifact</code> is {@link #buildPlan(String, String, OpFeedbackParam) buildPlan},
+ *   which builds a plan based on a domain and problem definition. Both definitions should be provided as Jason
+ *   structures
+ * </p>
+ *
+ * <p>
+ *   See <a href="https://github.com/Hypermedea/hypermedea/tree/master/examples/planner"><code>examples/planner</code></a>
+ *   for an example with PDDL planning.
+ * </p>
  *
  * @author Victor Charpenay, Jehad Melad
  */
@@ -45,7 +58,7 @@ public class PlannerArtifact extends Artifact {
     }
 
     /**
-     * operation to turn a Jason abstract specification of a PDDL domain/problem into a Jason plan
+     * Turn a Jason abstract specification of a PDDL domain/problem into a Jason plan
      * that agents can add to their plan library.
      *
      * @param domainStructure a Jason structure defining a PDDL domain
@@ -89,7 +102,7 @@ public class PlannerArtifact extends Artifact {
     }
 
     /**
-     * operation to serialize a specification in the PDDL format (mostly useful for debugging).
+     * Serialize a specification in the PDDL format (mostly useful for debugging).
      *
      * @param domainOrProblemStructure a Jason structure defining either a PDDL domain or a PDDL problem
      * @param pddlString a PDDL serialization of the definition

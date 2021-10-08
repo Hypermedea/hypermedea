@@ -32,9 +32,43 @@ import java.util.Base64;
 import java.util.Optional;
 
 /**
- * A CArtAgO artifact that can interpret a W3C WoT Thing Description (TD) and exposes the affordances
- * of the described Thing to agents. The artifact uses the hypermedia controls provided in the TD to
- * compose and issue HTTP requests for the exposed affordances.
+ * <p>
+ *  A CArtAgO artifact that can interpret a
+ *  <a href="https://www.w3.org/TR/wot-thing-description/">W3C WoT Thing Description (TD)</a> document
+ *  and expose the affordances (i.e. potential actions) of the described Thing to agents.
+ *  The artifact uses the hypermedia controls provided in the TD to compose and issue HTTP
+ *  requests for the exposed affordances.
+ * </p>
+ *
+ * <p>
+ *   Operations exposed by a <code>ThingArtifact</code> correspond to the TD operation types:
+ * </p>
+ * <ul>
+ *   <li>
+ *       {@link #readProperty(String, OpFeedbackParam) readProperty},
+ *       {@link #writeProperty(String, Object) writeProperty} and
+ *       {@link #observeProperty(String, String, int) observeProperty}
+ *       (for property affordances)
+ *   </li>
+ *   <li>
+ *       {@link #invokeAction(String) invokeAction} (for action affordances)
+ *   </li>
+ *   <li>
+ *       TODO <code>subscribeEvent</code> (for event affordances)
+ *   </li>
+ * </ul>
+ *
+ * <p>
+ *   Additional operations for authentication are also available.
+ * </p>
+ *
+ * <p>
+ *     See
+ *     <a href="https://github.com/Hypermedea/hypermedea/tree/master/examples/thing"><code>examples/thing</code></a>,
+ *     <a href="https://github.com/Hypermedea/hypermedea/tree/master/examples/itm-factory"><code>examples/itm-factory</code></a> and
+ *     <a href="https://github.com/Hypermedea/hypermedea/tree/master/examples/leubot"><code>examples/leubot</code></a>
+ *     for examples with WoT Things.
+ * </p>
  *
  * @author Andrei Ciortea, Olivier Boissier, Victor Charpenay
  */
@@ -51,10 +85,9 @@ public class ThingArtifact extends Artifact {
     private boolean dryRun;
 
     /**
-     * Method called by CArtAgO to initialize the artifact. The W3C WoT Thing Description (TD) used by
-     * this artifact is retrieved and parsed during initialization.
+     * Call {@link #init(String, boolean) init(String, false)}.
      *
-     * @param url A URL that dereferences to a W3C WoT Thing Description.
+     * @param url a URL that dereferences to a W3C WoT Thing Description.
      */
     public void init(String url) {
         try {
@@ -73,11 +106,11 @@ public class ThingArtifact extends Artifact {
     }
 
     /**
-     * Method called by CArtAgO to initialize the artifact. The W3C WoT Thing Description (TD) used by
+     * Initialize the artifact. The W3C WoT Thing Description (TD) used by
      * this artifact is retrieved and parsed during initialization.
      *
-     * @param url    A URL that dereferences to a W3C WoT Thing Description.
-     * @param dryRun When set to true, the requests are logged, but not executed.
+     * @param url a URL that dereferences to a W3C WoT Thing Description.
+     * @param dryRun when set to true, the requests are logged, but not executed.
      */
     public void init(String url, boolean dryRun) {
         init(url);
@@ -85,11 +118,11 @@ public class ThingArtifact extends Artifact {
     }
 
     /**
-     * CArtAgO operation for reading a property of a Thing using a semantic model of the Thing.
+     * Read a property of a Thing by name.
      *
-     * @param propertyName The property's name.
-     * @param output      The read value. Can be a list of one or more primitives, or a nested list of
-     *                    primitives or arbitrary depth.
+     * @param propertyName the property's name.
+     * @param output the read value. Can be a list of one or more primitives, or a nested list of
+     *               primitives or arbitrary depth.
      */
     @OPERATION
     public void readProperty(String propertyName, OpFeedbackParam<Object> output) {
@@ -111,14 +144,14 @@ public class ThingArtifact extends Artifact {
     }
 
     /**
-     * CArtAgO operation for subscribing to a property of a Thing.
+     * Observe a property of a Thing by name (subscribe to change notifications on the property).
      *
      * TODO cartago.Artifact already includes an observeProperty operation. Add a 3rd parameter to distinguish the two
      * TODO replace stubLabel with an outputParam with a ref to the property and override the parent operation
      *
      * TODO implement WebSub instead of long polling?
      *
-     * @param propertyName The property's name (which will also be the name of the observable property created in the Artifact).
+     * @param propertyName the property's name (which will also be the name of the observable property created in the Artifact).
      * @param timer a time interval in ms between each property read
      */
     @OPERATION
@@ -151,10 +184,10 @@ public class ThingArtifact extends Artifact {
     }
 
     /**
-     * CArtAgO operation for writing a property of a Thing using a semantic model of the Thing.
+     * Write a property of a Thing by name.
      *
-     * @param propertyName The property's name.
-     * @param payload      The payload to be issued when writing the property.
+     * @param propertyName the property's name.
+     * @param payload the payload to be issued when writing the property.
      */
     @OPERATION
     public void writeProperty(String propertyName, Object payload) {
@@ -170,12 +203,12 @@ public class ThingArtifact extends Artifact {
     }
 
     /**
-     * CArtAgO operation for invoking an action on a Thing using a semantic model of the Thing.
+     * Invoke an action on a Thing by name.
      *
      * TODO return action's output
      *
-     * @param actionName   Either an IRI that identifies the action type, or the action's name.
-     * @param payload     The payload to be issued when invoking the action.
+     * @param actionName the action's name.
+     * @param payload the payload to be issued when invoking the action as a Jason structure.
      *
      */
     @OPERATION
@@ -205,7 +238,7 @@ public class ThingArtifact extends Artifact {
     }
 
     /**
-     * CArtAgO operation that defines credentials to include in a <code>Authorization</code> header (for HTTP bindings).
+     * Define credentials to include in a <code>Authorization</code> header (for HTTP bindings).
      *
      * @param username a username
      * @param password a password
@@ -220,7 +253,7 @@ public class ThingArtifact extends Artifact {
     }
 
     /**
-     * CArtAgO operation that sets an authentication token (used with APIKeySecurityScheme).
+     * Set an authentication token (used with <code>APIKeySecurityScheme</code>).
      *
      * @param token The authentication token.
      */
@@ -232,7 +265,7 @@ public class ThingArtifact extends Artifact {
     }
 
     /**
-     * Matches the entire 2XX class
+     * Match the entire 2XX class
      */
     private boolean requestSucceeded(int statusCode) {
         return statusCode >= 200 && statusCode < 300;

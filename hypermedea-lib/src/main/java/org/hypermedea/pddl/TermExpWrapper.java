@@ -92,7 +92,7 @@ public class TermExpWrapper extends TermWrapper {
     /**
      * List predicates used in the PDDL logical expression.
      *
-     * @return a list of predicates with their arity (e.g. [p -> 3, q -> 2])
+     * @return a list of predicates with their arity (e.g. <code>[p/3, q/2]</code>)
      */
     public Map<Symbol, Integer> getPredicates() {
         Map<Symbol, Integer> preds = new HashMap<>();

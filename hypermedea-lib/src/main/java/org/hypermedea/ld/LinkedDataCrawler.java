@@ -18,6 +18,8 @@ import java.util.concurrent.Executors;
  *     <li>main thread dispatching requests to the thread pool</li>
  *     <li>one thread per request in the thread pool</li>
  * </ul>
+ *
+ * @author Victor Charpenay <victor.charpenay@emse.fr>
  */
 public class LinkedDataCrawler {
 
