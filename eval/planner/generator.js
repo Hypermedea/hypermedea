@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { off } = require('process');
 
 if (process.argv.length < 3) {
     console.log('Usage: node generator.js <nb_models>');
@@ -45,19 +46,38 @@ expandModels(models, 1);
 
 let workstations = models
     .filter(m => m.children)
-    .map((m, i) => ({ id: `workstation${i}`, produces: m }));
+    .map((m, i) => ({
+        id: `workstation${i}`,
+        a: 'Workstation',
+        hasStatus: { id: 'off' },
+        producesModel: m,
+        consumesModel: []
+    }));
+
+workstations.forEach(w => {
+    let m = w.producesModel;
+    m.children.forEach(subm => w.consumesModel.push(subm));
+});
 
 let items = models
     .filter(m => !m.children)
-    .map((m, i) => ({ id: `item${i}`, model: m }));
+    .map((m, i) => ({ id: `item${i}`, a: 'Item', isAt: { id: 'locstorage' }, model: m }));
 
 //////////////////// randomly assign workstations to positions on a map (matrix)
 
 const MAP_WIDTH = Math.ceil(Math.sqrt(workstations.length));
 
 let locations = [
-    { id: 'locstorage', coords: [-1, 0] },
-    { id: 'loccharging', coords: [0, -1] }
+    {
+        id: 'locstorage',
+        hasPathTo: [{ id: 'loc0' }]
+    }, {
+        id: 'loccharging',
+        hasPathTo: [{ id: 'loc0' }],
+        '@reverse': {
+            isAt: { id: 'agv', a: 'TransportationDevice' }
+        }
+    }
 ];
 
 function shuffle(array) {
@@ -71,12 +91,31 @@ shuffle(workstations);
 for (let i = 0; i < MAP_WIDTH; i++) {
     for (let j = 0; (j < MAP_WIDTH); j++) {
         let n = i * MAP_WIDTH + j;
-        let loc = { id: `loc${n}`, coords: [i, j] };
+        
+        let loc = {
+            id: `loc${n}`,
+            hasPathTo: []
+        };
+
+        let up = n + MAP_WIDTH;
+        let down = n - MAP_WIDTH;
+        let left = n - 1;
+        let right = n + 1;
+
+        [up, down, left, right].forEach(other => {
+            if (other >= 0 && other < MAP_WIDTH * MAP_WIDTH) loc.hasPathTo.push({ id: `loc${other}` });
+        });
+
+        if (n == 0) {
+            loc.hasPathTo.push({ id: 'locstorage' });
+            loc.hasPathTo.push({ id: 'loccharging' });
+        }
 
         locations.push(loc);
 
         let ws = workstations[n];
-        if (ws) ws.location = loc;
+
+        if (ws) ws.isAt = loc;
     }
 }
 
@@ -86,11 +125,11 @@ function workstationFacts(ws) {
     let facts = [
         `(workstation ${ws.id})`,
         `(off ${ws.id})`,
-        `(isat ${ws.id} ${ws.location.id})`,
-        `(producesmodel ${ws.id} ${ws.produces.id})`
+        `(isat ${ws.id} ${ws.isAt.id})`,
+        `(producesmodel ${ws.id} ${ws.producesModel.id})`
     ];
 
-    ws.produces.children.forEach(m => facts.push(`(consumesmodel ${ws.id} ${m.id})`));
+    ws.consumesModel.forEach(m => facts.push(`(consumesmodel ${ws.id} ${m.id})`));
     
     return facts.join(' ');
 }
@@ -104,19 +143,7 @@ function itemFacts(i) {
 }
 
 function locationFacts(loc) {
-    let adjacencies = [];
-
-    let up = locations.find(other => other && loc.coords[0] == other.coords[0] - 1 && loc.coords[1] == other.coords[1]);
-    let down = locations.find(other => other && loc.coords[0] == other.coords[0] + 1 && loc.coords[1] == other.coords[1]);
-    let left = locations.find(other => other && loc.coords[0] == other.coords[0] && loc.coords[1] == other.coords[1] - 1);
-    let right = locations.find(other => other && loc.coords[0] == other.coords[0] && loc.coords[1] == other.coords[1] + 1);
-
-    if (up) adjacencies.push(up);
-    if (down) adjacencies.push(down);
-    if (left) adjacencies.push(left);
-    if (right) adjacencies.push(right);
-
-    return adjacencies
+    return loc.hasPathTo
         .map(other => `(haspathto ${loc.id} ${other.id})`)
         .join(' ');
 }
@@ -151,9 +178,12 @@ fs.writeFileSync(`problem-${models.length}.pddl`, pddl);
 
 let graph = {
     '@context': {
-
+        '@base': 'http://example.org/',
+        '@vocab': 'http://example.org/',
+        'id': '@id',
+        'a': '@type'
     },
     '@graph': models.concat(workstations, items, locations)
 }
 
-// TODO
+fs.writeFileSync(`init-${models.length}.jsonld`, JSON.stringify(graph));
