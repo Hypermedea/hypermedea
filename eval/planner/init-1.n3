@@ -1,0 +1,13 @@
+@prefix ex: <http://example.org/> .
+@prefix st: <http://purl.org/restdesc/states#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+ex:agv a ex:TransportationDevice .
+_:state a st:InitialState .
+_:state log:includes { ex:agv ex:isAt ex:loccharging . } .
+
+ex:item0 a ex:Item .
+_:state log:includes { ex:item0 ex:model ex:model0 . } .
+_:state log:includes { ex:item0 ex:isAt ex:locstorage .  } .
+ex:locstorage ex:hasPathTo ex:loc0 .
+ex:loccharging ex:hasPathTo ex:loc0 .

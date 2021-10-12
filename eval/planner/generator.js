@@ -1,5 +1,4 @@
 const fs = require('fs');
-const { off } = require('process');
 
 if (process.argv.length < 3) {
     console.log('Usage: node generator.js <nb_models>');
@@ -9,7 +8,7 @@ if (process.argv.length < 3) {
 const NB_MODELS = Number(process.argv[2]);
 
 const MAX_PROCESS_DEPTH = Math.ceil(Math.log2(NB_MODELS));
-const NB_SUBMODELS_PER_MODEL = 1; // 2 for a tree
+const NB_SUBMODELS_PER_MODEL = 1; // TODO 2 for a tree
 
 const NB_WORKSTATIONS_PER_MODEL = 1;
 
@@ -174,16 +173,36 @@ let pddl = fs.readFileSync('problem.tpl.pddl', 'utf-8')
 
 fs.writeFileSync(`problem-${models.length}.pddl`, pddl);
 
-/////////////////////////////////////////////////////// fill-in JSON-LD template
+///////////////////////////////////////////////////////// generate N3 statements
 
-let graph = {
-    '@context': {
-        '@base': 'http://example.org/',
-        '@vocab': 'http://example.org/',
-        'id': '@id',
-        'a': '@type'
-    },
-    '@graph': models.concat(workstations, items, locations)
-}
+let n3 = '@prefix ex: <http://example.org/> .\n\
+@prefix st: <http://purl.org/restdesc/states#> .\n\
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .\n\
+\n\
+ex:agv a ex:TransportationDevice .\n\
+_:state a st:InitialState .\n\
+_:state log:includes { ex:agv ex:isAt ex:loccharging . } .\n\
+\n';
 
-fs.writeFileSync(`init-${models.length}.jsonld`, JSON.stringify(graph));
+n3 = workstations.reduce((n3, ws) => {
+    return n3
+        + `ex:${ws.id} a ex:${ws.a} .\n`
+        + `ex:${ws.id} ex:producesModel ex:${ws.producesModel.id} .\n`
+        + ws.consumesModel.map(m => `ex:${ws.id} ex:consumesModel ex:${m.id} .\n`).join('')
+        + `_:state log:includes { ex:${ws.id} ex:hasStatus ex:${ws.hasStatus.id} . } .\n`
+        + `_:state log:includes { ex:${ws.id} ex:isAt ex:${ws.isAt.id} .  } .\n`;
+}, n3);
+
+n3 = items.reduce((n3, i) => {
+    return n3
+        + `ex:${i.id} a ex:${i.a} .\n`
+        + `_:state log:includes { ex:${i.id} ex:model ex:${i.model.id} . } .\n`
+        + `_:state log:includes { ex:${i.id} ex:isAt ex:${i.isAt.id} .  } .\n`;
+}, n3)
+
+n3 = locations.reduce((n3, loc) => {
+    return n3
+        + loc.hasPathTo.map(other => `ex:${loc.id} ex:hasPathTo ex:${other.id} .\n`).join('');
+}, n3);
+
+fs.writeFileSync(`init-${models.length}.n3`, n3);

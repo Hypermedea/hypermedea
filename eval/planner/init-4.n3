@@ -1,0 +1,40 @@
+@prefix ex: <http://example.org/> .
+@prefix st: <http://purl.org/restdesc/states#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+ex:agv a ex:TransportationDevice .
+_:state a st:InitialState .
+_:state log:includes { ex:agv ex:isAt ex:loccharging . } .
+
+ex:workstation0 a ex:Workstation .
+ex:workstation0 ex:producesModel ex:model0 .
+ex:workstation0 ex:consumesModel ex:model1 .
+_:state log:includes { ex:workstation0 ex:hasStatus ex:off . } .
+_:state log:includes { ex:workstation0 ex:isAt ex:loc0 .  } .
+ex:workstation1 a ex:Workstation .
+ex:workstation1 ex:producesModel ex:model1 .
+ex:workstation1 ex:consumesModel ex:model2 .
+_:state log:includes { ex:workstation1 ex:hasStatus ex:off . } .
+_:state log:includes { ex:workstation1 ex:isAt ex:loc1 .  } .
+ex:workstation2 a ex:Workstation .
+ex:workstation2 ex:producesModel ex:model2 .
+ex:workstation2 ex:consumesModel ex:model3 .
+_:state log:includes { ex:workstation2 ex:hasStatus ex:off . } .
+_:state log:includes { ex:workstation2 ex:isAt ex:loc2 .  } .
+ex:item0 a ex:Item .
+_:state log:includes { ex:item0 ex:model ex:model3 . } .
+_:state log:includes { ex:item0 ex:isAt ex:locstorage .  } .
+ex:locstorage ex:hasPathTo ex:loc0 .
+ex:loccharging ex:hasPathTo ex:loc0 .
+ex:loc0 ex:hasPathTo ex:loc2 .
+ex:loc0 ex:hasPathTo ex:loc1 .
+ex:loc0 ex:hasPathTo ex:locstorage .
+ex:loc0 ex:hasPathTo ex:loccharging .
+ex:loc1 ex:hasPathTo ex:loc3 .
+ex:loc1 ex:hasPathTo ex:loc0 .
+ex:loc1 ex:hasPathTo ex:loc2 .
+ex:loc2 ex:hasPathTo ex:loc0 .
+ex:loc2 ex:hasPathTo ex:loc1 .
+ex:loc2 ex:hasPathTo ex:loc3 .
+ex:loc3 ex:hasPathTo ex:loc1 .
+ex:loc3 ex:hasPathTo ex:loc2 .
