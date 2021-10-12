@@ -111,7 +111,6 @@ import java.util.*;
  * <p>
  *     See <a href="https://github.com/Hypermedea/hypermedea/tree/master/examples/fayol"><code>examples/fayol</code></a>
  *     for an example with Linked Data browsing.
- *     TODO update example
  * </p>
  *
  * @author Victor Charpenay, Noé Saffaf
