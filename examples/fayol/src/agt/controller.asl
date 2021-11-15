@@ -3,22 +3,25 @@ knownVocab("https://w3id.org/bot#") .
 +!start :
     true
     <-
-    // create ldfu spider
-    makeArtifact(spider, "org.hypermedea.LinkedDataArtifact", [true], ArtId) ;
-    focus(ArtId) ;
+    // create Linked Data artifact
+    makeArtifact(ld, "org.hypermedea.LinkedDataArtifact", [], LDArtId) ;
+    focus(LDArtId) ;
+    // create ontology artifact
+    makeArtifact(owl, "org.hypermedea.OntologyArtifact", [true], OWLArtId) ;
+    focus(OWLArtId) ;
     // crawl the building's topology
     !crawl("https://territoire.emse.fr/kg/emse/fayol/index.ttl") .
 
 +!crawl(URI) :
     true
     <-
-    +crawling ;
     for (knownVocab(Vocab)) {
         .print("Retrieving OWL definitions of ", Vocab) ;
         get(Vocab) ;
         // synchronous call (wait for action's end)
         .wait({ +visited(_) }) ;
     }
+    +crawling ;
     get(URI) ;
   .
 
@@ -48,7 +51,6 @@ knownVocab("https://w3id.org/bot#") .
 +!expandCrawl(Anchor) :
     crawling
     <-
-    .print("Expanding crawl") ;
     for (barrier_resource(Anchor, URI)) {
         getParentURI(URI, URIp) ;
         if (not visited(URIp) | to_visit(URIp)) { get(URIp) }
@@ -59,7 +61,6 @@ knownVocab("https://w3id.org/bot#") .
 +!checkEndCrawl :
     crawling
     <-
-    .print("Checking end crawl") ;
     if (crawler_status(false) & not .intend(expandCrawl(_))) { !endCrawl }
   .
 

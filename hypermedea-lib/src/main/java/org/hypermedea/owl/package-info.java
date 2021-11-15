@@ -1,5 +1,5 @@
 /**
- * Classes to handle definitions in OWL, the Web Ontology Language
- * (used by the {@link org.hypermedea.LinkedDataArtifact}).
+ * Classes related to Hypermedea's ontology artifact
+ * (used by the {@link org.hypermedea.OntologyArtifact}).
  */
 package org.hypermedea.owl;

@@ -49,21 +49,23 @@ test(testABoxAndTBoxWithInference) .
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-+!doBefore(ArtId)
++!doBefore([LDArtId, OWLArtId])
     <-
-    makeArtifact("test", "org.hypermedea.LinkedDataArtifact", [true], ArtId) ;
-    focus(ArtId) .
+    makeArtifact("test-ld", "org.hypermedea.LinkedDataArtifact", [], LDArtId) ;
+    focus(LDArtId) ;
+    makeArtifact("test-owl", "org.hypermedea.OntologyArtifact", [true], OWLArtId) ;
+    focus(OWLArtId) .
 
-+!doAfter(ArtId)
++!doAfter(ArtIds)
     <-
-    disposeArtifact(ArtId) .
+    for (.member(ArtId, ArtIds)) { disposeArtifact(ArtId) } .
 
 +!test
     <-
     for (test(Test)) {
-        !doBefore(ArtId) ;
+        !doBefore(ArtIds) ;
         !Test ;
-        !doAfter(ArtId) ;
+        !doAfter(ArtIds) ;
         .print(Test, ": passed.") ;
     } .
 

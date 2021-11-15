@@ -34,7 +34,7 @@ public class LinkedDataCrawlerTest {
 
     @Test
     public void testSingleRequest() throws IOException, InterruptedException, URISyntaxException {
-        LinkedDataCrawler c = new LinkedDataCrawler();
+        LinkedDataCrawler c = LinkedDataCrawler.getInstance();
         ResourceCollector collector = new ResourceCollector();
 
         c.addListener(collector);
@@ -52,7 +52,7 @@ public class LinkedDataCrawlerTest {
 
     @Test
     public void testRequestChain() throws IOException, InterruptedException, URISyntaxException {
-        LinkedDataCrawler c = new LinkedDataCrawler();
+        LinkedDataCrawler c = LinkedDataCrawler.getInstance();
         ResourceCollector collector = new ResourceCollector();
 
         c.addListener(collector);

@@ -19,7 +19,10 @@ import java.util.concurrent.Executors;
  *     <li>one thread per request in the thread pool</li>
  * </ul>
  *
- * @author Victor Charpenay <victor.charpenay@emse.fr>
+ * The <code>LinkedDataCrawler</code> class is a singleton.
+ * Its unique instance is accessible via <code>getInstance()</code>.
+ *
+ * @author Victor Charpenay
  */
 public class LinkedDataCrawler {
 
@@ -33,9 +36,8 @@ public class LinkedDataCrawler {
 
         @Override
         public void run() {
-            nbActiveRequests++;
-
             Model g;
+
             try {
                 // TODO or use RDFParser.source(resourceURI).parse(StreamRDF);
                 // TODO check whether HTTP caching is implemented
@@ -63,13 +65,10 @@ public class LinkedDataCrawler {
                         resourceQueue.wait();
 
                         while (!resourceQueue.isEmpty()) {
-                            nbActiveRequests--;
-
-                            // TODO remove from queue only after notifications completed?
                             Resource res = resourceQueue.remove();
-
-                            for (RequestListener l : listeners) l.requestCompleted(res);
                             resourceURIQueue.remove(res.getURI());
+                            // TODO execute callbacks in separate threads
+                            for (RequestListener l : listeners) l.requestCompleted(res);
                         }
                     } catch (InterruptedException e) {
                         // TODO do nothing?
@@ -81,7 +80,12 @@ public class LinkedDataCrawler {
 
     }
 
+    /**
+     * TODO check env variable at instantiation time
+     */
     public final static int THREAD_POOL_SIZE = 8;
+
+    private static LinkedDataCrawler instance;
 
     private final Thread routine = new Thread(new CrawlerRoutine());
 
@@ -92,11 +96,14 @@ public class LinkedDataCrawler {
 
     private final Queue<String> resourceURIQueue = new ConcurrentLinkedQueue<>();
 
-    private int nbActiveRequests = 0;
-
     private Set<RequestListener> listeners = new HashSet<>();
 
-    public LinkedDataCrawler() {
+    public static LinkedDataCrawler getInstance() {
+        if (instance == null) instance = new LinkedDataCrawler();
+        return instance;
+    }
+
+    private LinkedDataCrawler() {
         routine.start();
     }
 
@@ -114,7 +121,7 @@ public class LinkedDataCrawler {
     }
 
     public boolean isActive() {
-        return nbActiveRequests > 0;
+        return resourceURIQueue.size() > 0;
     }
 
 }

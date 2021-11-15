@@ -1,8 +1,6 @@
 package org.hypermedea;
 
-import cartago.Artifact;
-import cartago.OPERATION;
-import cartago.OpFeedbackParam;
+import cartago.*;
 import ch.unisg.ics.interactions.wot.td.ThingDescription;
 import ch.unisg.ics.interactions.wot.td.ThingDescription.TDFormat;
 import ch.unisg.ics.interactions.wot.td.affordances.ActionAffordance;
@@ -25,6 +23,9 @@ import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
 import org.hypermedea.json.JsonTermWrapper;
 import org.hypermedea.json.TermJsonWrapper;
+import org.hypermedea.ld.LinkedDataCrawler;
+import org.hypermedea.ld.RequestListener;
+import org.hypermedea.ld.Resource;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -74,6 +75,29 @@ import java.util.Optional;
  */
 public class ThingArtifact extends Artifact {
 
+    private class TDListener implements RequestListener {
+
+        @Override
+        public void requestCompleted(Resource res) {
+            // TODO test whether a TD is defined in the resource.
+            if (false) {
+                try {
+                    // TODO get name from TD instead, to prevent duplicates? Or better if several TDs for the same Thing?
+                    String name = res.getURI();
+                    // TODO serialize TD in string buffer and add to params
+                    ArtifactConfig params = new ArtifactConfig();
+                    // FIXME no calling agent, not possible to create artifacts this way?
+                    makeArtifact(name, ThingArtifact.class.getName(), params);
+                    // TODO expose artifactID?
+                } catch (OperationException e) {
+                    // TODO log error
+                    e.printStackTrace();
+                }
+            }
+        }
+
+    }
+
     private static final String WEBID_PREFIX = "http://hypermedea.org/#";
 
     private ThingDescription td;
@@ -83,6 +107,10 @@ public class ThingArtifact extends Artifact {
     private Optional<String> basicAuth;
 
     private boolean dryRun;
+
+    public ThingArtifact() {
+        LinkedDataCrawler.getInstance().addListener(new TDListener());
+    }
 
     /**
      * Call {@link #init(String, boolean) init(String, false)}.

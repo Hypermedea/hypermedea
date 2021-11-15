@@ -32,7 +32,8 @@ Your agents should then be able to use Hypermedea artifacts.
 ## Documentation
 
 Hypermedea includes the following CArtAgO artifacts:
-- `LinkedDataArtifact`: Linked Data crawler and reasoner
+- `LinkedDataArtifact`: Linked Data crawler
+- `OntologyArtifact`: ontology manager and reasoner
 - `ThingArtifact`: wrapper for WoT 'things'
 - `PlannerArtifact`: PDDL planner (to handle WoT affordances, among others)
 
