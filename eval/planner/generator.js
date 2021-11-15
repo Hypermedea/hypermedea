@@ -180,29 +180,47 @@ let n3 = '@prefix ex: <http://example.org/> .\n\
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .\n\
 \n\
 ex:agv a ex:TransportationDevice .\n\
-_:state a st:InitialState .\n\
-_:state log:includes { ex:agv ex:isAt ex:loccharging . } .\n\
 \n';
+
+// stateless
 
 n3 = workstations.reduce((n3, ws) => {
     return n3
         + `ex:${ws.id} a ex:${ws.a} .\n`
         + `ex:${ws.id} ex:producesModel ex:${ws.producesModel.id} .\n`
         + ws.consumesModel.map(m => `ex:${ws.id} ex:consumesModel ex:${m.id} .\n`).join('')
-        + `_:state log:includes { ex:${ws.id} ex:hasStatus ex:${ws.hasStatus.id} . } .\n`
-        + `_:state log:includes { ex:${ws.id} ex:isAt ex:${ws.isAt.id} .  } .\n`;
+        // + `_:state log:includes { ex:${ws.id} ex:hasStatus ex:${ws.hasStatus.id} . } .\n`
+        // + `_:state log:includes { ex:${ws.id} ex:isAt ex:${ws.isAt.id} .  } .\n`;
 }, n3);
 
 n3 = items.reduce((n3, i) => {
     return n3
         + `ex:${i.id} a ex:${i.a} .\n`
-        + `_:state log:includes { ex:${i.id} ex:model ex:${i.model.id} . } .\n`
-        + `_:state log:includes { ex:${i.id} ex:isAt ex:${i.isAt.id} .  } .\n`;
+        // + `_:state log:includes { ex:${i.id} ex:model ex:${i.model.id} . } .\n`
+        // + `_:state log:includes { ex:${i.id} ex:isAt ex:${i.isAt.id} .  } .\n`;
 }, n3)
 
 n3 = locations.reduce((n3, loc) => {
     return n3
         + loc.hasPathTo.map(other => `ex:${loc.id} ex:hasPathTo ex:${other.id} .\n`).join('');
 }, n3);
+
+// stateful
+
+n3 += '\n{\n\tex:agv ex:isAt ex:loccharging .\n';
+
+n3 = workstations.reduce((n3, ws) => {
+    return n3
+        + `\tex:${ws.id} ex:hasStatus ex:${ws.hasStatus.id} .\n`
+        + `\tex:${ws.id} ex:isAt ex:${ws.isAt.id} .\n`;
+}, n3);
+
+n3 = items.reduce((n3, i) => {
+    return n3
+        + `\tex:${i.id} ex:model ex:${i.model.id} .\n`
+        + `\tex:${i.id} ex:isAt ex:${i.isAt.id} .\n`;
+}, n3)
+
+n3 += '} a st:InitialState .\n';
 
 fs.writeFileSync(`init-${models.length}.n3`, n3);

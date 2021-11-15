@@ -3,57 +3,35 @@
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
 ex:agv a ex:TransportationDevice .
-_:state a st:InitialState .
-_:state log:includes { ex:agv ex:isAt ex:loccharging . } .
 
 ex:workstation0 a ex:Workstation .
 ex:workstation0 ex:producesModel ex:model0 .
 ex:workstation0 ex:consumesModel ex:model1 .
-_:state log:includes { ex:workstation0 ex:hasStatus ex:off . } .
-_:state log:includes { ex:workstation0 ex:isAt ex:loc0 .  } .
 ex:workstation1 a ex:Workstation .
 ex:workstation1 ex:producesModel ex:model1 .
 ex:workstation1 ex:consumesModel ex:model2 .
-_:state log:includes { ex:workstation1 ex:hasStatus ex:off . } .
-_:state log:includes { ex:workstation1 ex:isAt ex:loc1 .  } .
 ex:workstation2 a ex:Workstation .
 ex:workstation2 ex:producesModel ex:model2 .
 ex:workstation2 ex:consumesModel ex:model3 .
-_:state log:includes { ex:workstation2 ex:hasStatus ex:off . } .
-_:state log:includes { ex:workstation2 ex:isAt ex:loc2 .  } .
 ex:workstation3 a ex:Workstation .
 ex:workstation3 ex:producesModel ex:model3 .
 ex:workstation3 ex:consumesModel ex:model4 .
-_:state log:includes { ex:workstation3 ex:hasStatus ex:off . } .
-_:state log:includes { ex:workstation3 ex:isAt ex:loc3 .  } .
 ex:workstation4 a ex:Workstation .
 ex:workstation4 ex:producesModel ex:model4 .
 ex:workstation4 ex:consumesModel ex:model5 .
-_:state log:includes { ex:workstation4 ex:hasStatus ex:off . } .
-_:state log:includes { ex:workstation4 ex:isAt ex:loc4 .  } .
 ex:workstation5 a ex:Workstation .
 ex:workstation5 ex:producesModel ex:model5 .
 ex:workstation5 ex:consumesModel ex:model6 .
-_:state log:includes { ex:workstation5 ex:hasStatus ex:off . } .
-_:state log:includes { ex:workstation5 ex:isAt ex:loc5 .  } .
 ex:workstation6 a ex:Workstation .
 ex:workstation6 ex:producesModel ex:model6 .
 ex:workstation6 ex:consumesModel ex:model7 .
-_:state log:includes { ex:workstation6 ex:hasStatus ex:off . } .
-_:state log:includes { ex:workstation6 ex:isAt ex:loc6 .  } .
 ex:workstation7 a ex:Workstation .
 ex:workstation7 ex:producesModel ex:model7 .
 ex:workstation7 ex:consumesModel ex:model8 .
-_:state log:includes { ex:workstation7 ex:hasStatus ex:off . } .
-_:state log:includes { ex:workstation7 ex:isAt ex:loc7 .  } .
 ex:workstation8 a ex:Workstation .
 ex:workstation8 ex:producesModel ex:model8 .
 ex:workstation8 ex:consumesModel ex:model9 .
-_:state log:includes { ex:workstation8 ex:hasStatus ex:off . } .
-_:state log:includes { ex:workstation8 ex:isAt ex:loc8 .  } .
 ex:item0 a ex:Item .
-_:state log:includes { ex:item0 ex:model ex:model9 . } .
-_:state log:includes { ex:item0 ex:isAt ex:locstorage .  } .
 ex:locstorage ex:hasPathTo ex:loc0 .
 ex:loccharging ex:hasPathTo ex:loc0 .
 ex:loc0 ex:hasPathTo ex:loc3 .
@@ -86,3 +64,27 @@ ex:loc7 ex:hasPathTo ex:loc6 .
 ex:loc7 ex:hasPathTo ex:loc8 .
 ex:loc8 ex:hasPathTo ex:loc5 .
 ex:loc8 ex:hasPathTo ex:loc7 .
+
+{
+	ex:agv ex:isAt ex:loccharging .
+	ex:workstation0 ex:hasStatus ex:off .
+	ex:workstation0 ex:isAt ex:loc0 .
+	ex:workstation1 ex:hasStatus ex:off .
+	ex:workstation1 ex:isAt ex:loc1 .
+	ex:workstation2 ex:hasStatus ex:off .
+	ex:workstation2 ex:isAt ex:loc2 .
+	ex:workstation3 ex:hasStatus ex:off .
+	ex:workstation3 ex:isAt ex:loc3 .
+	ex:workstation4 ex:hasStatus ex:off .
+	ex:workstation4 ex:isAt ex:loc4 .
+	ex:workstation5 ex:hasStatus ex:off .
+	ex:workstation5 ex:isAt ex:loc5 .
+	ex:workstation6 ex:hasStatus ex:off .
+	ex:workstation6 ex:isAt ex:loc6 .
+	ex:workstation7 ex:hasStatus ex:off .
+	ex:workstation7 ex:isAt ex:loc7 .
+	ex:workstation8 ex:hasStatus ex:off .
+	ex:workstation8 ex:isAt ex:loc8 .
+	ex:item0 ex:model ex:model9 .
+	ex:item0 ex:isAt ex:locstorage .
+} a st:InitialState .

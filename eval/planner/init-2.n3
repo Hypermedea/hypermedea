@@ -3,18 +3,20 @@
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
 ex:agv a ex:TransportationDevice .
-_:state a st:InitialState .
-_:state log:includes { ex:agv ex:isAt ex:loccharging . } .
 
 ex:workstation0 a ex:Workstation .
 ex:workstation0 ex:producesModel ex:model0 .
 ex:workstation0 ex:consumesModel ex:model1 .
-_:state log:includes { ex:workstation0 ex:hasStatus ex:off . } .
-_:state log:includes { ex:workstation0 ex:isAt ex:loc0 .  } .
 ex:item0 a ex:Item .
-_:state log:includes { ex:item0 ex:model ex:model1 . } .
-_:state log:includes { ex:item0 ex:isAt ex:locstorage .  } .
 ex:locstorage ex:hasPathTo ex:loc0 .
 ex:loccharging ex:hasPathTo ex:loc0 .
 ex:loc0 ex:hasPathTo ex:locstorage .
 ex:loc0 ex:hasPathTo ex:loccharging .
+
+{
+	ex:agv ex:isAt ex:loccharging .
+	ex:workstation0 ex:hasStatus ex:off .
+	ex:workstation0 ex:isAt ex:loc0 .
+	ex:item0 ex:model ex:model1 .
+	ex:item0 ex:isAt ex:locstorage .
+} a st:InitialState .
