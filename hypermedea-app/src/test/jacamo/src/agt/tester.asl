@@ -10,41 +10,47 @@ test(testABoxAndTBoxWithInference) .
     <-
     if (not crawler_status(false)) { .wait({ +crawler_status(false) }, T) } .
 
++!awaitEndReasoning : timeout(T)
+    <-
+    if (not reasoner_status(false)) { .wait({ +reasoner_status(false) }, T) } .
+
++!awaitEndProcessing <- !awaitEndCrawl ; !awaitEndReasoning .
+
 +!testABox : timeout(T)
     <-
     get("ttl/test-abox.ttl") ;
-    !awaitEndCrawl ;
+    !awaitEndProcessing ;
     .count(rdf(S, P, O), L) ;
     ?(L = 5) .
 
 +!testABoxAndTBox : timeout(T)
     <-
     get("ttl/test-tbox.ttl") ;
-    !awaitEndCrawl ;
+    !awaitEndProcessing ;
     get("ttl/test-abox.ttl") ;
-    !awaitEndCrawl ;
+    !awaitEndProcessing ;
     ?class(_) .
 
 +!testConsistentTBox : timeout(T)
     <-
     get("ttl/test-tbox.ttl") ;
-    !awaitEndCrawl ;
+    !awaitEndProcessing ;
     ?(not kb_inconsistent) .
 
 +!testInconsistentTBox : timeout(T)
     <-
     get("ttl/test-unsat-tbox.ttl") ;
-    !awaitEndCrawl ;
+    !awaitEndProcessing ;
     get("ttl/test-abox.ttl") ;
-    !awaitEndCrawl ;
+    !awaitEndProcessing ;
     ?kb_inconsistent .
 
 +!testABoxAndTBoxWithInference : timeout(T)
     <-
     get("ttl/test-tbox.ttl") ;
-    !awaitEndCrawl ;
+    !awaitEndProcessing ;
     get("ttl/test-abox.ttl") ;
-    !awaitEndCrawl ;
+    !awaitEndProcessing ;
     ?upper_class(_) .
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

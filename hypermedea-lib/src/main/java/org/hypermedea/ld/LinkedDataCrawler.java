@@ -67,7 +67,7 @@ public class LinkedDataCrawler {
                         while (!resourceQueue.isEmpty()) {
                             Resource res = resourceQueue.remove();
                             resourceURIQueue.remove(res.getURI());
-                            // TODO execute callbacks in separate threads
+                            // TODO execute callbacks in separate threads (important if time-consuming reasoning)
                             for (RequestListener l : listeners) l.requestCompleted(res);
                         }
                     } catch (InterruptedException e) {
@@ -85,8 +85,6 @@ public class LinkedDataCrawler {
      */
     public final static int THREAD_POOL_SIZE = 8;
 
-    private static LinkedDataCrawler instance;
-
     private final Thread routine = new Thread(new CrawlerRoutine());
 
     // TODO or newCachedThreadPool? To have variable size pool
@@ -98,12 +96,7 @@ public class LinkedDataCrawler {
 
     private Set<RequestListener> listeners = new HashSet<>();
 
-    public static LinkedDataCrawler getInstance() {
-        if (instance == null) instance = new LinkedDataCrawler();
-        return instance;
-    }
-
-    private LinkedDataCrawler() {
+    public LinkedDataCrawler() {
         routine.start();
     }
 
@@ -111,12 +104,16 @@ public class LinkedDataCrawler {
         this.listeners.add(listener);
     }
 
+    public void removeListener(RequestListener listener) {
+        this.listeners.remove(listener);
+    }
+
     public void get(String resourceURI) throws IOException, URISyntaxException {
         if (!resourceURIQueue.contains(resourceURI)) {
+            resourceURIQueue.add(resourceURI);
+
             RequestTask t = new RequestTask(resourceURI);
             pool.submit(t);
-
-            resourceURIQueue.add(resourceURI);
         }
     }
 

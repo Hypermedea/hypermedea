@@ -1,6 +1,9 @@
 package org.hypermedea;
 
-import cartago.*;
+import cartago.ArtifactConfig;
+import cartago.OPERATION;
+import cartago.OpFeedbackParam;
+import cartago.OperationException;
 import ch.unisg.ics.interactions.wot.td.ThingDescription;
 import ch.unisg.ics.interactions.wot.td.ThingDescription.TDFormat;
 import ch.unisg.ics.interactions.wot.td.affordances.ActionAffordance;
@@ -23,7 +26,6 @@ import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
 import org.hypermedea.json.JsonTermWrapper;
 import org.hypermedea.json.TermJsonWrapper;
-import org.hypermedea.ld.LinkedDataCrawler;
 import org.hypermedea.ld.RequestListener;
 import org.hypermedea.ld.Resource;
 
@@ -73,7 +75,7 @@ import java.util.Optional;
  *
  * @author Andrei Ciortea, Olivier Boissier, Victor Charpenay
  */
-public class ThingArtifact extends Artifact {
+public class ThingArtifact extends HypermedeaArtifact {
 
     private class TDListener implements RequestListener {
 
@@ -108,10 +110,6 @@ public class ThingArtifact extends Artifact {
 
     private boolean dryRun;
 
-    public ThingArtifact() {
-        LinkedDataCrawler.getInstance().addListener(new TDListener());
-    }
-
     /**
      * Call {@link #init(String, boolean) init(String, false)}.
      *
@@ -131,6 +129,10 @@ public class ThingArtifact extends Artifact {
         this.apiKey = Optional.empty();
         this.basicAuth = Optional.empty();
         this.dryRun = false;
+
+        crawlerListener = new TDListener();
+
+        super.init();
     }
 
     /**

@@ -1,6 +1,5 @@
 package org.hypermedea;
 
-import cartago.Artifact;
 import cartago.ObsProperty;
 import com.github.owlcs.ontapi.OntManagers;
 import com.github.owlcs.ontapi.Ontology;
@@ -11,7 +10,6 @@ import jason.asSyntax.StringTerm;
 import jason.asSyntax.Structure;
 import org.apache.jena.vocabulary.OWL;
 import org.apache.jena.vocabulary.RDF;
-import org.hypermedea.ld.LinkedDataCrawler;
 import org.hypermedea.ld.RequestListener;
 import org.hypermedea.ld.Resource;
 import org.hypermedea.owl.NamingStrategyFactory;
@@ -77,7 +75,7 @@ import java.util.*;
  *
  * @author Victor Charpenay, Noé Saffaf
  */
-public class OntologyArtifact extends Artifact {
+public class OntologyArtifact extends HypermedeaArtifact {
 
     /**
      * Manager that listens to incoming resources from the Linked Data crawler
@@ -88,8 +86,24 @@ public class OntologyArtifact extends Artifact {
         @Override
         public void requestCompleted(Resource res) {
             beginExternalSession();
+            updateReasonerStatus(true);
+            endExternalSession(true);
+
+            beginExternalSession();
 
             if (res.getRepresentation() != null) {
+                IRI iri = IRI.create(res.getURI());
+                List<OWLOntologyChange> changes = new ArrayList<>();
+
+                if (ontologyManager.contains(iri)) {
+                    // ontology previously crawled
+                    ontologyManager.removeOntology(ontologyManager.getOntology(iri));
+
+                    changes.add(new RemoveImport(rootOntology, dataFactory.getOWLImportsDeclaration(iri)));
+                    ontologyManager.applyChanges(changes);
+                    changes.clear();
+                }
+
                 Ontology o = ontologyManager.createOntology();
 
                 if (!res.getRepresentation().contains(null, RDF.type, OWL.Ontology)) {
@@ -109,9 +123,6 @@ public class OntologyArtifact extends Artifact {
                     // TODO add predicates for the signature?
                 }
 
-                List<OWLOntologyChange> changes = new ArrayList<>();
-
-                IRI iri = IRI.create(res.getURI());
                 changes.add(new SetOntologyID(o, iri));
                 changes.add(new AddImport(rootOntology, dataFactory.getOWLImportsDeclaration(iri)));
 
@@ -146,9 +157,15 @@ public class OntologyArtifact extends Artifact {
             }
 
             endExternalSession(true);
+
+            beginExternalSession();
+            updateReasonerStatus(false);
+            endExternalSession(true);
         }
 
     }
+
+    public static final String REASONER_STATUS_FUNCTOR = "reasoner_status";
 
     public static final String KB_INCONSISTENT_FUNCTOR = "kb_inconsistent";
 
@@ -158,6 +175,10 @@ public class OntologyArtifact extends Artifact {
 
     private OWLReasoner reasoner;
 
+    /**
+     * Note: the ontology manager seems to be a singleton with its own lifecycle: a new instance of
+     * <code>OntologyArtifact</code> shares the same pre-loaded ontologies with all other instances.
+     */
     private OntologyManager ontologyManager = OntManagers.createManager();
 
     private OWLDataFactory dataFactory = ontologyManager.getOWLDataFactory();
@@ -167,6 +188,8 @@ public class OntologyArtifact extends Artifact {
     private Set<OWLEntity> kbSignature = new HashSet<>();
 
     private ShortFormProvider namingStrategy;
+
+    private ObsProperty reasonerStatus;
 
     /**
      * Initialize the artifact without inference, i.e. call {@link #init(boolean) init(false)}).
@@ -194,7 +217,15 @@ public class OntologyArtifact extends Artifact {
 
         namingStrategy = NamingStrategyFactory.createDefaultNamingStrategy(ontologyManager);
 
-        LinkedDataCrawler.getInstance().addListener(new OWLObsPropertyManager());
+        reasonerStatus = defineObsProperty(REASONER_STATUS_FUNCTOR, false);
+
+        crawlerListener = new OWLObsPropertyManager();
+
+        super.init();
+    }
+
+    private void updateReasonerStatus(Boolean status) {
+        if (!reasonerStatus.getValue().equals(status)) reasonerStatus.updateValue(status);
     }
 
     private void updateKbInconsistent(Boolean consistent) {

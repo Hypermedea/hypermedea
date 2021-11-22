@@ -1,13 +1,11 @@
 package org.hypermedea;
 
-import cartago.Artifact;
 import cartago.OPERATION;
 import cartago.ObsProperty;
 import cartago.OpFeedbackParam;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.StringTerm;
 import jason.asSyntax.Term;
-import org.hypermedea.ld.LinkedDataCrawler;
 import org.hypermedea.ld.RDFTripleWrapper;
 import org.hypermedea.ld.RequestListener;
 import org.hypermedea.ld.Resource;
@@ -59,7 +57,7 @@ import java.net.URISyntaxException;
  *
  * @author Victor Charpenay, Noé Saffaf
  */
-public class LinkedDataArtifact extends Artifact {
+public class LinkedDataArtifact extends HypermedeaArtifact {
 
 	/**
 	 * Manager that listens to incoming resources from the Linked Data crawler
@@ -109,18 +107,17 @@ public class LinkedDataArtifact extends Artifact {
 
 	public static final String TO_VISIT_FUNCTOR = "to_visit";
 
-	private LinkedDataCrawler crawler;
-
 	private ObsProperty crawlerStatus;
 
 	/**
 	 * Initialize the Linked Data crawler.
 	 */
 	public void init() {
-		crawler = LinkedDataCrawler.getInstance();
-		crawler.addListener(new RDFObsPropertyManager());
-
+		crawlerListener = new RDFObsPropertyManager();
+		// FIXME 2 instances of the LD artifact would share the same crawler
 		crawlerStatus = defineObsProperty(CRAWLER_STATUS_FUNCTOR, false);
+
+		super.init();
 	}
 
 	/**
@@ -159,6 +156,7 @@ public class LinkedDataArtifact extends Artifact {
 
 			if (!visited(requestedURI) && !toVisit(requestedURI)) {
 				defineObsProperty(TO_VISIT_FUNCTOR, requestedURI);
+				commit(); // to ensure to_visit is set before GET ends
 				crawler.get(requestedURI);
 			} else {
 				// TODO necessary?
