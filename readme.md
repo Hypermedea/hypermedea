@@ -37,5 +37,9 @@ Hypermedea includes the following CArtAgO artifacts:
 - `ThingArtifact`: wrapper for WoT 'things'
 - `PlannerArtifact`: PDDL planner (to handle WoT affordances, among others)
 
+Artifacts interact via a shared RDF store, as follows:
+
+![Hypermedea technical overview](img/technical-overview.png)
+
 For a complete documentation, run `./gradlew javadoc` and browse the generated
 Javadoc starting from `hypermedea-lib/build/docs/javadoc/index.html`.
