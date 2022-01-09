@@ -16,10 +16,12 @@ import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
+import org.hypermedea.pddl.PlanJasonWrapper;
 import org.hypermedea.pddl.TermDomainWrapper;
 import org.hypermedea.pddl.TermProblemWrapper;
-import org.hypermedea.pddl.PlanJasonWrapper;
 import org.hypermedea.pddl.TermWrapperException;
+import org.hypermedea.pddl.planners.DefaultPlannerWrapper;
+import org.hypermedea.pddl.planners.PlannerWrapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,13 +37,15 @@ import java.util.Map;
  */
 public class PlannerArtifact extends Artifact {
 
-    private final Planner planner;
+    private final PlannerWrapper planner;
 
     public PlannerArtifact() {
         final StateSpacePlannerFactory stateSpacePlannerFactory = StateSpacePlannerFactory.getInstance();
         final Planner.Name plannerName = AbstractStateSpacePlanner.DEFAULT_PLANNER;
-        planner = stateSpacePlannerFactory.getPlanner(plannerName);
+        Planner p = stateSpacePlannerFactory.getPlanner(plannerName);
         // TODO parameterize choice of planner
+
+        planner = new DefaultPlannerWrapper(p);
     }
 
     /**
@@ -69,6 +73,7 @@ public class PlannerArtifact extends Artifact {
             domain = domainWrapper.getDomain();
             pb = problemWrapper.getProblem();
 
+            // TODO use instead CodedProblem.toString(Object)
             dictionary.putAll(domainWrapper.getDictionary());
             dictionary.putAll(problemWrapper.getDictionary());
         } catch (ParseException | TermWrapperException e) {
@@ -80,10 +85,9 @@ public class PlannerArtifact extends Artifact {
             return;
         }
 
-        CodedProblem cpb = Encoder.encode(domain, pb);
+        Plan p = planner.search(domain, pb);
 
-        Plan p = planner.search(cpb);
-
+        CodedProblem cpb = Encoder.encode(domain, pb); // TODO redundant with DefaultPlannerWrapper
         PlanJasonWrapper w = new PlanJasonWrapper(p, cpb.getConstants(), dictionary);
         plan.set(w.toString());
     }
