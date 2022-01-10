@@ -16,14 +16,16 @@ import static org.hypermedea.pddl.TermProblemWrapperTest.TEST_PROBLEM_STRUCTURE;
 public class NativePlannerWrapperTest {
 
     @Test
-    public void testCodedProblem() throws ParseException, TermWrapperException {
+    public void testSearch() throws ParseException, TermWrapperException {
         Structure domainTerm = ASSyntax.parseStructure(TEST_DOMAIN_STRUCTURE);
         Structure pbTerm = ASSyntax.parseStructure(TEST_PROBLEM_STRUCTURE);
 
         Domain domain = new TermDomainWrapper(domainTerm).getDomain();
         Problem pb = new TermProblemWrapper(pbTerm).getProblem();
 
-        PlannerWrapper planner = new NativePlannerWrapper("hypermedea-lib/bin/ff");
+        String loc = NativePlannerWrapperTest.class.getClassLoader().getResource("ff").getFile();
+
+        PlannerWrapper planner = new NativePlannerWrapper(loc);
         planner.search(domain, pb);
     }
 

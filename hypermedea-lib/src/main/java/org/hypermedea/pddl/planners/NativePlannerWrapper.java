@@ -38,7 +38,7 @@ public class NativePlannerWrapper extends PlannerWrapper {
             pw.close();
 
             // TODO handle relative path
-            ProcessBuilder psb = new ProcessBuilder("hypermedia-lib/bin/ff", "-o " + DOMAIN_TMP_LOCATION, "-f " + PROBLEM_TMP_LOCATION);
+            ProcessBuilder psb = new ProcessBuilder(location, "-o " + DOMAIN_TMP_LOCATION, "-f " + PROBLEM_TMP_LOCATION);
             psb.redirectError(new File("error.log"));
 
             Process ps = null;
