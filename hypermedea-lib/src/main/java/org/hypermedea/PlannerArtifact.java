@@ -85,9 +85,11 @@ public class PlannerArtifact extends Artifact {
             return;
         }
 
-        Plan p = planner.search(domain, pb);
+        // TODO internalize coded problem
+        CodedProblem cpb = Encoder.encode(domain, pb);
 
-        CodedProblem cpb = Encoder.encode(domain, pb); // TODO redundant with DefaultPlannerWrapper
+        Plan p = planner.search(domain, pb, cpb);
+
         PlanJasonWrapper w = new PlanJasonWrapper(p, cpb.getConstants(), dictionary);
         plan.set(w.toString());
     }

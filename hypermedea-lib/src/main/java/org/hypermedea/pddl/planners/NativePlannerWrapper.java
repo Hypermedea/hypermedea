@@ -1,20 +1,20 @@
 package org.hypermedea.pddl.planners;
 
+import fr.uga.pddl4j.encoding.CodedProblem;
 import fr.uga.pddl4j.parser.Domain;
 import fr.uga.pddl4j.parser.Problem;
+import fr.uga.pddl4j.util.BitOp;
 import fr.uga.pddl4j.util.Plan;
-import fr.uga.pddl4j.util.SequentialPlan;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Wrapper for a PDDL planner provided as a native program (called in a subprocess).
- *
- * By default, Hypermedea includes <a href="https://fai.cs.uni-saarland.de/hoffmann/ff.html">the FF(-X) planner by Joerg Hoffmann</a> (Linux).
  */
-public class NativePlannerWrapper extends PlannerWrapper {
+public abstract class NativePlannerWrapper extends PlannerWrapper {
 
     public static final String DOMAIN_TMP_LOCATION = "/tmp/domain.pddl";
 
@@ -27,7 +27,7 @@ public class NativePlannerWrapper extends PlannerWrapper {
     }
 
     @Override
-    public Plan search(Domain domain, Problem problem) {
+    public Plan search(Domain domain, Problem problem, CodedProblem codedProblem) {
         try {
             FileWriter dw = new FileWriter(DOMAIN_TMP_LOCATION);
             dw.write(domain.toString());
@@ -37,19 +37,13 @@ public class NativePlannerWrapper extends PlannerWrapper {
             pw.write(problem.toString());
             pw.close();
 
-            // TODO handle relative path
-            ProcessBuilder psb = new ProcessBuilder(location, "-o " + DOMAIN_TMP_LOCATION, "-f " + PROBLEM_TMP_LOCATION);
+            ProcessBuilder psb = new ProcessBuilder(location, "-o", DOMAIN_TMP_LOCATION, "-f", PROBLEM_TMP_LOCATION);
             psb.redirectError(new File("error.log"));
 
-            Process ps = null;
-            ps = psb.start();
+            Process ps = psb.start();
             ps.waitFor();
 
-            // TODO parse result and build plan
-            ps.getInputStream();
-
-            Plan p = new SequentialPlan();
-            p.add(0, null);
+            return parsePlan(ps.getInputStream(), codedProblem);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -57,6 +51,32 @@ public class NativePlannerWrapper extends PlannerWrapper {
         }
 
         return null;
+    }
+
+    /**
+     * Parse the output of the native program and build a {@link Plan object}.
+     *
+     * @param in the character stream output by the underlying native program
+     * @return a PDDL plan
+     */
+    protected abstract Plan parsePlan(InputStream in, CodedProblem codedProblem) throws IOException;
+
+    /**
+     * Build
+     *
+     * @param name
+     * @param params
+     * @return
+     */
+    protected BitOp buildOp(String name, String[] params, CodedProblem codedProblem) {
+        BitOp op = new BitOp(name.toLowerCase(), params.length);
+
+        for (int i = 0; i < params.length; i++) {
+            String p = params[i].toLowerCase();
+            op.setValueOfParameter(i, codedProblem.getConstants().indexOf(p));
+        }
+
+        return op;
     }
 
 }
