@@ -3,7 +3,7 @@
 # Hypermedea
 
 Medea is known in Greek mythology as Jason's wife.
-Hypermedea is a companion framework to Jason, CArtAgO and Moise (known collectively as [JaCaMo](jacamo.sourceforge.net/)).
+Hypermedea is a companion framework to Jason, CArtAgO and Moise (known collectively as [JaCaMo](http://jacamo.sourceforge.net/)).
 Hypermedea is designed for programming hypermedia multi-agent systems.
 
 ## Getting started
