@@ -8,18 +8,17 @@ import fr.uga.pddl4j.encoding.Encoder;
 import fr.uga.pddl4j.parser.Domain;
 import fr.uga.pddl4j.parser.Problem;
 import fr.uga.pddl4j.parser.Symbol;
-import fr.uga.pddl4j.planners.Planner;
-import fr.uga.pddl4j.planners.statespace.AbstractStateSpacePlanner;
-import fr.uga.pddl4j.planners.statespace.StateSpacePlannerFactory;
 import fr.uga.pddl4j.util.Plan;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
+import org.hypermedea.pddl.PlanJasonWrapper;
 import org.hypermedea.pddl.TermDomainWrapper;
 import org.hypermedea.pddl.TermProblemWrapper;
-import org.hypermedea.pddl.PlanJasonWrapper;
 import org.hypermedea.pddl.TermWrapperException;
+import org.hypermedea.pddl.planners.PlannerWrapper;
+import org.hypermedea.pddl.planners.PlannerWrapperFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,13 +47,25 @@ import java.util.Map;
  */
 public class PlannerArtifact extends Artifact {
 
-    private final Planner planner;
+    public static final String DEFAULT_PLANNER = PlannerWrapperFactory.FF_PLANNER;
 
-    public PlannerArtifact() {
-        final StateSpacePlannerFactory stateSpacePlannerFactory = StateSpacePlannerFactory.getInstance();
-        final Planner.Name plannerName = AbstractStateSpacePlanner.DEFAULT_PLANNER;
-        planner = stateSpacePlannerFactory.getPlanner(plannerName);
-        // TODO parameterize choice of planner
+    private PlannerWrapper planner;
+
+    /**
+     * Initialize the planner artifact with the default planner (see {@link #DEFAULT_PLANNER}).
+     */
+    public void init() {
+        init(DEFAULT_PLANNER);
+    }
+
+    /**
+     * Initialize the planner artifact with a custom planner.
+     *
+     * @param plannerName either one of the PDDL4J planners ({@code ff} or {@code hsp}, see {@link PlannerWrapperFactory})
+     *                    or a path to an executable program (e.g. {@code /opt/ff})
+     */
+    public void init(String plannerName) {
+        planner = PlannerWrapperFactory.create(plannerName);
     }
 
     /**
@@ -82,6 +93,7 @@ public class PlannerArtifact extends Artifact {
             domain = domainWrapper.getDomain();
             pb = problemWrapper.getProblem();
 
+            // TODO use instead CodedProblem.toString(Object)
             dictionary.putAll(domainWrapper.getDictionary());
             dictionary.putAll(problemWrapper.getDictionary());
         } catch (ParseException | TermWrapperException e) {
@@ -93,9 +105,10 @@ public class PlannerArtifact extends Artifact {
             return;
         }
 
+        // TODO internalize coded problem
         CodedProblem cpb = Encoder.encode(domain, pb);
 
-        Plan p = planner.search(cpb);
+        Plan p = planner.search(domain, pb, cpb);
 
         PlanJasonWrapper w = new PlanJasonWrapper(p, cpb.getConstants(), dictionary);
         plan.set(w.toString());

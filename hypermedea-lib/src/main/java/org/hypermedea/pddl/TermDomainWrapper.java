@@ -48,6 +48,9 @@ public class TermDomainWrapper extends TermWrapper {
         if (!domainTerm.isStructure()) throw new TermWrapperException(domainTerm, "expected structure");
 
         parseTerm((Structure) term);
+
+        // TODO adapt requirements according to term
+        domain.addRequirement(RequireKey.ADL);
     }
 
     /**
