@@ -47,17 +47,6 @@ task jacamoJar(type: Jar) {
     }
 }
 
-publishing {
-    publications {
-        lib(MavenPublication) {
-            from components.java
-        }
-    }
-
-    // TODO add Maven Central repo with auth
-    // see https://docs.gradle.org/4.4.1/userguide/publishing_maven.html
-}
-
 clean {
     delete 'bin'
     delete 'build'
