@@ -25,11 +25,20 @@ public class NativePlannerWrapperTest {
         Domain domain = new TermDomainWrapper(domainTerm).getDomain();
         Problem pb = new TermProblemWrapper(pbTerm).getProblem();
 
-        PlannerWrapper planner = new FFWrapper();
-        Plan p = planner.search(domain, pb);
+        String arch = System.getProperty("os.arch");
+        String os = System.getProperty("os.name");
 
-        assertEquals(p.actions().size(), 1);
-        assertEquals(p.actions().get(0).getArity(), 3);
+        if (arch.equals("amd64") && os.equals("Linux")) {
+            String loc = NativePlannerWrapperTest.class.getClassLoader().getResource("ff").getFile();
+
+            PlannerWrapper planner = new NativePlannerWrapper(loc);
+            Plan p = planner.search(domain, pb);
+
+            assertEquals(p.actions().size(), 1);
+            assertEquals(p.actions().get(0).getArity(), 3);
+        } else {
+            // TODO warn that test was not performed
+        }
     }
 
 }

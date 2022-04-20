@@ -38,10 +38,19 @@ public class PlannerArtifact extends Artifact {
 
     private PlannerWrapper planner;
 
+    /**
+     * Initialize the planner artifact with the default planner (see {@link #DEFAULT_PLANNER}).
+     */
     public void init() {
         init(DEFAULT_PLANNER);
     }
 
+    /**
+     * Initialize the planner artifact with a custom planner.
+     *
+     * @param plannerName either one of the PDDL4J planners ({@code ff} or {@code hsp}, see {@link PlannerWrapperFactory})
+     *                    or a path to an executable program (e.g. {@code /opt/ff})
+     */
     public void init(String plannerName) {
         planner = PlannerWrapperFactory.create(plannerName);
     }
