@@ -62,11 +62,12 @@ public abstract class NativePlannerWrapper extends PlannerWrapper {
     protected abstract Plan parsePlan(InputStream in, CodedProblem codedProblem) throws IOException;
 
     /**
-     * Build
+     * Build a compact representation of an operation {@code name(params...)} based on the indexed representation of the
+     * problem. This methods should be used by child classes to implement {@link #parsePlan(InputStream, CodedProblem)}.
      *
-     * @param name
-     * @param params
-     * @return
+     * @param name operation name
+     * @param params operation parameters
+     * @return a compact representation of the operation
      */
     protected BitOp buildOp(String name, String[] params, CodedProblem codedProblem) {
         BitOp op = new BitOp(name.toLowerCase(), params.length);

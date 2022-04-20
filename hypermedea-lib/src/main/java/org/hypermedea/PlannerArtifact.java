@@ -8,9 +8,6 @@ import fr.uga.pddl4j.encoding.Encoder;
 import fr.uga.pddl4j.parser.Domain;
 import fr.uga.pddl4j.parser.Problem;
 import fr.uga.pddl4j.parser.Symbol;
-import fr.uga.pddl4j.planners.Planner;
-import fr.uga.pddl4j.planners.statespace.AbstractStateSpacePlanner;
-import fr.uga.pddl4j.planners.statespace.StateSpacePlannerFactory;
 import fr.uga.pddl4j.util.Plan;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Structure;
@@ -20,8 +17,8 @@ import org.hypermedea.pddl.PlanJasonWrapper;
 import org.hypermedea.pddl.TermDomainWrapper;
 import org.hypermedea.pddl.TermProblemWrapper;
 import org.hypermedea.pddl.TermWrapperException;
-import org.hypermedea.pddl.planners.DefaultPlannerWrapper;
 import org.hypermedea.pddl.planners.PlannerWrapper;
+import org.hypermedea.pddl.planners.PlannerWrapperFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,15 +34,16 @@ import java.util.Map;
  */
 public class PlannerArtifact extends Artifact {
 
-    private final PlannerWrapper planner;
+    public static final String DEFAULT_PLANNER = PlannerWrapperFactory.FF_PLANNER;
 
-    public PlannerArtifact() {
-        final StateSpacePlannerFactory stateSpacePlannerFactory = StateSpacePlannerFactory.getInstance();
-        final Planner.Name plannerName = AbstractStateSpacePlanner.DEFAULT_PLANNER;
-        Planner p = stateSpacePlannerFactory.getPlanner(plannerName);
-        // TODO parameterize choice of planner
+    private PlannerWrapper planner;
 
-        planner = new DefaultPlannerWrapper(p);
+    public void init() {
+        init(DEFAULT_PLANNER);
+    }
+
+    public void init(String plannerName) {
+        planner = PlannerWrapperFactory.create(plannerName);
     }
 
     /**

@@ -16,10 +16,27 @@ import java.util.regex.Pattern;
  */
 public class FFWrapper extends NativePlannerWrapper {
 
+    /**
+     * Name of the OS for which FF binaries have been compiled
+     */
+    public static final String OS_NAME = "Linux";
+
+    /**
+     * Name of the processor architecture for which FF binaries have been compiled
+     */
+    public static final String OS_ARCHITECTURE = "amd64";
+
     public static final String FF_BINARY_LOCATION = FFWrapper.class.getClassLoader().getResource("ff").getFile();
 
     public FFWrapper() {
         super(FF_BINARY_LOCATION);
+
+        String name = System.getProperty("os.name");
+        String arch = System.getProperty("os.arch");
+
+        if (!name.equals(OS_NAME) || !arch.equals(OS_ARCHITECTURE)) {
+            throw new RuntimeException("The native FF program is not compatible with your system architecture and OS. Please use another PDDL planner.");
+        }
     }
 
     @Override
