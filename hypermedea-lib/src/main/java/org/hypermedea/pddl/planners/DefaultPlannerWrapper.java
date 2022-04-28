@@ -1,6 +1,7 @@
 package org.hypermedea.pddl.planners;
 
 import fr.uga.pddl4j.encoding.CodedProblem;
+import fr.uga.pddl4j.encoding.Encoder;
 import fr.uga.pddl4j.parser.Domain;
 import fr.uga.pddl4j.parser.Problem;
 import fr.uga.pddl4j.planners.Planner;
@@ -18,7 +19,13 @@ public class DefaultPlannerWrapper extends PlannerWrapper {
     }
 
     @Override
-    public Plan search(Domain domain, Problem problem, CodedProblem codedProblem) {
+    public Plan search(Domain domain, Problem problem) {
+        CodedProblem codedProblem = Encoder.encode(domain, problem);
+
+        constantIndex.clear();
+        for (String constant : codedProblem.getConstants()) constantIndex.add(constant);
+
         return planner.search(codedProblem);
     }
+
 }

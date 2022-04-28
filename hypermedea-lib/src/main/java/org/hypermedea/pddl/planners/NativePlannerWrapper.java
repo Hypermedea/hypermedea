@@ -1,6 +1,5 @@
 package org.hypermedea.pddl.planners;
 
-import fr.uga.pddl4j.encoding.CodedProblem;
 import fr.uga.pddl4j.parser.Domain;
 import fr.uga.pddl4j.parser.Problem;
 import fr.uga.pddl4j.util.BitOp;
@@ -42,7 +41,7 @@ public class NativePlannerWrapper extends PlannerWrapper {
     }
 
     @Override
-    public Plan search(Domain domain, Problem problem, CodedProblem codedProblem) {
+    public Plan search(Domain domain, Problem problem) {
         try {
             FileWriter dw = new FileWriter(DOMAIN_TMP_LOCATION);
             dw.write(domain.toString());
@@ -58,7 +57,7 @@ public class NativePlannerWrapper extends PlannerWrapper {
             Process ps = psb.start();
             ps.waitFor();
 
-            return parsePlan(ps.getInputStream(), codedProblem);
+            return parsePlan(ps.getInputStream());
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -74,7 +73,7 @@ public class NativePlannerWrapper extends PlannerWrapper {
      * @param in the character stream output by the underlying native program
      * @return a PDDL plan
      */
-    protected Plan parsePlan(InputStream in, CodedProblem codedProblem) throws IOException {
+    protected Plan parsePlan(InputStream in) throws IOException {
         Plan p = new SequentialPlan();
 
         BufferedReader lineReader = new BufferedReader(new InputStreamReader(in));
@@ -96,7 +95,7 @@ public class NativePlannerWrapper extends PlannerWrapper {
                     String name = m.group("name");
                     String[] params = m.group("params").stripLeading().split(" ");
 
-                    p.add(p.size(), buildOp(name, params, codedProblem));
+                    p.add(p.size(), buildOp(name, params));
                 }
             }
         }
@@ -112,12 +111,19 @@ public class NativePlannerWrapper extends PlannerWrapper {
      * @param params operation parameters
      * @return a compact representation of the operation
      */
-    protected BitOp buildOp(String name, String[] params, CodedProblem codedProblem) {
+    protected BitOp buildOp(String name, String[] params) {
         BitOp op = new BitOp(name.toLowerCase(), params.length);
 
         for (int i = 0; i < params.length; i++) {
             String p = params[i].toLowerCase();
-            op.setValueOfParameter(i, codedProblem.getConstants().indexOf(p));
+            Integer indexValue = constantIndex.indexOf(p);
+
+            if (indexValue < 0) {
+                constantIndex.add(p);
+                indexValue = getConstantIndex().size() - 1;
+            }
+
+            op.setValueOfParameter(i, indexValue);
         }
 
         return op;

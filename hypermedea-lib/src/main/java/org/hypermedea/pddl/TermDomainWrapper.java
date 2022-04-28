@@ -33,6 +33,7 @@ public class TermDomainWrapper extends TermWrapper {
         public Map<Symbol, Integer> getPredicates() {
             return predicates;
         }
+
     }
 
     private Domain domain;

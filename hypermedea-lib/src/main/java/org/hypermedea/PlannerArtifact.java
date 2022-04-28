@@ -3,8 +3,6 @@ package org.hypermedea;
 import cartago.Artifact;
 import cartago.OPERATION;
 import cartago.OpFeedbackParam;
-import fr.uga.pddl4j.encoding.CodedProblem;
-import fr.uga.pddl4j.encoding.Encoder;
 import fr.uga.pddl4j.parser.Domain;
 import fr.uga.pddl4j.parser.Problem;
 import fr.uga.pddl4j.parser.Symbol;
@@ -105,12 +103,9 @@ public class PlannerArtifact extends Artifact {
             return;
         }
 
-        // TODO internalize coded problem
-        CodedProblem cpb = Encoder.encode(domain, pb);
+        Plan p = planner.search(domain, pb);
 
-        Plan p = planner.search(domain, pb, cpb);
-
-        PlanJasonWrapper w = new PlanJasonWrapper(p, cpb.getConstants(), dictionary);
+        PlanJasonWrapper w = new PlanJasonWrapper(p, planner.getConstantIndex(), dictionary);
         plan.set(w.toString());
     }
 
