@@ -6,8 +6,7 @@ mas fayol_mas {
     }
 
     workspace fayol_workspace  {
-        // TODO parser doesn't accept boolean arguments?
-        // artifact spider : org.hypermedea.LinkedDataArtifact(true)
+        // artifacts will be created by the agent. See controller.asl.
     }
 
 }
