@@ -10,9 +10,7 @@ import ch.unisg.ics.interactions.wot.td.affordances.ActionAffordance;
 import ch.unisg.ics.interactions.wot.td.affordances.Form;
 import ch.unisg.ics.interactions.wot.td.affordances.InteractionAffordance;
 import ch.unisg.ics.interactions.wot.td.affordances.PropertyAffordance;
-import ch.unisg.ics.interactions.wot.td.bindings.Operation;
-import ch.unisg.ics.interactions.wot.td.bindings.ProtocolBindings;
-import ch.unisg.ics.interactions.wot.td.bindings.Response;
+import ch.unisg.ics.interactions.wot.td.bindings.*;
 import ch.unisg.ics.interactions.wot.td.bindings.http.TDHttpOperation;
 import ch.unisg.ics.interactions.wot.td.io.TDGraphReader;
 import ch.unisg.ics.interactions.wot.td.schemas.DataSchema;
@@ -145,6 +143,24 @@ public class ThingArtifact extends HypermedeaArtifact {
     public void init(String url, boolean dryRun) {
         init(url);
         this.dryRun = dryRun;
+    }
+
+    /**
+     * Register a protocol binding class associated with a given URI scheme.
+     * Default bindings are already available for HTTP(S) and CoAP(S).
+     *
+     * @param scheme URI scheme recognized by the binding.
+     * @param bindingClass the full name of a Java class
+     *                     implementing the {@link ch.unisg.ics.interactions.wot.td.bindings.ProtocolBinding} interface,
+     *                     (e.g. {@code "ch.unisg.ics.interactions.wot.td.bindings.http.TDHttpBinding"}).
+     */
+    @OPERATION
+    public void registerBinding(String scheme, String bindingClass) {
+        try {
+            ProtocolBindings.registerBinding(scheme, bindingClass);
+        } catch (BindingNotRegisteredException e) {
+            failed(e.getMessage());
+        }
     }
 
     /**
