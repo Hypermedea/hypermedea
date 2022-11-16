@@ -15,6 +15,7 @@ repositories {
     mavenCentral()
     // artifact repository for JaCaMo-related project
     maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -28,8 +29,7 @@ dependencies {
     implementation group: 'net.sourceforge.owlapi', name: 'org.semanticweb.hermit', version: '1.4.5.519'
 
     // Thing Description (TD) client dependencies
-    // TODO include newer version of wot-td-java
-    implementation group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
+    implementation group: 'com.github.Hypermedea', name: 'wot-td-java', version: '1d163b1'
 
     // Planning Domain Description Language (PDDL) dependencies
     implementation fileTree(dir: 'lib', include: 'pddl4j-*.jar')

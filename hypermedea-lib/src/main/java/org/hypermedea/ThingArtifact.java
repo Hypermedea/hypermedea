@@ -10,12 +10,12 @@ import ch.unisg.ics.interactions.wot.td.affordances.ActionAffordance;
 import ch.unisg.ics.interactions.wot.td.affordances.Form;
 import ch.unisg.ics.interactions.wot.td.affordances.InteractionAffordance;
 import ch.unisg.ics.interactions.wot.td.affordances.PropertyAffordance;
-import ch.unisg.ics.interactions.wot.td.clients.TDHttpRequest;
-import ch.unisg.ics.interactions.wot.td.clients.TDHttpResponse;
+import ch.unisg.ics.interactions.wot.td.bindings.Operation;
+import ch.unisg.ics.interactions.wot.td.bindings.ProtocolBindings;
+import ch.unisg.ics.interactions.wot.td.bindings.Response;
+import ch.unisg.ics.interactions.wot.td.bindings.http.TDHttpOperation;
 import ch.unisg.ics.interactions.wot.td.io.TDGraphReader;
-import ch.unisg.ics.interactions.wot.td.schemas.ArraySchema;
 import ch.unisg.ics.interactions.wot.td.schemas.DataSchema;
-import ch.unisg.ics.interactions.wot.td.schemas.ObjectSchema;
 import ch.unisg.ics.interactions.wot.td.security.APIKeySecurityScheme;
 import ch.unisg.ics.interactions.wot.td.security.SecurityScheme;
 import ch.unisg.ics.interactions.wot.td.vocabularies.TD;
@@ -120,7 +120,7 @@ public class ThingArtifact extends HypermedeaArtifact {
             td = TDGraphReader.readFromURL(TDFormat.RDF_TURTLE, url);
 
             for (SecurityScheme scheme : td.getSecuritySchemes()) {
-                defineObsProperty("securityScheme", scheme.getSchemaType());
+                defineObsProperty("securityScheme", scheme.getSchemeType());
             }
         } catch (IOException e) {
             failed(e.getMessage());
@@ -158,17 +158,20 @@ public class ThingArtifact extends HypermedeaArtifact {
     public void readProperty(String propertyName, OpFeedbackParam<Object> output) {
         PropertyAffordance property = getPropertyOrFail(propertyName);
 
-        Optional<TDHttpResponse> response = executeRequest(property, TD.readProperty, Optional.empty(),  null);
+        Optional<Response> response = executeRequest(property, TD.readProperty, Optional.empty(),  null);
 
         if (!dryRun) {
             if (!response.isPresent()) {
                 failed("Something went wrong with the read property request.");
             }
 
-            if (requestSucceeded(response.get().getStatusCode())) {
-                readPayloadWithSchema(response.get(), property.getDataSchema(), output);
+            if (response.get().getStatus().equals(Response.ResponseStatus.OK) && response.get().getPayload().isPresent()) {
+                Object value = response.get().getPayload().get();
+                output.set(new JsonTermWrapper(value).getTerm());
+            } else if (!response.get().getStatus().equals(Response.ResponseStatus.OK)) {
+                failed("Status: " + response.get().getStatus());
             } else {
-                failed("Status code: " + response.get().getStatusCode());
+                failed("No payload returned by the Thing");
             }
         }
     }
@@ -225,10 +228,10 @@ public class ThingArtifact extends HypermedeaArtifact {
 
         Optional<DataSchema> schema = Optional.of(property.getDataSchema());
 
-        Optional<TDHttpResponse> response = executeRequest(property, TD.writeProperty, schema, payload);
+        Optional<Response> response = executeRequest(property, TD.writeProperty, schema, payload);
 
-        if (response.isPresent() && !requestSucceeded(response.get().getStatusCode())) {
-            failed("Status code: " + response.get().getStatusCode());
+        if (response.isPresent() && !response.get().getStatus().equals(Response.ResponseStatus.OK)) {
+            failed("Status: " + response.get().getStatus());
         }
     }
 
@@ -252,11 +255,13 @@ public class ThingArtifact extends HypermedeaArtifact {
                 log("Input payload ignored. Action " + actionName + " does not take any input.");
             }
 
-            Optional<TDHttpResponse> response = executeRequest(action.get(), TD.invokeAction, inputSchema, payload);
+            Optional<Response> response = executeRequest(action.get(), TD.invokeAction, inputSchema, payload);
 
-            if (response.isPresent() && !requestSucceeded(response.get().getStatusCode())) {
-                failed("Status code: " + response.get().getStatusCode());
+            if (response.isPresent() && !response.get().getStatus().equals(Response.ResponseStatus.OK)) {
+                failed("Status: " + response.get().getStatus());
             }
+
+            // TODO include output param
         } else {
             failed("Unknown action: " + actionName);
         }
@@ -294,13 +299,6 @@ public class ThingArtifact extends HypermedeaArtifact {
         }
     }
 
-    /**
-     * Match the entire 2XX class
-     */
-    private boolean requestSucceeded(int statusCode) {
-        return statusCode >= 200 && statusCode < 300;
-    }
-
     /* Tries to retrieve a property first by semantic tag, then by name. Fails if none works. */
     private PropertyAffordance getPropertyOrFail(String propertyName) {
         Optional<PropertyAffordance> property = td.getPropertyByName(propertyName);
@@ -312,12 +310,7 @@ public class ThingArtifact extends HypermedeaArtifact {
         return property.get();
     }
 
-    private void readPayloadWithSchema(TDHttpResponse response, DataSchema schema, OpFeedbackParam<Object> output) {
-        Object value = response.getPayloadWithSchema(schema);
-        output.set(new JsonTermWrapper(value).getTerm());
-    }
-
-    private Optional<TDHttpResponse> executeRequest(InteractionAffordance affordance, String operationType, Optional<DataSchema> schema, Object payload) {
+    private Optional<Response> executeRequest(InteractionAffordance affordance, String operationType, Optional<DataSchema> schema, Object payload) {
         Optional<Form> form = affordance.getFirstFormForOperationType(operationType);
 
         if (!form.isPresent()) {
@@ -326,23 +319,23 @@ public class ThingArtifact extends HypermedeaArtifact {
         }
 
         try {
-            TDHttpRequest request = new TDHttpRequest(form.get(), operationType);
+            Operation op = ProtocolBindings.getBinding(form.get()).bind(form.get(), operationType);
 
             if (schema.isPresent() && payload != null) {
                 Term p = parseCArtAgOObject(payload);
 
                 TermJsonWrapper w = new TermJsonWrapper(p);
 
-                if (w.isJsonBoolean() || w.isJsonNumber() || w.isJsonString()) setPrimitivePayload(request, schema.get(), w);
-                else if (w.isJsonArray()) setArrayPayload(request, schema.get(), w);
-                else if (w.isJsonObject()) setObjectPayload(request, schema.get(), w);
+                if (w.isJsonBoolean() || w.isJsonNumber() || w.isJsonString()) setPrimitivePayload(op, schema.get(), w);
+                else if (w.isJsonArray()) setArrayPayload(op, schema.get(), w);
+                else if (w.isJsonObject()) setObjectPayload(op, schema.get(), w);
                 else {
                     failed("Could not detect the type of payload (primitive, object, or array).");
                     return Optional.empty();
                 }
             }
 
-            return issueRequest(request);
+            return issueRequest(op);
         } catch (ParseException e) {
             // Should not happen (original object was a Jason term)
             failed("Invalid payload.");
@@ -350,69 +343,78 @@ public class ThingArtifact extends HypermedeaArtifact {
         }
     }
 
-    TDHttpRequest setPrimitivePayload(TDHttpRequest request, DataSchema schema, TermJsonWrapper w) {
+    Operation setPrimitivePayload(Operation op, DataSchema schema, TermJsonWrapper w) {
         try {
             if (w.isJsonBoolean()) {
-                return request.setPrimitivePayload(schema, w.getJsonBoolean());
+                op.setPayload(schema, w.getJsonBoolean());
             } else if (w.isJsonNumber()) {
-                Number nb = w.getJsonNumber();
-
-                if (nb instanceof Double) return request.setPrimitivePayload(schema, (double) nb);
-                else if (nb instanceof Long) return request.setPrimitivePayload(schema, (long) nb);
+                op.setPayload(schema, w.getJsonNumber());
             } else if (w.isJsonString()) {
-                return request.setPrimitivePayload(schema, w.getJsonString());
+                op.setPayload(schema, w.getJsonString());
+            } else {
+                failed("Unable to detect the primitive datatype of payload: " + w.getJsonValue());
             }
-
-            failed("Unable to detect the primitive datatype of payload: " + w.getJsonValue());
         } catch (IllegalArgumentException e) {
             failed(e.getMessage());
         }
 
-        return request;
+        return op;
     }
 
-    TDHttpRequest setObjectPayload(TDHttpRequest request, DataSchema schema, TermJsonWrapper w) {
+    Operation setObjectPayload(Operation op, DataSchema schema, TermJsonWrapper w) {
         if (schema.getDatatype() != DataSchema.OBJECT) {
             failed("TD mismatch: illegal arguments, this affordance uses a data schema of type "
                     + schema.getDatatype());
         }
 
-        return request.setObjectPayload((ObjectSchema) schema, w.getJsonObject());
+        op.setPayload(schema, w.getJsonObject());
+        return op;
     }
 
-    TDHttpRequest setArrayPayload(TDHttpRequest request, DataSchema schema, TermJsonWrapper w) {
+    Operation setArrayPayload(Operation op, DataSchema schema, TermJsonWrapper w) {
         if (schema.getDatatype() != DataSchema.ARRAY) {
             failed("TD mismatch: illegal arguments, this affordance uses a data schema of type "
                     + schema.getDatatype());
         }
 
-        return request.setArrayPayload((ArraySchema) schema, w.getJsonArray());
+        op.setPayload(schema, w.getJsonArray());
+        return op;
     }
 
-    private Optional<TDHttpResponse> issueRequest(TDHttpRequest request) {
-        if (apiKey.isPresent()) {
+    private Optional<Response> issueRequest(Operation op) {
+        if (apiKey.isPresent() && op instanceof TDHttpOperation) {
+            TDHttpOperation httpOp = (TDHttpOperation) op;
             Optional<SecurityScheme> scheme = td.getFirstSecuritySchemeByType(WoTSec.APIKeySecurityScheme);
-            if (scheme.isPresent()) request.setAPIKey((APIKeySecurityScheme) scheme.get(), apiKey.get());
+            if (scheme.isPresent()) httpOp.setAPIKey((APIKeySecurityScheme) scheme.get(), apiKey.get());
+        } else if (apiKey.isPresent()) {
+            log("Warning: API key auth is only supported for HTTP bindings. Key given to artifact was ignored.");
         }
 
-        if (basicAuth.isPresent()) {
+        if (basicAuth.isPresent() && op instanceof TDHttpOperation) {
+            TDHttpOperation httpOp = (TDHttpOperation) op;
             // TODO if future version of wot-td-java includes the whole vocab, replace string with constant
             Optional<SecurityScheme> scheme = td.getFirstSecuritySchemeByType("BasicSecurityScheme");
             //if (scheme.isPresent())
-                request.addHeader("Authorization", "Basic " + basicAuth.get());
+                httpOp.addHeader("Authorization", "Basic " + basicAuth.get());
+        } else if (basicAuth.isPresent()) {
+            log("Warning: basic auth is only supported for HTTP bindings. Credentials given to artifact were ignored.");
         }
 
-        // Set a header with the id of the operating agent
-        request.addHeader("X-Agent-WebID", WEBID_PREFIX + getCurrentOpAgentId().getAgentName());
         log("operating agent: " + getCurrentOpAgentId().getAgentName());
 
+        if (op instanceof TDHttpOperation) {
+            // Set a header with the id of the operating agent
+            TDHttpOperation httpOp = (TDHttpOperation) op;
+            httpOp.addHeader("X-Agent-WebID", WEBID_PREFIX + getCurrentOpAgentId().getAgentName());
+        }
+
         if (this.dryRun) {
-            log(request.toString());
+            log(op.toString());
             return Optional.empty();
         } else {
-            log(request.toString());
+            log(op.toString());
             try {
-                return Optional.of(request.execute());
+                return Optional.of(op.getResponse());
             } catch (IOException e) {
                 failed(e.getMessage());
             }
