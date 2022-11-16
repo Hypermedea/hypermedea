@@ -15,6 +15,7 @@ repositories {
     mavenCentral()
     // artifact repository for JaCaMo-related project
     maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
+    maven { url "https://jitpack.io" }
 }
 
 dependencies {
@@ -32,7 +33,7 @@ dependencies {
     implementation group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
 
     // Planning Domain Description Language (PDDL) dependencies
-    implementation fileTree(dir: 'lib', include: 'pddl4j-*.jar')
+    implementation group: 'com.github.pellierd', name: 'pddl4j', version: 'v3.8.3'
 }
 
 /**

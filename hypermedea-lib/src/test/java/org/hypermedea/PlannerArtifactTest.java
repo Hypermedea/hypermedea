@@ -13,6 +13,7 @@ public class PlannerArtifactTest {
     @Test
     public void testBuildPlan() throws ParseException {
         PlannerArtifact a = new PlannerArtifact();
+        a.init();
 
         OpFeedbackParam<String> res = new OpFeedbackParam<>();
 
