@@ -414,6 +414,7 @@ public class ThingArtifact extends HypermedeaArtifact {
         } else {
             log(op.toString());
             try {
+                op.sendRequest();
                 return Optional.of(op.getResponse());
             } catch (IOException e) {
                 failed(e.getMessage());
