@@ -82,6 +82,7 @@ public class PlannerArtifact extends Artifact {
         Map<Symbol, Term> dictionary = new HashMap<>();
 
         try {
+            // TODO put Jason parsing within wrappers
             Structure domainTerm = ASSyntax.parseStructure(domainStructure);
             Structure problemTerm = ASSyntax.parseStructure(problemStructure);
 
