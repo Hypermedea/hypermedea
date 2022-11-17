@@ -12,7 +12,7 @@ mas siram_mas {
          *  - https://github.com/Hypermedea/opcua-binding
          *  - https://github.com/Hypermedea/ros-binding
          */
-        artifact thing: org.hypermedea.ThingArtifact("http://localhost:8080/td")
+        artifact thing: org.hypermedea.ThingArtifact("http://localhost:5000/td-mir.ttl")
     }
 
 }

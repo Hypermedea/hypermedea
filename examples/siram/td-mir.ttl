@@ -1,0 +1,23 @@
+@prefix td: <https://www.w3.org/2019/wot/td#> .
+@prefix ros: <https://github.com/RobotWebTools/rosbridge_suite/blob/ros1/ROSBRIDGE_PROTOCOL.md#> .
+@prefix hctl: <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix wotsec: <https://www.w3.org/2019/wot/security#> .
+@prefix js: <https://www.w3.org/2019/wot/json-schema#> .
+@base <ros+ws://localhost:9090/> .
+
+<#thing> a td:Thing ;
+    dct:title "MiR robot" ;
+    td:hasSecurityConfiguration [ a wotsec:NoSecurityScheme ] ;
+    td:hasBase <> ;
+    td:hasPropertyAffordance [
+        a td:PropertyAffordance, js:ObjectSchema ;
+        td:name "light_cmd" ;
+        dct:title "Feedback light" ;
+        td:hasForm [
+            hctl:hasTarget <light_cmd> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:writeProperty ;
+            ros:messageType "std_msgs/String"
+        ] ;
+    ] .
