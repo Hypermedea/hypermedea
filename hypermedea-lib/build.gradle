@@ -29,10 +29,14 @@ dependencies {
     implementation group: 'net.sourceforge.owlapi', name: 'org.semanticweb.hermit', version: '1.4.5.519'
 
     // Thing Description (TD) client dependencies
-    implementation group: 'com.github.Hypermedea', name: 'wot-td-java', version: 'd208e66'
+    implementation group: 'com.github.Hypermedea', name: 'wot-td-java', version: 'ca73f81'
 
     // Planning Domain Description Language (PDDL) dependencies
     implementation group: 'com.github.pellierd', name: 'pddl4j', version: 'v3.8.3'
+
+    // TODO to remove
+    implementation group: 'com.github.Hypermedea', name: 'opcua-binding', version: 'feeb9b9'
+    implementation group: 'com.github.Hypermedea', name: 'ros-binding', version: 'f8a2595'
 }
 
 /**

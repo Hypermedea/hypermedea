@@ -4,14 +4,7 @@ ros_goal(json([kv("data", "emg:0")])) .
 +!start :
     true
     <-
-    !init ;
     !observe .
-    
-+!init :
-    true
-    <-
-    registerBinding("ros+ws", "org.hypermedea.ros.ROSBinding") .
-    //registerBinding("opc.tcp", "org.hypermedea.opcua.OpcUaBinding") .
 
 +!observe :
     ros_goal(Goal)

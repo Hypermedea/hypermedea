@@ -27,7 +27,7 @@ import org.hypermedea.json.TermJsonWrapper;
 import org.hypermedea.ld.RequestListener;
 import org.hypermedea.ld.Resource;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
@@ -64,6 +64,18 @@ import java.util.Optional;
  * </p>
  *
  * <p>
+ *     To register custom WoT protocol bindings (e.g. for MQTT, OPC UA, ROS, etc.) to all
+ *     <code>ThingArtifact</code>s, create the file {@value BINDING_CONFIG_FILENAME} in the root folder
+ *     of your application and declare binding class names as follows (one Java class name per line):
+ * </p>
+ *
+ * <pre>
+ * org.hypermedea.opcua.OpcUaBinding
+ * org.hypermedea.ros.ROSBinding
+ * ...
+ * </pre>
+ *
+ * <p>
  *     See
  *     <a href="https://github.com/Hypermedea/hypermedea/tree/master/examples/thing"><code>examples/thing</code></a>,
  *     <a href="https://github.com/Hypermedea/hypermedea/tree/master/examples/itm-factory"><code>examples/itm-factory</code></a> and
@@ -98,6 +110,11 @@ public class ThingArtifact extends HypermedeaArtifact {
 
     }
 
+    /**
+     * Name of the configuration file that should be used to declare custom bindings.
+     */
+    public static final String BINDING_CONFIG_FILENAME = "bindings.txt";
+
     private static final String WEBID_PREFIX = "http://hypermedea.org/#";
 
     private ThingDescription td;
@@ -107,6 +124,24 @@ public class ThingArtifact extends HypermedeaArtifact {
     private Optional<String> basicAuth;
 
     private boolean dryRun;
+
+    static {
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(BINDING_CONFIG_FILENAME));
+
+            reader.lines().forEach((String bindingClass) -> {
+                try {
+                    ProtocolBindings.registerBinding(bindingClass);
+                } catch (BindingNotRegisteredException e) {
+                    e.printStackTrace();
+                    // TODO log error
+                }
+            });
+        } catch (FileNotFoundException e) {
+            // do nothing
+            // TODO log (debug) that no binding file was found
+        }
+    }
 
     /**
      * Call {@link #init(String, boolean) init(String, false)}.
@@ -143,24 +178,6 @@ public class ThingArtifact extends HypermedeaArtifact {
     public void init(String url, boolean dryRun) {
         init(url);
         this.dryRun = dryRun;
-    }
-
-    /**
-     * Register a protocol binding class associated with a given URI scheme.
-     * Default bindings are already available for HTTP(S) and CoAP(S).
-     *
-     * @param scheme URI scheme recognized by the binding.
-     * @param bindingClass the full name of a Java class
-     *                     implementing the {@link ch.unisg.ics.interactions.wot.td.bindings.ProtocolBinding} interface,
-     *                     (e.g. {@code "ch.unisg.ics.interactions.wot.td.bindings.http.TDHttpBinding"}).
-     */
-    @OPERATION
-    public void registerBinding(String scheme, String bindingClass) {
-        try {
-            ProtocolBindings.registerBinding(scheme, bindingClass);
-        } catch (BindingNotRegisteredException e) {
-            failed(e.getMessage());
-        }
     }
 
     /**

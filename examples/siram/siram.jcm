@@ -3,7 +3,7 @@ mas siram_mas {
    agent controller {
           goals: start
           join: siram_workspace
-          focus: siram_workspace.thing
+          focus: siram_workspace.dx10
     }
 
     workspace siram_workspace  {
@@ -12,7 +12,8 @@ mas siram_mas {
          *  - https://github.com/Hypermedea/opcua-binding
          *  - https://github.com/Hypermedea/ros-binding
          */
-        artifact thing: org.hypermedea.ThingArtifact("http://localhost:5000/td-mir.ttl")
+        artifact mir: org.hypermedea.ThingArtifact("http://localhost:5000/td-mir.ttl")
+        artifact dx10: org.hypermedea.ThingArtifact("http://localhost:5000/td-dx10.ttl")
     }
 
 }
