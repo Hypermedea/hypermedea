@@ -4,7 +4,7 @@
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix wotsec: <https://www.w3.org/2019/wot/security#> .
 @prefix js: <https://www.w3.org/2019/wot/json-schema#> .
-@base <ros+ws://localhost:9090/> .
+@base <ros+ws://192.168.12.20:9090/> .
 
 <#thing> a td:Thing ;
     dct:title "MiR robot" ;
@@ -20,4 +20,17 @@
             hctl:hasOperationType td:writeProperty ;
             ros:messageType "std_msgs/String"
         ] ;
+    ] ;
+    td:hasPropertyAffordance [
+        # TOOD implement actionlib interactions for ActionAffordance
+        a td:PropertyAffordance, js:ObjectSchema ;
+        td:name "move_base" ;
+        dct:title "Mission to move to a position" ;
+        td:hasForm [
+            hctl:hasTarget <move_base/goal> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:writeProperty ;
+            #ros:messageType "std_msgs/String"
+            ros:messageType "mir_actions/MirMoveBaseActionGoal"
+        ]
     ] .
