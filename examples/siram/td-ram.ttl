@@ -1,0 +1,26 @@
+@prefix td: <https://www.w3.org/2019/wot/td#> .
+@prefix ros: <https://github.com/RobotWebTools/rosbridge_suite/blob/ros1/ROSBRIDGE_PROTOCOL.md#> .
+@prefix hctl: <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix wotsec: <https://www.w3.org/2019/wot/security#> .
+@prefix js: <https://www.w3.org/2019/wot/json-schema#> .
+@base <http://localhost:8080/> .
+
+<#thing> a td:Thing ;
+    dct:title "RAM robot developed in the SIRAM project" ;
+    td:hasSecurityConfiguration [ a wotsec:NoSecurityScheme ] ;
+    td:hasBase <> ;
+    td:hasActionAffordance [
+        a td:ActionAffordance ;
+        td:name "goto" ;
+        dct:title "Go to a target location" ;
+        td:hasInputSchema [
+            a js:ObjectSchema
+        ] ;
+        # td:hasOutputSchema [] ;
+        td:hasForm [
+            hctl:hasTarget <navette/goto> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:invokeAction
+        ] ;
+    ] .

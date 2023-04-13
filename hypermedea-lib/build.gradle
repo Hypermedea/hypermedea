@@ -33,21 +33,31 @@ dependencies {
 
     // Planning Domain Description Language (PDDL) dependencies
     implementation group: 'com.github.pellierd', name: 'pddl4j', version: 'v3.8.3'
-
-    // TODO to remove
-    implementation group: 'com.github.Hypermedea', name: 'opcua-binding', version: 'feeb9b9'
-    implementation group: 'com.github.Hypermedea', name: 'ros-binding', version: 'f8a2595'
 }
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = 'org.hypermedea'
+            artifactId = 'hypermedea'
+            version = version
+
+            from components.java
+        }
+    }
+}
+
+
 
 /**
  * task to create a all-in-one jar that can be used as JaCaMo library
  */
 task jacamoJar(type: Jar) {
-    archiveBaseName = 'hypermedea-jacamo-lib'
+    archiveClassifier = 'standalone'
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
     from {
-        configurations.runtimeClasspath
-            .filter { !it.name.endsWith('pom') }
-            .collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
     }
 }
 
