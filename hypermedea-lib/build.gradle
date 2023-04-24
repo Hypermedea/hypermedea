@@ -29,7 +29,7 @@ dependencies {
     implementation group: 'net.sourceforge.owlapi', name: 'org.semanticweb.hermit', version: '1.4.5.519'
 
     // Thing Description (TD) client dependencies
-    implementation group: 'com.github.Hypermedea', name: 'wot-td-java', version: 'ca73f81'
+    implementation group: 'com.github.Hypermedea', name: 'wot-td-java', version: '6037c4e'
 
     // Planning Domain Description Language (PDDL) dependencies
     implementation group: 'com.github.pellierd', name: 'pddl4j', version: 'v3.8.3'
@@ -46,8 +46,6 @@ publishing {
         }
     }
 }
-
-
 
 /**
  * task to create a all-in-one jar that can be used as JaCaMo library

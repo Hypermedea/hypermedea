@@ -4,12 +4,22 @@
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix wotsec: <https://www.w3.org/2019/wot/security#> .
 @prefix js: <https://www.w3.org/2019/wot/json-schema#> .
-@base <http://localhost:8080/> .
+@base <http://192.168.20.139/> .
 
 <#thing> a td:Thing ;
     dct:title "RAM robot developed in the SIRAM project" ;
     td:hasSecurityConfiguration [ a wotsec:NoSecurityScheme ] ;
     td:hasBase <> ;
+    td:hasPropertyAffordance [
+        a td:PropertyAffordance, js:ObjectSchema ;
+        td:name "ram_status" ;
+        dct:title "Get status" ;
+        td:hasForm [
+            hctl:hasTarget <> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:readProperty
+        ]
+    ] ;
     td:hasActionAffordance [
         a td:ActionAffordance ;
         td:name "goto" ;
@@ -20,6 +30,34 @@
         # td:hasOutputSchema [] ;
         td:hasForm [
             hctl:hasTarget <navette/goto> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:invokeAction
+        ] ;
+    ],
+    [
+        a td:ActionAffordance ;
+        td:name "pick" ;
+        dct:title "Pick an item" ;
+        td:hasInputSchema [
+            a js:ObjectSchema
+        ] ;
+        # td:hasOutputSchema [] ;
+        td:hasForm [
+            hctl:hasTarget <robot/pick> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:invokeAction
+        ] ;
+    ],
+    [
+        a td:ActionAffordance ;
+        td:name "place" ;
+        dct:title "Place an item" ;
+        td:hasInputSchema [
+            a js:ObjectSchema
+        ] ;
+        # td:hasOutputSchema [] ;
+        td:hasForm [
+            hctl:hasTarget <robot/place> ;
             hctl:forContentType "application/json" ;
             hctl:hasOperationType td:invokeAction
         ] ;
