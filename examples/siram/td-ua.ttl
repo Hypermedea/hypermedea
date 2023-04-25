@@ -43,13 +43,18 @@
         ] ;
     ],
     [
-        a td:PropertyAffordance, js:NumberSchema ;
+        a td:PropertyAffordance, js:IntegerSchema ;
         td:name "MW322" ;
         dct:title "Compteur pots" ;
         td:hasForm [
             hctl:hasTarget <> ;
             hctl:forContentType "application/json" ;
             hctl:hasOperationType td:readProperty ;
+            opcua:nodeId "ns=2;s=ITm Factory.VL10.Compteur pots"
+        ], [
+            hctl:hasTarget <> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:writeProperty ;
             opcua:nodeId "ns=2;s=ITm Factory.VL10.Compteur pots"
         ] ;
     ] .

@@ -1,19 +1,18 @@
 // allowed values: "emg:0" (green), "emg:1" (red)
 alert_goal(json([kv("data", "emg:0")])) .
 
-thing(mir) .
-//thing(ram) .
-
 tag("logistique") .
 tag("qualite") .
 tag("zone_tampon") .
 tag("dx10b5") .
+tag("chargement") .
 
 //mir_tagged_location("logistique", [19.58, 7.44, 0], [0, 0, -0.56, 0.82]) .
 mir_tagged_location("logistique", [19.79, 7.22, 0], [0, 0, 0.87, 0.47]) .
 mir_tagged_location("qualite", [15.476616259551427, 5.4803723308303525, 0], [0, 0, -0.5534475888053139, 0.8328840053966604]) .
 mir_tagged_location("zone_tampon", [13.261030169302074, 6.188439205363753, 0], [0, 0, 0.1958453875670178, 0.9806347863342013]) .
 mir_tagged_location("dx10b5", [10.827581428659371, 10.95123100099946, 0], [0, 0, 0.1763894630109686, 0.984320454597334]) .
+mir_tagged_location("chargement", [6.75, 14.7, 0], [0, 0, -0.56, 0.82]) .
 
 mir_move_base_payload(Tag, json([
     kv("goal", json([
@@ -200,6 +199,17 @@ mission(takeSample, [
     <-
     invokeAction("place", Payload, Response)[artifact_name(ram)] .
 
++!goToLoadingDock :
+    thing(mir) & mir_move_base_payload("chargement", Payload)
+    <-
+    writeProperty("move_base", Payload)[artifact_name(mir)] ;
+    .print("executed goToLoadingDock with MiR (no response)")  .
+
++!goToLoadingDock :
+    thing(ram) & ram_goto_payload("chargement", Payload)
+    <-
+    invokeAction("goto", Payload, Response)[artifact_name(ram)] .
+
 +!execute(Mission, I) :
     mission(Mission, ActionList) & .nth(I, ActionList, Action) & .length(ActionList, NbActions)
     <-
@@ -243,6 +253,7 @@ mission(takeSample, [
 +!finalize(takeSample) :
     true
     <-
+    !goToLoadingDock ;
     .wait(10000) ;
     !!performQualityControl ;
     .
@@ -259,7 +270,7 @@ mission(takeSample, [
         !!feedLine
     } .
 
-+!finalize(refillStorage)
++!finalize(refillStorage) :
     true
     <-
     writeProperty("MW322", 0)[artifact_name(ua)] ;
@@ -270,17 +281,30 @@ mission(takeSample, [
 +!get_status
     <-
     readProperty("ram_status", Res)[artifact_name(ram)] ;
-    .print(Res) .
+    Res = json(KV) ;
+    .member(kv("carriedObjects", NbObjects), KV) ;
+    .print(NbObjects) .
     // TODO get nbObjects and check if RAM is busy
 
 +!start :
     true
     <-
+    .print("waiting for input") ;
+    //!goToLoadingDock ;
     //!execute(refillStorage, 0) ;
-    //!execute(takeSample, 2) ;
-    !!feedLine ;
+    //!execute(takeSample, 0) ;
+    //!!feedLine ;
     //!!performQualityControl ;
+    //!get_status
     .
+
+/*
+ * .send(controller, tell, thing(ram))
+ * .send(controller, tell, thing(mir))
+ *
+ * .send(controller, achieve, feedLine)
+ * .send(controller, achieve, performQualityControl)
+ */
 
 { include("inc/actions.asl") }
 
