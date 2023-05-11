@@ -4,7 +4,6 @@ import fr.uga.pddl4j.parser.Symbol;
 import fr.uga.pddl4j.util.BitOp;
 import fr.uga.pddl4j.util.Plan;
 import jason.asSyntax.ASSyntax;
-import jason.asSyntax.Atom;
 import jason.asSyntax.Term;
 
 import java.util.HashMap;
@@ -68,7 +67,7 @@ public class PlanJasonWrapper {
                     if (j < op.getArity() - 1) args.append(", ");
                 }
 
-                String a = String.format("%s(%s)", getLabelForSymbol(op.getName()), args);
+                String a = String.format("!%s(%s)", getLabelForSymbol(op.getName()), args);
                 list.append(a);
 
                 if (i < plan.size() - 1) list.append("; ");
