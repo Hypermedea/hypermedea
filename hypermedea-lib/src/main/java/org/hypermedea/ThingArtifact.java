@@ -6,11 +6,11 @@ import cartago.OpFeedbackParam;
 import cartago.OperationException;
 import ch.unisg.ics.interactions.wot.td.ThingDescription;
 import ch.unisg.ics.interactions.wot.td.ThingDescription.TDFormat;
-import ch.unisg.ics.interactions.wot.td.affordances.ActionAffordance;
-import ch.unisg.ics.interactions.wot.td.affordances.Form;
-import ch.unisg.ics.interactions.wot.td.affordances.InteractionAffordance;
-import ch.unisg.ics.interactions.wot.td.affordances.PropertyAffordance;
-import ch.unisg.ics.interactions.wot.td.bindings.*;
+import ch.unisg.ics.interactions.wot.td.affordances.*;
+import ch.unisg.ics.interactions.wot.td.bindings.BindingNotRegisteredException;
+import ch.unisg.ics.interactions.wot.td.bindings.Operation;
+import ch.unisg.ics.interactions.wot.td.bindings.ProtocolBindings;
+import ch.unisg.ics.interactions.wot.td.bindings.Response;
 import ch.unisg.ics.interactions.wot.td.bindings.http.TDHttpOperation;
 import ch.unisg.ics.interactions.wot.td.io.TDGraphReader;
 import ch.unisg.ics.interactions.wot.td.schemas.DataSchema;
@@ -20,6 +20,7 @@ import ch.unisg.ics.interactions.wot.td.vocabularies.TD;
 import ch.unisg.ics.interactions.wot.td.vocabularies.WoTSec;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.ListTerm;
+import jason.asSyntax.StringTerm;
 import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
 import org.hypermedea.json.JsonTermWrapper;
@@ -27,7 +28,10 @@ import org.hypermedea.json.TermJsonWrapper;
 import org.hypermedea.ld.RequestListener;
 import org.hypermedea.ld.Resource;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
@@ -114,6 +118,13 @@ public class ThingArtifact extends HypermedeaArtifact {
      * Name of the configuration file that should be used to declare custom bindings.
      */
     public static final String BINDING_CONFIG_FILENAME = "bindings.txt";
+
+    /**
+     * Functor used to advertise that a new resource has been created.
+     * TODO as RDF triple instead? Would require anchor information
+     * TODO or as Link object?
+     */
+    public static final String RESOURCE_FUNCTOR = "resource";
 
     private static final String WEBID_PREFIX = "http://hypermedea.org/#";
 
@@ -274,35 +285,82 @@ public class ThingArtifact extends HypermedeaArtifact {
      * TODO return action's output
      *
      * @param actionName the action's name.
-     * @param payload the payload to be issued when invoking the action as a Jason structure.
+     * @param input the input payload to be issued when invoking the action as a Jason structure.
+     * @param outputOrURI the output of the action, as provided by the Thing or the URI of the ongoing action.
      *
      */
     @OPERATION
-    public void invokeAction(String actionName, Object payload) {
+    public void invokeAction(String actionName, Object input, OpFeedbackParam<Object> outputOrURI) {
         Optional<ActionAffordance> action = td.getActionByName(actionName);
 
         if (action.isPresent()) {
             Optional<DataSchema> inputSchema = action.get().getInputSchema();
 
-            if (!inputSchema.isPresent() && payload != null) {
+            if (!inputSchema.isPresent() && input != null) {
                 log("Input payload ignored. Action " + actionName + " does not take any input.");
             }
 
-            Optional<Response> response = executeRequest(action.get(), TD.invokeAction, inputSchema, payload);
+            Optional<Response> response = executeRequest(action.get(), TD.invokeAction, inputSchema, input);
 
             if (response.isPresent() && !response.get().getStatus().equals(Response.ResponseStatus.OK)) {
                 failed("Status: " + response.get().getStatus());
-            }
+            } else if (outputOrURI != null) {
+                Response res = response.get();
 
-            // TODO include output param
+                // TODO improve detection of "201 Location" header value (currently, empty rel)
+                Optional<Link> linkToNewResource = res.getLinks().stream().filter(l -> l.getRelationType().isEmpty()).findFirst();
+
+                if (linkToNewResource.isPresent()) {
+                    String uri = linkToNewResource.get().getTarget();
+                    StringTerm uriTerm = ASSyntax.createString(uri);
+
+                    Term t = ASSyntax.createLiteral(RESOURCE_FUNCTOR, uriTerm);
+                    outputOrURI.set(t);
+                } else if (res.getPayload().isPresent()) {
+                    Object payload = res.getPayload().get();
+
+                    JsonTermWrapper w = new JsonTermWrapper(payload);
+                    outputOrURI.set(w.getTerm());
+                }
+            }
         } else {
             failed("Unknown action: " + actionName);
         }
     }
 
     @OPERATION
+    public void invokeAction(String actionName, Object input) {
+        invokeAction(actionName, input, null);
+    }
+
+    @OPERATION
     public void invokeAction(String actionName) {
-        invokeAction(actionName, null);
+        invokeAction(actionName, null, null);
+    }
+
+    @OPERATION
+    public void invokeAction(String actionName, OpFeedbackParam<Object> outputOrURI) {
+        invokeAction(actionName, null, outputOrURI);
+    }
+
+    @OPERATION
+    public void queryAction(String actionName, Object uriVariables, OpFeedbackParam<Object> output) {
+        Optional<ActionAffordance> action = td.getActionByName(actionName);
+
+        if (action.isPresent()) {
+            try {
+                Term t = parseCArtAgOObject(uriVariables);
+
+                TermJsonWrapper w = new TermJsonWrapper(t);
+                // TODO get kv for uri variables
+
+                executeRequest(action.get(), TD.invokeAction, Optional.empty(), null);
+            } catch (ParseException e) {
+                failed("Invalid URI variables: " + uriVariables);
+            }
+        } else {
+            failed("Unknown action: " + actionName);
+        }
     }
 
     /**
@@ -353,6 +411,7 @@ public class ThingArtifact extends HypermedeaArtifact {
 
         try {
             Operation op = ProtocolBindings.getBinding(form.get()).bind(form.get(), operationType);
+            // TODO or .bind() with uri variables
 
             if (schema.isPresent() && payload != null) {
                 Term p = parseCArtAgOObject(payload);
@@ -448,7 +507,9 @@ public class ThingArtifact extends HypermedeaArtifact {
             log(op.toString());
             try {
                 op.sendRequest();
-                return Optional.of(op.getResponse());
+                Response res = op.getResponse();
+                log(String.format("[%s] Status: %s", res.getClass().getTypeName(), res.getStatus())); // TODO override res.toString()
+                return Optional.of(res);
             } catch (IOException e) {
                 failed(e.getMessage());
             }

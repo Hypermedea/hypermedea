@@ -22,8 +22,8 @@ dependencies {
     implementation group: 'org.hypermedea', name: 'hypermedea', version: '0.2'
 
     // protocol binding libraries declared in 'bindings.txt'
-    implementation group: 'com.github.Hypermedea', name: 'opcua-binding', version: 'feeb9b9'
-    implementation group: 'com.github.Hypermedea', name: 'ros-binding', version: 'f8a2595'
+    implementation group: 'com.github.Hypermedea', name: 'opcua-binding', version: '3307b78'
+    implementation group: 'com.github.Hypermedea', name: 'ros-binding', version: '596843a'
 }
 
 task run (type: JavaExec, dependsOn: 'classes') {

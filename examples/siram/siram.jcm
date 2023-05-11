@@ -4,6 +4,7 @@ mas siram_mas {
           goals: start
           join: siram_workspace
           focus: siram_workspace.ram
+          //focus: siram_workspace.b5
     }
 
     workspace siram_workspace  {
@@ -12,9 +13,10 @@ mas siram_mas {
          *  - https://github.com/Hypermedea/opcua-binding
          *  - https://github.com/Hypermedea/ros-binding
          */
-        //artifact mir: org.hypermedea.ThingArtifact("http://localhost:5000/td-mir.ttl")
+        artifact mir: org.hypermedea.ThingArtifact("http://localhost:5000/td-mir.ttl")
         artifact ram: org.hypermedea.ThingArtifact("http://localhost:5000/td-ram.ttl")
-        //artifact dx10: org.hypermedea.ThingArtifact("http://localhost:5000/td-dx10.ttl")
+        artifact b5: org.hypermedea.ThingArtifact("http://localhost:5000/B5.ttl")
+        artifact ua: org.hypermedea.ThingArtifact("http://localhost:5000/td-ua.ttl")
     }
 
 }
