@@ -28,7 +28,7 @@ goal(clear(disk2)) .
     .print("goal reached!") ;
     .
 
--!try[code(Goal2)] :
+-!try[code(Goal2)] : // FIXME Goal2 should be Goal
     goal(Goal) & not retrying
     <-
     .print("no plan known to reach goal; synthesizing plan...") ;
