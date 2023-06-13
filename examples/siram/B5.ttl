@@ -1,0 +1,39 @@
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix eco: <http://www.ebusiness-unibw.org/ontologies/eclass/5.1.4#> .
+@prefix hctl: <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix htv: <http://www.w3.org/2011/http#> .
+@prefix js: <https://www.w3.org/2019/wot/json-schema#> .
+@prefix pto: <http://www.productontology.org/id/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <http://schema.org/> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix td: <https://www.w3.org/2019/wot/td#> .
+@prefix ua: <http://opcfoundation.org/UA/> .
+@prefix wotsec: <https://www.w3.org/2019/wot/security#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://ci.mines-stetienne.fr/kg/itmfactory/dx10/B5> a eco:C_AGZ376003,
+        pto:Level_Sensor,
+        pto:Sensor ;
+    rdfs:label "Diffuse sensor with background suppression"@en ;
+    dct:title "B5" ;
+    schema:manufacturer "Leuze" ;
+    schema:subjectOf <https://www.leuze.com/en/usa/products_us/switching_sensors_us/optical_sensors_us/photoelectric_sensors_light_scanners_cubic_us/5_series_us/lichttaster_mit_hintergrundausblendung_us_5/ht_5_us/selector.php?supplier_aid=50135262&grp_id=1467795393506&lang=eng> ;
+    rdfs:comment "It indicates the product presence in the bottle on DX10 machine of the IT'm factory."@en ;
+    sosa:observes <https://ci.mines-stetienne.fr/kg/itmfactory/dx10/B5#this> ;
+    td:hasPropertyAffordance [ a js:BooleanSchema,
+                td:PropertyAffordance ;
+            dct:description "Indicates bottle reaches to end of the conveyor belt and it detects the product presence in the bottle on DX10 machine of the IT'm factory." ;
+            dct:title "Accumulation_Aval_B5" ;
+            js:readOnly false ;
+            js:writeOnly false ;
+            td:hasForm [ a hctl:Form ;
+                    ua:nodeId "ns=2;s=ITm Factory.DX10.Accumulation Aval B5" ;
+                    htv:methodName "GET" ;
+                    hctl:forContentType "application/json" ;
+                    hctl:hasOperationType td:readProperty ;
+                    hctl:hasTarget <opc.tcp://10.1.9.1:49320> ] ;
+            td:isObservable true ;
+            td:name "Accumulation_Aval_B5" ] ;
+    td:hasSecurityConfiguration [ a wotsec:NoSecurityScheme ] .
+

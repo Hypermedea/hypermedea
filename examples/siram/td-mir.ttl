@@ -1,0 +1,59 @@
+@prefix td: <https://www.w3.org/2019/wot/td#> .
+@prefix ros: <https://github.com/RobotWebTools/rosbridge_suite/blob/ros1/ROSBRIDGE_PROTOCOL.md#> .
+@prefix hctl: <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix wotsec: <https://www.w3.org/2019/wot/security#> .
+@prefix js: <https://www.w3.org/2019/wot/json-schema#> .
+#@base <ros+ws://192.168.12.20:9090/> .
+@base <ros+ws://192.168.20.202:9090/> .
+
+<#thing> a td:Thing ;
+    dct:title "MiR robot" ;
+    td:hasSecurityConfiguration [ a wotsec:NoSecurityScheme ] ;
+    td:hasBase <> ;
+    td:hasPropertyAffordance [
+        a td:PropertyAffordance, js:ObjectSchema ;
+        td:name "light_cmd" ;
+        dct:title "Feedback light" ;
+        td:hasForm [
+            hctl:hasTarget <light_cmd> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:writeProperty ;
+            ros:messageType "std_msgs/String"
+        ] ;
+    ] ;
+    td:hasPropertyAffordance [
+        a td:PropertyAffordance, js:ObjectSchema ;
+        td:name "mir_mission" ;
+        dct:title "Action delegated to human operator to pick/place items" ;
+        td:hasForm [
+            hctl:hasTarget <mir_mission> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:writeProperty ;
+            ros:messageType "std_msgs/String"
+        ]
+    ] ;
+    td:hasPropertyAffordance [
+        a td:PropertyAffordance, js:ObjectSchema ;
+        td:name "mir_mission_status" ;
+        dct:title "Status of the action to pick/place items" ;
+        td:hasForm [
+            hctl:hasTarget <mir_mission_status> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:readProperty ;
+            ros:messageType "std_msgs/String"
+        ]
+    ] ;
+    td:hasPropertyAffordance [
+        # TOOD implement actionlib interactions for ActionAffordance
+        a td:PropertyAffordance, js:ObjectSchema ;
+        td:name "move_base" ;
+        dct:title "Mission to move to a position" ;
+        td:hasForm [
+            hctl:hasTarget <move_base/goal> ;
+            hctl:forContentType "application/json" ;
+            hctl:hasOperationType td:writeProperty ;
+            #ros:messageType "std_msgs/String"
+            ros:messageType "mir_actions/MirMoveBaseActionGoal"
+        ]
+    ] .

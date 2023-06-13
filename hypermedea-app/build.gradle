@@ -15,7 +15,7 @@ repositories {
     mavenCentral()
     // artifact repository for JaCaMo-related project
     maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
-    maven { url "https://jitpack.io" }
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {

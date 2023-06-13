@@ -26,10 +26,8 @@ public class JsonTermWrapper {
         if (value instanceof Boolean) {
             if (((Boolean) value).booleanValue()) term = Literal.LTrue;
             else term = Literal.LFalse;
-        } else if (value instanceof Double) {
-            term = ASSyntax.createNumber((Double) value);
-        } else if (value instanceof Long) {
-            term = ASSyntax.createNumber(((Long) value).doubleValue());
+        } else if (value instanceof Number) {
+            term = ASSyntax.createNumber(((Number) value).doubleValue());
         } else if (value instanceof String) {
             term = ASSyntax.createString(value);
         } else if (value instanceof List) {

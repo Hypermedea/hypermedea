@@ -29,22 +29,33 @@ dependencies {
     implementation group: 'net.sourceforge.owlapi', name: 'org.semanticweb.hermit', version: '1.4.5.519'
 
     // Thing Description (TD) client dependencies
-    // TODO include newer version of wot-td-java
-    implementation group: 'ch.unisg.ics.interactions', name: 'wot-td-java', version: '0.0.1'
+    implementation group: 'com.github.Hypermedea', name: 'wot-td-java', version: '1f08cce'
 
     // Planning Domain Description Language (PDDL) dependencies
     implementation group: 'com.github.pellierd', name: 'pddl4j', version: 'v3.8.3'
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = group
+            artifactId = 'hypermedea'
+            version = version
+
+            from components.java
+        }
+    }
 }
 
 /**
  * task to create a all-in-one jar that can be used as JaCaMo library
  */
 task jacamoJar(type: Jar) {
-    archiveBaseName = 'hypermedea-jacamo-lib'
+    archiveClassifier = 'standalone'
+    from sourceSets.main.output
+    dependsOn configurations.runtimeClasspath
     from {
-        configurations.runtimeClasspath
-            .filter { !it.name.endsWith('pom') }
-            .collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
     }
 }
 
