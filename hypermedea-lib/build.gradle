@@ -38,7 +38,7 @@ dependencies {
 publishing {
     publications {
         maven(MavenPublication) {
-            groupId = 'org.hypermedea'
+            groupId = group
             artifactId = 'hypermedea'
             version = version
 
