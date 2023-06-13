@@ -162,10 +162,6 @@ public class ThingArtifact extends HypermedeaArtifact {
     public void init(String url) {
         try {
             td = TDGraphReader.readFromURL(TDFormat.RDF_TURTLE, url);
-
-            for (SecurityScheme scheme : td.getSecuritySchemes()) {
-                defineObsProperty("securityScheme", scheme.getSchemeType());
-            }
         } catch (IOException e) {
             failed(e.getMessage());
         }

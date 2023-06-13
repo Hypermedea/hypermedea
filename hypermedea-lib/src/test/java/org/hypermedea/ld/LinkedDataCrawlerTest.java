@@ -13,9 +13,9 @@ public class LinkedDataCrawlerTest {
 
     public static final long SLEEP_DURATION= 5000;
 
-    public static final String SOURCE_URI = "http://ontology.irstea.fr/weather/data/resource/platform/VP2lesPalaquins01";
+    public static final String SOURCE_URI = "https://territoire.emse.fr/kg/emse/fayol/4ET";
 
-    public static final String SOSA_HOSTS = "http://www.w3.org/ns/sosa/hosts";
+    public static final String BOT_HAS_SPACE = "https://w3id.org/bot#hasSpace";
 
     private class ResourceCollector implements RequestListener {
 
@@ -47,7 +47,7 @@ public class LinkedDataCrawlerTest {
 
         Resource res = collector.getResources().iterator().next();
 
-        assert res.getRepresentation().size() == 17;
+        assert res.getRepresentation().size() == 45;
     }
 
     @Test
@@ -59,7 +59,7 @@ public class LinkedDataCrawlerTest {
         c.addListener(res -> {
             if (res.getURI().equals(SOURCE_URI)) {
                 Model m = res.getRepresentation();
-                Property p = m.createProperty(SOSA_HOSTS);
+                Property p = m.createProperty(BOT_HAS_SPACE);
 
                 m.listObjectsOfProperty(p).forEachRemaining(o -> {
                     try {
@@ -75,7 +75,7 @@ public class LinkedDataCrawlerTest {
 
         Thread.sleep(SLEEP_DURATION);
 
-        assert collector.getResources().size() == 8;
+        assert collector.getResources().size() == 38;
     }
 
 }
