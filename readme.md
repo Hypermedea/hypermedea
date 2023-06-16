@@ -1,5 +1,7 @@
 ![Hypermedia Programming Framework](img/banner.png)
 
+Website: https://hypermedea.github.io/
+
 # Hypermedea
 
 Medea is known in Greek mythology as Jason's wife.
@@ -41,5 +43,7 @@ Artifacts interact via a shared RDF store, as follows:
 
 ![Hypermedea technical overview](img/technical-overview.png)
 
-For a complete documentation, run `./gradlew javadoc` and browse the generated
+For more details, refer to the [Javadoc of the latest release](https://hypermedea.github.io/javadoc/latest).
+
+For documentation of the latest code base, run `./gradlew javadoc` and browse the generated
 Javadoc starting from `hypermedea-lib/build/docs/javadoc/index.html`.
