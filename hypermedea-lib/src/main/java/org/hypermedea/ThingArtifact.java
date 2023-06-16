@@ -1,16 +1,10 @@
 package org.hypermedea;
 
-import cartago.ArtifactConfig;
-import cartago.OPERATION;
-import cartago.OpFeedbackParam;
-import cartago.OperationException;
+import cartago.*;
 import ch.unisg.ics.interactions.wot.td.ThingDescription;
 import ch.unisg.ics.interactions.wot.td.ThingDescription.TDFormat;
 import ch.unisg.ics.interactions.wot.td.affordances.*;
-import ch.unisg.ics.interactions.wot.td.bindings.BindingNotRegisteredException;
-import ch.unisg.ics.interactions.wot.td.bindings.Operation;
-import ch.unisg.ics.interactions.wot.td.bindings.ProtocolBindings;
-import ch.unisg.ics.interactions.wot.td.bindings.Response;
+import ch.unisg.ics.interactions.wot.td.bindings.*;
 import ch.unisg.ics.interactions.wot.td.bindings.http.TDHttpOperation;
 import ch.unisg.ics.interactions.wot.td.io.TDGraphReader;
 import ch.unisg.ics.interactions.wot.td.schemas.DataSchema;
@@ -40,9 +34,9 @@ import java.util.Optional;
  * <p>
  *  A CArtAgO artifact that can interpret a
  *  <a href="https://www.w3.org/TR/wot-thing-description/">W3C WoT Thing Description (TD)</a> document
- *  and expose the affordances (i.e. potential actions) of the described Thing to agents.
- *  The artifact uses the hypermedia controls provided in the TD to compose and issue HTTP
- *  requests for the exposed affordances.
+ *  and expose the affordances (i.e. potential actions) of the described Thing to agents. The artifact
+ *  uses the hypermedia controls provided in the TD to compose and issue requests for the exposed
+ *  affordances.
  * </p>
  *
  * <p>
@@ -50,18 +44,23 @@ import java.util.Optional;
  * </p>
  * <ul>
  *   <li>
- *       {@link #readProperty(String, OpFeedbackParam) readProperty},
- *       {@link #writeProperty(String, Object) writeProperty} and
- *       {@link #observeProperty(String, String, int) observeProperty}
- *       (for property affordances)
+ *       {@link #readProperty(String, OpFeedbackParam) readProperty} and
+ *       {@link #writeProperty(String, Object) writeProperty} (for property affordances)
  *   </li>
  *   <li>
  *       {@link #invokeAction(String) invokeAction} (for action affordances)
  *   </li>
  *   <li>
- *       TODO <code>subscribeEvent</code> (for event affordances)
+ *       TODO <code>subscribeEvent</code> and <code>unsubscribeEvent</code> (for event affordances)
  *   </li>
  * </ul>
+ *
+ * <p>
+ *     The <code>observeProperty</code> operation that some TDs expose has a special role in CArtAgO:
+ *     agents explicitly observe a property to receive notifications only when property values change.
+ *     The <code>ThingArtifact</code> keeps this behavior, only acting as a proxy that caches values
+ *     received from the Thing.
+ * </p>
  *
  * <p>
  *   Additional operations for authentication are also available.
@@ -162,6 +161,10 @@ public class ThingArtifact extends HypermedeaArtifact {
     public void init(String url) {
         try {
             td = TDGraphReader.readFromURL(TDFormat.RDF_TURTLE, url);
+
+            for (PropertyAffordance property : td.getProperties()) {
+                defineObsProperty(property.getName(), Double.NaN);
+            }
         } catch (IOException e) {
             failed(e.getMessage());
         }
@@ -189,71 +192,37 @@ public class ThingArtifact extends HypermedeaArtifact {
 
     /**
      * Read a property of a Thing by name.
+     * The read value is exposed by the <code>ThingArtifact</code> as an observable property.
+     * Assume the underlying Thing exposes an affordance for the integer-valued property <code>prop</code>,
+     * the read value will be accessible via the observable property <code>prop(12)</code>.
+     *
+     * See also {@link #readProperty(String, OpFeedbackParam)}.
      *
      * @param propertyName the property's name.
-     * @param output the read value. Can be a list of one or more primitives, or a nested list of
-     *               primitives or arbitrary depth.
      */
-    @OPERATION
-    public void readProperty(String propertyName, OpFeedbackParam<Object> output) {
+    public void readProperty(String propertyName) {
+        ObsProperty p = getObsProperty(propertyName);
         PropertyAffordance property = getPropertyOrFail(propertyName);
 
-        Optional<Response> response = executeRequest(property, TD.readProperty, Optional.empty(),  null);
+        Operation op = bindForOperation(property, TD.readProperty, Optional.empty(),  null);
+        Optional<Response> response = waitForResponse(op);
 
-        if (!dryRun) {
-            if (!response.isPresent()) {
-                failed("Something went wrong with the read property request.");
-            }
-
-            if (response.get().getStatus().equals(Response.ResponseStatus.OK) && response.get().getPayload().isPresent()) {
-                Object value = response.get().getPayload().get();
-                output.set(new JsonTermWrapper(value).getTerm());
-            } else if (!response.get().getStatus().equals(Response.ResponseStatus.OK)) {
-                failed("Status: " + response.get().getStatus());
-            } else {
-                failed("No payload returned by the Thing");
-            }
-        }
+        if (!dryRun) updateValueFromResponse(p, response);
     }
 
     /**
-     * Observe a property of a Thing by name (subscribe to change notifications on the property).
+     * Read a property of a Thing by name.
      *
-     * TODO cartago.Artifact already includes an observeProperty operation. Add a 3rd parameter to distinguish the two
-     * TODO replace stubLabel with an outputParam with a ref to the property and override the parent operation
-     *
-     * TODO implement WebSub instead of long polling?
-     *
-     * @param propertyName the property's name (which will also be the name of the observable property created in the Artifact).
-     * @param timer a time interval in ms between each property read
+     * @param propertyName the property's name.
+     * @param output the read value. Can be a list of one or more primitives, or a nested list of
+     *               primitives of arbitrary depth.
      */
     @OPERATION
-    public void observeProperty(String propertyName, String stubLabel, int timer) {
-        Thread t = new Thread(() -> {
-            OpFeedbackParam<Object> output = new OpFeedbackParam<>();
-            while (true) {
-                beginExternalSession();
-                readProperty(propertyName, output);
-                if (hasObsProperty(propertyName)) {
-                    try {
-                        if (!getObsProperty(propertyName).getValue().equals(output.get())) {
-                            getObsProperty(propertyName).updateValues(output.get());
-                        }
-                    } catch (IllegalArgumentException e) {
-                    }
-                } else {
-                    defineObsProperty(propertyName, output.get());
-                }
-                endExternalSession(true);
-                try {
-                    Thread.sleep(timer);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    failed("Property polling thread was interrupted");
-                }
-            }
-        });
-        t.start();
+    public void readProperty(String propertyName, OpFeedbackParam<Object> output) {
+        readProperty(propertyName);
+
+        ObsProperty p = getObsProperty(propertyName);
+        output.set(p.getValue());
     }
 
     /**
@@ -268,11 +237,54 @@ public class ThingArtifact extends HypermedeaArtifact {
 
         Optional<DataSchema> schema = Optional.of(property.getDataSchema());
 
-        Optional<Response> response = executeRequest(property, TD.writeProperty, schema, payload);
+        Operation op = bindForOperation(property, TD.writeProperty, schema, payload);
+        Optional<Response> response = waitForResponse(op);
+
+        // TODO no need for the optional response; check dryRun and fail if IOException
+        // TODO check status inside waitForResponse?
 
         if (response.isPresent() && !response.get().getStatus().equals(Response.ResponseStatus.OK)) {
             failed("Status: " + response.get().getStatus());
         }
+    }
+
+    /**
+     * Observe a property of a Thing by name (subscribe to change notifications on the property).
+     *
+     * Note: the <code>ThingArtifact</code> classes overrides the behavior of
+     * <code>Artifact.observeProperty(String, OpFeedbackParam)</code>.
+     *
+     * @param propertyName the property's name (which will also be the name of the observable property created in the Artifact).
+     * @param propParam the observable property as exposed to agents
+     */
+    @OPERATION
+    public void observeProperty(String propertyName, OpFeedbackParam<ArtifactObsProperty> propParam) {
+        ObsProperty p = getObsProperty(propertyName);
+        PropertyAffordance affordance = getPropertyOrFail(propertyName);
+
+        Operation op = bindForOperation(affordance, TD.observeProperty, Optional.empty(),  null);
+
+        op.registerResponseCallback(new ResponseCallback() {
+            @Override
+            public void onResponse(Response response) {
+                beginExternalSession();
+                updateValueFromResponse(p, Optional.of(response));
+                endExternalSession(true);
+            }
+
+            @Override
+            public void onError() {
+                beginExternalSession();
+
+                log("observeProperty operation has failed because connection to the Thing was lost");
+
+                endExternalSession(false);
+            }
+        });
+
+        waitForResponse(op); // FIXME shouldn't wait for an answer
+
+        propParam.set(getUserCopy(p));
     }
 
     /**
@@ -296,7 +308,10 @@ public class ThingArtifact extends HypermedeaArtifact {
                 log("Input payload ignored. Action " + actionName + " does not take any input.");
             }
 
-            Optional<Response> response = executeRequest(action.get(), TD.invokeAction, inputSchema, input);
+            Operation op = bindForOperation(action.get(), TD.invokeAction, inputSchema, input);
+            Optional<Response> response = waitForResponse(op);
+
+            // TODO keep track of invocation (with resource(URI)?) for queryAction or cancelAction
 
             if (response.isPresent() && !response.get().getStatus().equals(Response.ResponseStatus.OK)) {
                 failed("Status: " + response.get().getStatus());
@@ -350,13 +365,30 @@ public class ThingArtifact extends HypermedeaArtifact {
                 TermJsonWrapper w = new TermJsonWrapper(t);
                 // TODO get kv for uri variables
 
-                executeRequest(action.get(), TD.invokeAction, Optional.empty(), null);
+                bindForOperation(action.get(), TD.invokeAction, Optional.empty(), null);
             } catch (ParseException e) {
                 failed("Invalid URI variables: " + uriVariables);
             }
         } else {
             failed("Unknown action: " + actionName);
         }
+    }
+
+    @OPERATION
+    public void cancelAction(String actionName) {
+        log("cancelAction not implemented");
+    }
+
+    @OPERATION
+    public void subscribeEvent(String eventName) {
+        log("subscribeEvent not implemented");
+
+        // TODO call signal(predicate) in the notification callback
+    }
+
+    @OPERATION
+    public void unsubscribeEvent(String eventName) {
+        log("unsubscribeEvent not implemented");
     }
 
     /**
@@ -397,16 +429,30 @@ public class ThingArtifact extends HypermedeaArtifact {
         return property.get();
     }
 
-    private Optional<Response> executeRequest(InteractionAffordance affordance, String operationType, Optional<DataSchema> schema, Object payload) {
-        Optional<Form> form = affordance.getFirstFormForOperationType(operationType);
+    /**
+     * Copy the content of an observable property, to expose to agents.
+     *
+     * Note: this method duplicates code from <code>ObsProperty.getUserCopy()</code>, which isn't accessible to subclasses.
+     *
+     * @param p an observable property
+     * @return a copy of the observable property exposable to agents
+     */
+    private ArtifactObsProperty getUserCopy(ObsProperty p) {
+        ArtifactObsProperty copy = new ArtifactObsProperty(p.getFullId(), p.getId(), p.getName(), p.getValues().clone());
+        return copy.setAnnots(p.cloneAnnots());
+    }
 
-        if (!form.isPresent()) {
+    private Operation bindForOperation(InteractionAffordance affordance, String operationType, Optional<DataSchema> schema, Object payload) {
+        Optional<Form> formOpt = affordance.getFirstFormForOperationType(operationType);
+
+        if (!formOpt.isPresent()) {
             // Should not happen (an exception will be raised by the TD library first)
             failed("Invalid TD: the affordance does not have a valid form.");
         }
 
         try {
-            Operation op = ProtocolBindings.getBinding(form.get()).bind(form.get(), operationType);
+            Form form = formOpt.get();
+            Operation op = ProtocolBindings.getBinding(form).bind(form, operationType);
             // TODO or .bind() with uri variables
 
             if (schema.isPresent() && payload != null) {
@@ -419,15 +465,14 @@ public class ThingArtifact extends HypermedeaArtifact {
                 else if (w.isJsonObject()) setObjectPayload(op, schema.get(), w);
                 else {
                     failed("Could not detect the type of payload (primitive, object, or array).");
-                    return Optional.empty();
                 }
             }
 
-            return issueRequest(op);
+            return wrapOperation(op);
         } catch (ParseException e) {
             // Should not happen (original object was a Jason term)
             failed("Invalid payload.");
-            return Optional.empty();
+            return null;
         }
     }
 
@@ -469,7 +514,7 @@ public class ThingArtifact extends HypermedeaArtifact {
         return op;
     }
 
-    private Optional<Response> issueRequest(Operation op) {
+    private Operation wrapOperation(Operation op) {
         if (apiKey.isPresent() && op instanceof TDHttpOperation) {
             TDHttpOperation httpOp = (TDHttpOperation) op;
             Optional<SecurityScheme> scheme = td.getFirstSecuritySchemeByType(WoTSec.APIKeySecurityScheme);
@@ -483,7 +528,7 @@ public class ThingArtifact extends HypermedeaArtifact {
             // TODO if future version of wot-td-java includes the whole vocab, replace string with constant
             Optional<SecurityScheme> scheme = td.getFirstSecuritySchemeByType("BasicSecurityScheme");
             //if (scheme.isPresent())
-                httpOp.addHeader("Authorization", "Basic " + basicAuth.get());
+            httpOp.addHeader("Authorization", "Basic " + basicAuth.get());
         } else if (basicAuth.isPresent()) {
             log("Warning: basic auth is only supported for HTTP bindings. Credentials given to artifact were ignored.");
         }
@@ -496,6 +541,10 @@ public class ThingArtifact extends HypermedeaArtifact {
             httpOp.addHeader("X-Agent-WebID", WEBID_PREFIX + getCurrentOpAgentId().getAgentName());
         }
 
+        return op;
+    }
+
+    private Optional<Response> waitForResponse(Operation op) {
         if (this.dryRun) {
             log(op.toString());
             return Optional.empty();
@@ -512,6 +561,29 @@ public class ThingArtifact extends HypermedeaArtifact {
         }
 
         return Optional.empty();
+    }
+
+    private void updateValueFromResponse(ObsProperty p, Optional<Response> responseOpt) {
+        if (!responseOpt.isPresent()) {
+            failed("Something went wrong with the read property request.");
+        }
+
+        Response response = responseOpt.get();
+
+        if (!responseOpt.get().getStatus().equals(Response.ResponseStatus.OK)) {
+            failed("Status: " + responseOpt.get().getStatus());
+        }
+
+        if (!response.getPayload().isPresent()) {
+            failed("No payload returned by the Thing");
+        }
+
+        Object rawValue = responseOpt.get().getPayload().get();
+        Term value = new JsonTermWrapper(rawValue).getTerm();
+
+        if (!p.getValue().equals(value)) {
+            p.updateValue(value);
+        }
     }
 
     /**

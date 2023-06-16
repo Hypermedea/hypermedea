@@ -41,5 +41,10 @@ goal(hasValue("status", false)) .
     !switchOff ;
     +Goal .
 
++status(LightStatus) :
+    true
+    <-
+    .print("light status (from obs. property): ", LightStatus) .
+
 { include("$jacamoJar/templates/common-cartago.asl") }
 { include("$jacamoJar/templates/common-moise.asl") }

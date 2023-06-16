@@ -7,13 +7,13 @@
 @base <http://localhost:8080/> .
 
 <#thing> a td:Thing ;
-    dct:title "Light switch" ;
+    td:title "Light switch" ;
     td:hasSecurityConfiguration [ a wotsec:NoSecurityScheme ] ;
     td:hasBase <> ;
     td:hasPropertyAffordance [
         a td:PropertyAffordance, js:BooleanSchema ;
         td:name "status" ;
-        dct:title "Light status" ;
+        td:title "Light status" ;
         td:hasForm [
             htv:methodName "GET" ;
             hctl:hasTarget <status> ;
@@ -29,7 +29,7 @@
     td:hasActionAffordance [
         a td:ActionAffordance ;
         td:name "toggle" ;
-        dct:title "Toggle action" ;
+        td:title "Toggle action" ;
         td:hasForm [
             htv:methodName "PUT" ;
             hctl:hasTarget <toggle> ;
