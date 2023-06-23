@@ -154,13 +154,18 @@ public class ThingArtifact extends HypermedeaArtifact {
     }
 
     /**
-     * Call {@link #init(String, boolean) init(String, false)}.
+     * Initialize the artifact. The W3C WoT Thing Description (TD) used by
+     * this artifact is retrieved and parsed during initialization.
      *
-     * @param url a URL that dereferences to a W3C WoT Thing Description.
+     * @param urlOrPath a URL that dereferences to a W3C WoT TD or a path to a local W3C WoT TD, in the Turtle format
      */
-    public void init(String url) {
+    public void init(String urlOrPath) {
         try {
-            td = TDGraphReader.readFromURL(TDFormat.RDF_TURTLE, url);
+            if (urlOrPath.startsWith("http")) {
+                td = TDGraphReader.readFromURL(TDFormat.RDF_TURTLE, urlOrPath);
+            } else {
+                td = TDGraphReader.readFromFile(TDFormat.RDF_TURTLE, urlOrPath);
+            }
 
             for (PropertyAffordance property : td.getProperties()) {
                 defineObsProperty(property.getName(), Double.NaN);
@@ -179,14 +184,13 @@ public class ThingArtifact extends HypermedeaArtifact {
     }
 
     /**
-     * Initialize the artifact. The W3C WoT Thing Description (TD) used by
-     * this artifact is retrieved and parsed during initialization.
+     * See {@link ThingArtifact#init(String)}.
      *
-     * @param url a URL that dereferences to a W3C WoT Thing Description.
-     * @param dryRun when set to true, the requests are logged, but not executed.
+     * @param urlOrPath a URL that dereferences to a W3C WoT TD or a path to a local W3C WoT TD, in the Turtle format
+     * @param dryRun when set to true, the requests are logged, but not executed
      */
-    public void init(String url, boolean dryRun) {
-        init(url);
+    public void init(String urlOrPath, boolean dryRun) {
+        init(urlOrPath);
         this.dryRun = dryRun;
     }
 
