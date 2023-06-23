@@ -1,6 +1,9 @@
 package org.hypermedea;
 
-import cartago.*;
+import cartago.ArtifactObsProperty;
+import cartago.OPERATION;
+import cartago.ObsProperty;
+import cartago.OpFeedbackParam;
 import ch.unisg.ics.interactions.wot.td.ThingDescription;
 import ch.unisg.ics.interactions.wot.td.ThingDescription.TDFormat;
 import ch.unisg.ics.interactions.wot.td.affordances.*;
@@ -19,16 +22,16 @@ import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
 import org.hypermedea.json.JsonTermWrapper;
 import org.hypermedea.json.TermJsonWrapper;
-import org.hypermedea.ld.RequestListener;
-import org.hypermedea.ld.Resource;
+import org.hypermedea.tools.URITemplates;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -90,38 +93,15 @@ import java.util.Optional;
  */
 public class ThingArtifact extends HypermedeaArtifact {
 
-    private class TDListener implements RequestListener {
-
-        @Override
-        public void requestCompleted(Resource res) {
-            // TODO test whether a TD is defined in the resource.
-            if (false) {
-                try {
-                    // TODO get name from TD instead, to prevent duplicates? Or better if several TDs for the same Thing?
-                    String name = res.getURI();
-                    // TODO serialize TD in string buffer and add to params
-                    ArtifactConfig params = new ArtifactConfig();
-                    // FIXME no calling agent, not possible to create artifacts this way?
-                    makeArtifact(name, ThingArtifact.class.getName(), params);
-                    // TODO expose artifactID?
-                } catch (OperationException e) {
-                    // TODO log error
-                    e.printStackTrace();
-                }
-            }
-        }
-
-    }
-
     /**
      * Name of the configuration file that should be used to declare custom bindings.
      */
     public static final String BINDING_CONFIG_FILENAME = "bindings.txt";
 
     /**
-     * Functor used to advertise that a new resource has been created.
-     * TODO as RDF triple instead? Would require anchor information
-     * TODO or as Link object?
+     * Functor used to advertise that some resource has been created, such as actions or events.
+     * For instance, an <code>invokeAction</code> operation may return the result of the action
+     * or the URI of a new action resource that can be dereferenced.
      */
     public static final String RESOURCE_FUNCTOR = "resource";
 
@@ -178,8 +158,6 @@ public class ThingArtifact extends HypermedeaArtifact {
         this.basicAuth = Optional.empty();
         this.dryRun = false;
 
-        crawlerListener = new TDListener();
-
         super.init();
     }
 
@@ -208,7 +186,7 @@ public class ThingArtifact extends HypermedeaArtifact {
         ObsProperty p = getObsProperty(propertyName);
         PropertyAffordance property = getPropertyOrFail(propertyName);
 
-        Operation op = bindForOperation(property, TD.readProperty, Optional.empty(),  null);
+        Operation op = bindForOperation(property, TD.readProperty, Optional.empty(),  null, property.getUriVariables(), new HashMap<>());
         Optional<Response> response = waitForResponse(op);
 
         if (!dryRun) updateValueFromResponse(p, response);
@@ -241,7 +219,7 @@ public class ThingArtifact extends HypermedeaArtifact {
 
         Optional<DataSchema> schema = Optional.of(property.getDataSchema());
 
-        Operation op = bindForOperation(property, TD.writeProperty, schema, payload);
+        Operation op = bindForOperation(property, TD.writeProperty, schema, payload, property.getUriVariables(), new HashMap<>());
         Optional<Response> response = waitForResponse(op);
 
         // TODO no need for the optional response; check dryRun and fail if IOException
@@ -264,9 +242,9 @@ public class ThingArtifact extends HypermedeaArtifact {
     @OPERATION
     public void observeProperty(String propertyName, OpFeedbackParam<ArtifactObsProperty> propParam) {
         ObsProperty p = getObsProperty(propertyName);
-        PropertyAffordance affordance = getPropertyOrFail(propertyName);
+        PropertyAffordance property = getPropertyOrFail(propertyName);
 
-        Operation op = bindForOperation(affordance, TD.observeProperty, Optional.empty(),  null);
+        Operation op = bindForOperation(property, TD.observeProperty, Optional.empty(),  null, property.getUriVariables(), new HashMap<>());
 
         op.registerResponseCallback(new ResponseCallback() {
             @Override
@@ -303,43 +281,33 @@ public class ThingArtifact extends HypermedeaArtifact {
      */
     @OPERATION
     public void invokeAction(String actionName, Object input, OpFeedbackParam<Object> outputOrURI) {
-        Optional<ActionAffordance> action = td.getActionByName(actionName);
+        ActionAffordance action = getActionOrFail(actionName);
 
-        if (action.isPresent()) {
-            Optional<DataSchema> inputSchema = action.get().getInputSchema();
+        Optional<DataSchema> inputSchema = action.getInputSchema();
 
-            if (!inputSchema.isPresent() && input != null) {
-                log("Input payload ignored. Action " + actionName + " does not take any input.");
-            }
+        if (!inputSchema.isPresent() && input != null) {
+            log("Input payload ignored. Action " + actionName + " does not take any input.");
+        }
 
-            Operation op = bindForOperation(action.get(), TD.invokeAction, inputSchema, input);
-            Optional<Response> response = waitForResponse(op);
+        Operation op = bindForOperation(action, TD.invokeAction, inputSchema, input, action.getUriVariables(), new HashMap<>());
 
-            // TODO keep track of invocation (with resource(URI)?) for queryAction or cancelAction
+        Optional<Response> resOpt = waitForResponse(op);
+        Response res = getResponseOrFail(resOpt);
 
-            if (response.isPresent() && !response.get().getStatus().equals(Response.ResponseStatus.OK)) {
-                failed("Status: " + response.get().getStatus());
-            } else if (outputOrURI != null) {
-                Response res = response.get();
+        // empty rel ~ 201 Location header value
+        Optional<Link> linkToNewResource = res.getLinks().stream().filter(l -> l.getRelationType().isEmpty()).findFirst();
 
-                // TODO improve detection of "201 Location" header value (currently, empty rel)
-                Optional<Link> linkToNewResource = res.getLinks().stream().filter(l -> l.getRelationType().isEmpty()).findFirst();
+        if (linkToNewResource.isPresent()) {
+            String uri = linkToNewResource.get().getTarget();
+            StringTerm uriTerm = ASSyntax.createString(uri);
 
-                if (linkToNewResource.isPresent()) {
-                    String uri = linkToNewResource.get().getTarget();
-                    StringTerm uriTerm = ASSyntax.createString(uri);
+            Term t = ASSyntax.createLiteral(RESOURCE_FUNCTOR, uriTerm);
+            outputOrURI.set(t);
+        } else if (res.getPayload().isPresent()) {
+            Object payload = res.getPayload().get();
 
-                    Term t = ASSyntax.createLiteral(RESOURCE_FUNCTOR, uriTerm);
-                    outputOrURI.set(t);
-                } else if (res.getPayload().isPresent()) {
-                    Object payload = res.getPayload().get();
-
-                    JsonTermWrapper w = new JsonTermWrapper(payload);
-                    outputOrURI.set(w.getTerm());
-                }
-            }
-        } else {
-            failed("Unknown action: " + actionName);
+            JsonTermWrapper w = new JsonTermWrapper(payload);
+            outputOrURI.set(w.getTerm());
         }
     }
 
@@ -359,28 +327,38 @@ public class ThingArtifact extends HypermedeaArtifact {
     }
 
     @OPERATION
-    public void queryAction(String actionName, Object uriVariables, OpFeedbackParam<Object> output) {
-        Optional<ActionAffordance> action = td.getActionByName(actionName);
+    public void queryAction(String actionName, Object targetOrVariableBindings, OpFeedbackParam<Object> output) {
+        ActionAffordance action = getActionOrFail(actionName);
+        Map<String, Object> varBindings = getBindings(action, TD.queryAction, targetOrVariableBindings);
 
-        if (action.isPresent()) {
-            try {
-                Term t = parseCArtAgOObject(uriVariables);
+        Operation op = bindForOperation(action, TD.queryAction, Optional.empty(), null, action.getUriVariables(), varBindings);
 
-                TermJsonWrapper w = new TermJsonWrapper(t);
-                // TODO get kv for uri variables
+        Optional<Response> resOpt = waitForResponse(op);
+        Response res = getResponseOrFail(resOpt);
 
-                bindForOperation(action.get(), TD.invokeAction, Optional.empty(), null);
-            } catch (ParseException e) {
-                failed("Invalid URI variables: " + uriVariables);
-            }
-        } else {
-            failed("Unknown action: " + actionName);
-        }
+        JsonTermWrapper w = new JsonTermWrapper(res);
+        output.set(w.getTerm());
+    }
+
+    @OPERATION
+    public void queryAction(String actionName, OpFeedbackParam<Object> output) {
+        queryAction(actionName, null, output);
     }
 
     @OPERATION
     public void cancelAction(String actionName) {
-        log("cancelAction not implemented");
+        cancelAction(actionName, null);
+    }
+
+    @OPERATION
+    public void cancelAction(String actionName, Object targetOrVariableBindings) {
+        ActionAffordance action = getActionOrFail(actionName);
+        Map<String, Object> varBindings = getBindings(action, TD.cancelAction, targetOrVariableBindings);
+
+        Operation op = bindForOperation(action, TD.cancelAction, Optional.empty(), null, action.getUriVariables(), varBindings);
+
+        Optional<Response> resOpt = waitForResponse(op);
+        getResponseOrFail(resOpt);
     }
 
     @OPERATION
@@ -422,7 +400,6 @@ public class ThingArtifact extends HypermedeaArtifact {
         }
     }
 
-    /* Tries to retrieve a property first by semantic tag, then by name. Fails if none works. */
     private PropertyAffordance getPropertyOrFail(String propertyName) {
         Optional<PropertyAffordance> property = td.getPropertyByName(propertyName);
 
@@ -433,10 +410,24 @@ public class ThingArtifact extends HypermedeaArtifact {
         return property.get();
     }
 
+    private ActionAffordance getActionOrFail(String actionName) {
+        Optional<ActionAffordance> action = td.getActionByName(actionName);
+
+        if (!action.isPresent()) {
+            failed("Unknown action: " + actionName);
+        }
+
+        return action.get();
+    }
+
     /**
-     * Copy the content of an observable property, to expose to agents.
+     * <p>
+     *     Copy the content of an observable property, to expose to agents.
+     * </p>
      *
-     * Note: this method duplicates code from <code>ObsProperty.getUserCopy()</code>, which isn't accessible to subclasses.
+     * <p>
+     *     <i>Note: this method duplicates code from <code>ObsProperty.getUserCopy()</code>, which isn't accessible to subclasses.</i>
+     * </p>
      *
      * @param p an observable property
      * @return a copy of the observable property exposable to agents
@@ -446,7 +437,51 @@ public class ThingArtifact extends HypermedeaArtifact {
         return copy.setAnnots(p.cloneAnnots());
     }
 
-    private Operation bindForOperation(InteractionAffordance affordance, String operationType, Optional<DataSchema> schema, Object payload) {
+    private Map<String, Object> getBindings(InteractionAffordance affordance, String operationType, Object targetOrVariableBindings) {
+        Map<String, Object> varBindings = new HashMap<>();
+
+        if (targetOrVariableBindings != null) {
+            try {
+                Term t = parseCArtAgOObject(targetOrVariableBindings);
+                TermJsonWrapper w = new TermJsonWrapper(t);
+
+                if (!w.isJsonObject() && !w.isJsonString()) {
+                    failed("URI variables must be a URI or a JSON object (mapping variable names to numbers, booleans or strings)");
+                }
+
+                if (w.isJsonObject()) {
+                    varBindings = w.getJsonObject();
+                } else {
+                    String targetURI = w.getJsonString();
+                    varBindings = getBindingsForTarget(affordance, operationType, targetURI);
+                }
+            } catch (ParseException e) {
+                failed("Invalid URI variables: " + targetOrVariableBindings);
+            }
+        }
+
+        return varBindings;
+    }
+
+    private Map<String, Object> getBindingsForTarget(InteractionAffordance affordance, String operationType, String targetURI) {
+        Stream<Form> stream = affordance.getForms().stream().filter(f -> f.getOperationTypes().contains(operationType));
+        List<Form> forms = stream.collect(Collectors.toList());
+
+        Optional<Form> exactMatch = forms.stream().filter(f -> f.getTarget().equals(targetURI)).findAny();
+
+        if (exactMatch.isPresent()) {
+            return new HashMap<>();
+        } else {
+            Stream<Map<String, Object>> bindings = forms.stream().map(f -> URITemplates.bind(f.getTarget(), targetURI));
+            Optional<Map<String, Object>> opt = bindings.filter(b -> !b.isEmpty()).findAny();
+
+            return opt.isPresent() ? opt.get() : new HashMap<>();
+        }
+    }
+
+    private Operation bindForOperation(InteractionAffordance affordance, String operationType,
+                                       Optional<DataSchema> schema, Object payload,
+                                       Optional<Map<String, DataSchema>> varSchema, Map<String, Object> varValues) {
         Optional<Form> formOpt = affordance.getFirstFormForOperationType(operationType);
 
         if (!formOpt.isPresent()) {
@@ -454,10 +489,17 @@ public class ThingArtifact extends HypermedeaArtifact {
             failed("Invalid TD: the affordance does not have a valid form.");
         }
 
+        if (!varValues.isEmpty() && varSchema.isEmpty()) {
+            log("URI variable bindings passed to operation will be ignored (no variable defined in affordance)");
+        }
+
         try {
             Form form = formOpt.get();
-            Operation op = ProtocolBindings.getBinding(form).bind(form, operationType);
-            // TODO or .bind() with uri variables
+            ProtocolBinding binding = ProtocolBindings.getBinding(form);
+
+            Operation op = varValues.isEmpty() || varSchema.isEmpty() ?
+                    binding.bind(form, operationType) :
+                    binding.bind(form, operationType, varSchema.get(), varValues);
 
             if (schema.isPresent() && payload != null) {
                 Term p = parseCArtAgOObject(payload);
@@ -565,6 +607,20 @@ public class ThingArtifact extends HypermedeaArtifact {
         }
 
         return Optional.empty();
+    }
+
+    private Response getResponseOrFail(Optional<Response> opt) {
+        if (opt.isEmpty()) {
+            failed("No response returned by the Thing");
+        }
+
+        Response res = opt.get();
+
+        if (!res.getStatus().equals(Response.ResponseStatus.OK)) {
+            failed("The Thing responded with error status: " + res.getStatus());
+        }
+
+        return res;
     }
 
     private void updateValueFromResponse(ObsProperty p, Optional<Response> responseOpt) {
