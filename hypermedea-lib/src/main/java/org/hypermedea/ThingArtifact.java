@@ -51,10 +51,13 @@ import java.util.stream.Stream;
  *       {@link #writeProperty(String, Object) writeProperty} (for property affordances)
  *   </li>
  *   <li>
- *       {@link #invokeAction(String) invokeAction} (for action affordances)
+ *       {@link #invokeAction(String) invokeAction},
+ *       {@link #queryAction(String, Object, OpFeedbackParam) queryAction} and
+ *       {@link #queryAction(String, Object, OpFeedbackParam) cancelAction} (for action affordances)
  *   </li>
  *   <li>
- *       TODO <code>subscribeEvent</code> and <code>unsubscribeEvent</code> (for event affordances)
+ *       {@link #subscribeEvent(String, Object, OpFeedbackParam)} subscribeEvent} and
+ *       {@link #unsubscribeEvent(String, String, Object) unsubscribeEvent} (for event affordances)
  *   </li>
  * </ul>
  *
@@ -173,10 +176,12 @@ public class ThingArtifact extends HypermedeaArtifact {
     }
 
     /**
-     * Read a property of a Thing by name.
-     * The read value is exposed by the <code>ThingArtifact</code> as an observable property.
-     * Assume the underlying Thing exposes an affordance for the integer-valued property <code>prop</code>,
-     * the read value will be accessible via the observable property <code>prop(12)</code>.
+     * <p>
+     *     Read a property of a Thing by name.
+     *     The read value is exposed by the <code>ThingArtifact</code> as an observable property.
+     *     Assume the underlying Thing exposes an affordance for the integer-valued property <code>speedLevel</code>,
+     *     the read value will be accessible via the observable property <code>speedLevel(12)</code>.
+     * </p>
      *
      * See also {@link #readProperty(String, OpFeedbackParam)}.
      *
@@ -193,11 +198,16 @@ public class ThingArtifact extends HypermedeaArtifact {
     }
 
     /**
-     * Read a property of a Thing by name.
+     * <p>
+     *     Read a property of a Thing by name.
+     * </p>
+     * <p>
+     *     The read value is provided in JSON.
+     *     For documentation on the mapping between JSON and Jason terms, see {@link org.hypermedea.json}.
+     * </p>
      *
      * @param propertyName the property's name.
-     * @param output the read value. Can be a list of one or more primitives, or a nested list of
-     *               primitives of arbitrary depth.
+     * @param output the read value.
      */
     @OPERATION
     public void readProperty(String propertyName, OpFeedbackParam<Object> output) {
@@ -208,7 +218,13 @@ public class ThingArtifact extends HypermedeaArtifact {
     }
 
     /**
-     * Write a property of a Thing by name.
+     * <p>
+     *     Write a property of a Thing by name.
+     * </p>
+     * <p>
+     *     The value to write must be provided in JSON.
+     *     For documentation on the mapping between JSON and Jason terms, see {@link org.hypermedea.json}.
+     * </p>
      *
      * @param propertyName the property's name.
      * @param payload the payload to be issued when writing the property.
@@ -231,10 +247,15 @@ public class ThingArtifact extends HypermedeaArtifact {
     }
 
     /**
-     * Observe a property of a Thing by name (subscribe to change notifications on the property).
-     *
-     * Note: the <code>ThingArtifact</code> classes overrides the behavior of
-     * <code>Artifact.observeProperty(String, OpFeedbackParam)</code>.
+     * <p>
+     *     Observe a property of a Thing by name (subscribe to change notifications on the property).
+     * </p>
+     * <p>
+     *     <i>
+     *         Note: the <code>ThingArtifact</code> classes overrides the behavior of
+     *         <code>Artifact.observeProperty(String, OpFeedbackParam)</code>.
+     *     </i>
+     * </p>
      *
      * @param propertyName the property's name (which will also be the name of the observable property created in the Artifact).
      * @param propParam the observable property as exposed to agents
@@ -257,9 +278,7 @@ public class ThingArtifact extends HypermedeaArtifact {
             @Override
             public void onError() {
                 beginExternalSession();
-
                 log("observeProperty operation has failed because connection to the Thing was lost");
-
                 endExternalSession(false);
             }
         });
@@ -270,13 +289,32 @@ public class ThingArtifact extends HypermedeaArtifact {
     }
 
     /**
-     * Invoke an action on a Thing by name.
-     *
-     * TODO return action's output
+     * <p>
+     *     Invoke an action on a Thing by name. The Thing may either return the output of the action, if executed
+     *     synchronously, or a link pointing at the URI of the ongoing action, for asynchronous execution.
+     *     Caller agents may differentiate the two cases as follows:
+     * </p>
+     * <ul>
+     *     <li>
+     *         if <code>outputOrURI</code> binds to an atom, a string or a <code>json</code> structure,
+     *         it is a JSON representation of the action's output as returned by the Thing. For
+     *         documentation on the mapping between JSON and Jason terms, see {@link org.hypermedea.json}.
+     *     </li>
+     *     <li>
+     *         if <code>outputOrURI</code> binds to a <code>resource</code> structure,
+     *         e.g. <code>resource("http://example.org/actions/123")</code>, the enclosed
+     *         URI identifies the ongoing action. It may be used as the <code>targetOrVariableBindings</code> parameter of
+     *         {@link #queryAction(String, Object, OpFeedbackParam)} or
+     *         {@link #cancelAction(String, Object)}.
+     *     </li>
+     * </ul>
+     * <p>
+     *     If the returned value is a URI, that URI
+     * </p>
      *
      * @param actionName the action's name.
      * @param input the input payload to be issued when invoking the action as a Jason structure.
-     * @param outputOrURI the output of the action, as provided by the Thing or the URI of the ongoing action.
+     * @param outputOrURI the output of the action, as provided by the Thing, or the URI of the ongoing action.
      *
      */
     @OPERATION
@@ -293,39 +331,58 @@ public class ThingArtifact extends HypermedeaArtifact {
 
         Optional<Response> resOpt = waitForResponse(op);
         Response res = getResponseOrFail(resOpt);
-
-        // empty rel ~ 201 Location header value
-        Optional<Link> linkToNewResource = res.getLinks().stream().filter(l -> l.getRelationType().isEmpty()).findFirst();
-
-        if (linkToNewResource.isPresent()) {
-            String uri = linkToNewResource.get().getTarget();
-            StringTerm uriTerm = ASSyntax.createString(uri);
-
-            Term t = ASSyntax.createLiteral(RESOURCE_FUNCTOR, uriTerm);
-            outputOrURI.set(t);
-        } else if (res.getPayload().isPresent()) {
-            Object payload = res.getPayload().get();
-
-            JsonTermWrapper w = new JsonTermWrapper(payload);
-            outputOrURI.set(w.getTerm());
-        }
+        setOutputOrURI(res, outputOrURI);
     }
 
+    /**
+     * Equivalent to <code>invokeAction(actionName, input, null)}</code>.
+     * 
+     * @param actionName the action's name.
+     * @param input the input payload to be issued when invoking the action as a Jason structure.
+     */
     @OPERATION
     public void invokeAction(String actionName, Object input) {
         invokeAction(actionName, input, null);
     }
 
+    /**
+     * Equivalent to <code>invokeAction(actionName, null, null)}</code>.
+     *
+     * @param actionName the action's name.
+     */
     @OPERATION
     public void invokeAction(String actionName) {
         invokeAction(actionName, null, null);
     }
 
+    /**
+     * Equivalent to <code>invokeAction(actionName, null, outputOrURI)}</code>.
+     *
+     * @param actionName the action's name.
+     * @param outputOrURI the output of the action, as provided by the Thing, or the URI of the ongoing action.
+     */
     @OPERATION
     public void invokeAction(String actionName, OpFeedbackParam<Object> outputOrURI) {
         invokeAction(actionName, null, outputOrURI);
     }
 
+    /**
+     * <p>
+     *      Query the status of an ongoing action performed by the Thing. The action may be addressed
+     *      either directly (e.g. with the full URI <code>http://example.org/actions/123</code>)
+     *      or via variables in a URI template (e.g. <code>actionId</code> binding to <code>123</code>
+     *      in the URI template <code>http://example.org/actions/{actionId}</code>).
+     *      Variable bindings must be given as a JSON object, with variables as keys
+     *      and bindings as values).
+     * </p>
+     * <p>
+     *     For documentation on the mapping between JSON and Jason terms, see {@link org.hypermedea.json}.
+     * </p>
+     *
+     * @param actionName the action's name.
+     * @param targetOrVariableBindings URI of the target action or URI template variable bindings.
+     * @param output the status of the action.
+     */
     @OPERATION
     public void queryAction(String actionName, Object targetOrVariableBindings, OpFeedbackParam<Object> output) {
         ActionAffordance action = getActionOrFail(actionName);
@@ -340,16 +397,24 @@ public class ThingArtifact extends HypermedeaArtifact {
         output.set(w.getTerm());
     }
 
+    /**
+     * Equivalent to <code>queryAction(actionName, null, status)}</code>.
+     *
+     * @param actionName the action's name.
+     * @param status the status of the action.
+     */
     @OPERATION
-    public void queryAction(String actionName, OpFeedbackParam<Object> output) {
-        queryAction(actionName, null, output);
+    public void queryAction(String actionName, OpFeedbackParam<Object> status) {
+        queryAction(actionName, null, status);
     }
 
-    @OPERATION
-    public void cancelAction(String actionName) {
-        cancelAction(actionName, null);
-    }
-
+    /**
+     * Cancel an ongoing action. As in the <code>queryAction</code> operation, the action may be addressed
+     * directly or via URI template variables.
+     *
+     * @param actionName the action's name.
+     * @param targetOrVariableBindings URI of the target action or URI template variable bindings.
+     */
     @OPERATION
     public void cancelAction(String actionName, Object targetOrVariableBindings) {
         ActionAffordance action = getActionOrFail(actionName);
@@ -361,16 +426,115 @@ public class ThingArtifact extends HypermedeaArtifact {
         getResponseOrFail(resOpt);
     }
 
+    /**
+     * Equivalent to <code>cancelAction(actionName, null)}</code>.
+     *
+     * @param actionName the action's name.
+     */
     @OPERATION
-    public void subscribeEvent(String eventName) {
-        log("subscribeEvent not implemented");
-
-        // TODO call signal(predicate) in the notification callback
+    public void cancelAction(String actionName) {
+        cancelAction(actionName, null);
     }
 
+    /**
+     * <p>
+     *     Subscribe to an event observed by the Thing. As a result, the Thing is expected to create
+     *     a subscription resource whose URI is returned if the subscription operation was successful.
+     *     The URI of the subscription resource is exposed to agents in a <code>resource</code> structure,
+     *     e.g. <code>resource("http://example.org/subscriptions/abc")</code>.
+     * </p>
+     * <p>
+     *     Any subsequent notification pushed by the Thing is turned into a signal by the <code>ThingArtifact</code>.
+     *     For instance, if an agent subscribes to the <code>tempAboveThreshold</code> event, which the Thing
+     *     emits with the latest temperature value it measured, the agent will receive signals such as
+     *     <code>tempAboveThreshold(36.8)</code>. If the Thing pushes notification without payloads, signals are
+     *     transmitted to agents as plain atoms (e.g. <code>tempAboveThreshold</code>).
+     * </p>
+     * <p>
+     *     Subscribing to an event may require input data to provide to the Thing.
+     *     Agents must provide it in JSON via the <code>subscription</code> parameter.
+     *     Notification payloads are also exposed to agents in JSON.
+     *     For documentation on the mapping between JSON and Jason terms, see {@link org.hypermedea.json}.
+     * </p>
+     *
+     * @param eventName the event's name.
+     * @param subscription the payload to be issued to the Thing when subscribing to the event
+     * @param subscriptionURI a structure enclosing the URI of the active subscription returned by the Thing.
+     */
     @OPERATION
-    public void unsubscribeEvent(String eventName) {
-        log("unsubscribeEvent not implemented");
+    public void subscribeEvent(String eventName, Object subscription, OpFeedbackParam<Object> subscriptionURI) {
+        EventAffordance event = getEventOrFail(eventName);
+
+        Optional<DataSchema> subscriptionSchema = event.getSubscriptionSchema();
+
+        if (!subscriptionSchema.isPresent() && subscription != null) {
+            log("subscription payload ignored. Subscription to " + eventName + " does not take any input.");
+        }
+
+        Operation op = bindForOperation(event, TD.subscribeEvent, subscriptionSchema, subscription, event.getUriVariables(), new HashMap<>());
+
+        op.registerResponseCallback(new ResponseCallback() {
+            @Override
+            public void onResponse(Response response) {
+                beginExternalSession();
+                boolean success = sendSignalFromResponse(eventName, response);
+                endExternalSession(success);
+            }
+
+            @Override
+            public void onError() {
+                beginExternalSession();
+                log("subscribeEvent operation has failed because connection to the Thing was lost");
+                endExternalSession(false);
+            }
+        });
+
+        Optional<Response> resOpt = waitForResponse(op);
+        Response res = getResponseOrFail(resOpt);
+        setOutputOrURI(res, subscriptionURI);
+    }
+
+    /**
+     * Equivalent to <code>subscribeEvent(eventName, null, outputOrURI)</code>.
+     *
+     * @param eventName
+     * @param outputOrURI
+     */
+    @OPERATION
+    public void subscribeEvent(String eventName, OpFeedbackParam<Object> outputOrURI) {
+        subscribeEvent(eventName, null);
+    }
+
+    /**
+     * Cancel an active subscription to the event. The subscription may be addressed directly or via
+     * URI template variables. See {@link #queryAction(String, Object, OpFeedbackParam)} for a similar interface.
+     *
+     * @param eventName the event's name.
+     * @param targetOrVariableBindings URI of the target subscription or URI template variable bindings.
+     * @param cancellation cancellation data to provide to the Thing.
+     */
+    @OPERATION
+    public void unsubscribeEvent(String eventName, String targetOrVariableBindings, Object cancellation) {
+        EventAffordance event = getEventOrFail(eventName);
+        Map<String, Object> varBindings = getBindings(event, TD.unsubscribeEvent, targetOrVariableBindings);
+
+        // TODO take cancellation payload into account
+
+        Operation op = bindForOperation(event, TD.unsubscribeEvent, Optional.empty(), null, event.getUriVariables(), varBindings);
+
+        Optional<Response> resOpt = waitForResponse(op);
+        getResponseOrFail(resOpt);
+    }
+
+    /**
+     * Equivalent to <code>unsubscribeEvent(eventName, targetOrVariableBindings, null)</code>.
+     *
+     * @param eventName the event's name.
+     * @param targetOrVariableBindings URI of the target subscription or URI template variable bindings.
+     */
+    @OPERATION
+    public void unsubscribeEvent(String eventName, String targetOrVariableBindings) {
+        unsubscribeEvent(eventName, targetOrVariableBindings, null);
     }
 
     /**
@@ -420,11 +584,20 @@ public class ThingArtifact extends HypermedeaArtifact {
         return action.get();
     }
 
+    private EventAffordance getEventOrFail(String eventName) {
+        Optional<EventAffordance> event = td.getEventByName(eventName);
+
+        if (!event.isPresent()) {
+            failed("Unknown event: " + eventName);
+        }
+
+        return event.get();
+    }
+
     /**
      * <p>
      *     Copy the content of an observable property, to expose to agents.
      * </p>
-     *
      * <p>
      *     <i>Note: this method duplicates code from <code>ObsProperty.getUserCopy()</code>, which isn't accessible to subclasses.</i>
      * </p>
@@ -623,6 +796,24 @@ public class ThingArtifact extends HypermedeaArtifact {
         return res;
     }
 
+    private void setOutputOrURI(Response res, OpFeedbackParam<Object> outputOrURI) {
+        // empty rel ~ 201 Location header value
+        Optional<Link> linkToNewResource = res.getLinks().stream().filter(l -> l.getRelationType().isEmpty()).findFirst();
+
+        if (linkToNewResource.isPresent()) {
+            String uri = linkToNewResource.get().getTarget();
+            StringTerm uriTerm = ASSyntax.createString(uri);
+
+            Term t = ASSyntax.createLiteral(RESOURCE_FUNCTOR, uriTerm);
+            outputOrURI.set(t);
+        } else if (res.getPayload().isPresent()) {
+            Object payload = res.getPayload().get();
+
+            JsonTermWrapper w = new JsonTermWrapper(payload);
+            outputOrURI.set(w.getTerm());
+        }
+    }
+
     private void updateValueFromResponse(ObsProperty p, Optional<Response> responseOpt) {
         if (!responseOpt.isPresent()) {
             failed("Something went wrong with the read property request.");
@@ -644,6 +835,23 @@ public class ThingArtifact extends HypermedeaArtifact {
         if (!p.getValue().equals(value)) {
             p.updateValue(value);
         }
+    }
+
+    private boolean sendSignalFromResponse(String signalType, Response response) {
+        if (!response.getStatus().equals(Response.ResponseStatus.OK)) {
+            log("The Thing sent notification for event " + signalType + " with status " + response.getStatus());
+            return false;
+        }
+
+        if (!response.getPayload().isPresent()) {
+            signal(signalType);
+        } else {
+            Object payload = response.getPayload().get();
+            JsonTermWrapper w = new JsonTermWrapper(payload);
+            signal(signalType, w.getTerm());
+        }
+
+        return true;
     }
 
     /**
