@@ -57,7 +57,7 @@ import java.net.URISyntaxException;
  *
  * @author Victor Charpenay, Noé Saffaf
  */
-public class LinkedDataArtifact extends HypermedeaArtifact {
+public class NavigationArtifact extends HypermedeaArtifact {
 
 	/**
 	 * Manager that listens to incoming resources from the Linked Data crawler

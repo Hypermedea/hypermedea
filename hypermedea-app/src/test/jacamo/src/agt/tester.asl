@@ -57,7 +57,7 @@ test(testABoxAndTBoxWithInference) .
 
 +!doBefore([LDArtId, OWLArtId])
     <-
-    makeArtifact("test-ld", "org.hypermedea.LinkedDataArtifact", [], LDArtId) ;
+    makeArtifact("test-ld", "org.hypermedea.NavigationArtifact", [], LDArtId) ;
     focus(LDArtId) ;
     makeArtifact("test-owl", "org.hypermedea.OntologyArtifact", [true], OWLArtId) ;
     focus(OWLArtId) .

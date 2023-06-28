@@ -4,7 +4,7 @@ knownVocab("https://w3id.org/bot#") .
     true
     <-
     // create Linked Data artifact
-    makeArtifact(ld, "org.hypermedea.LinkedDataArtifact", [], LDArtId) ;
+    makeArtifact(ld, "org.hypermedea.NavigationArtifact", [], LDArtId) ;
     focus(LDArtId) ;
     // create ontology artifact
     makeArtifact(owl, "org.hypermedea.OntologyArtifact", [true], OWLArtId) ;
