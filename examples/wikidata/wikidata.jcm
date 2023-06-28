@@ -1,0 +1,12 @@
+mas wikidata_mas {
+
+    agent query_agent {
+        goals: start
+        join: wikidata_workspace
+    }
+
+    workspace wikidata_workspace {
+        artifact wd: org.hypermedea.QueryArtifact("https://query.wikidata.org/sparql")
+    }
+
+}
