@@ -17,9 +17,6 @@ import java.util.Map;
 /**
  * Wrapper for a JSON value built from a Jason term. Used by the <code>ThingArtifact</code> to read/write payloads.
  *
- * The mapping between JSON objects and Jason terms is inspired by the SWI-Prolog JSON library.
- * See https://www.swi-prolog.org/pldoc/man?section=jsonsupport
- *
  * TODO use TermWrapperException (and move it to upper package)
  *
  * @author Victor Charpenay
