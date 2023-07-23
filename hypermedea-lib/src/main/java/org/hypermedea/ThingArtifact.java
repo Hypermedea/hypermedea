@@ -192,7 +192,9 @@ public class ThingArtifact extends HypermedeaArtifact {
         PropertyAffordance property = getPropertyOrFail(propertyName);
 
         Operation op = bindForOperation(property, TD.readProperty, Optional.empty(),  null, property.getUriVariables(), new HashMap<>());
-        Optional<Response> response = waitForResponse(op);
+
+        sendRequest(op);
+        Optional<Response> response = waitForOKOrFail(op);
 
         if (!dryRun) updateValueFromResponse(p, response);
     }
@@ -236,14 +238,9 @@ public class ThingArtifact extends HypermedeaArtifact {
         Optional<DataSchema> schema = Optional.of(property.getDataSchema());
 
         Operation op = bindForOperation(property, TD.writeProperty, schema, payload, property.getUriVariables(), new HashMap<>());
-        Optional<Response> response = waitForResponse(op);
 
-        // TODO no need for the optional response; check dryRun and fail if IOException
-        // TODO check status inside waitForResponse?
-
-        if (response.isPresent() && !response.get().getStatus().equals(Response.ResponseStatus.OK)) {
-            failed("Status: " + response.get().getStatus());
-        }
+        sendRequest(op);
+        waitForOKOrFail(op);
     }
 
     /**
@@ -283,7 +280,7 @@ public class ThingArtifact extends HypermedeaArtifact {
             }
         });
 
-        waitForResponse(op); // FIXME shouldn't wait for an answer
+        sendRequest(op);
 
         propParam.set(getUserCopy(p));
     }
@@ -329,9 +326,12 @@ public class ThingArtifact extends HypermedeaArtifact {
 
         Operation op = bindForOperation(action, TD.invokeAction, inputSchema, input, action.getUriVariables(), new HashMap<>());
 
-        Optional<Response> resOpt = waitForResponse(op);
-        Response res = getResponseOrFail(resOpt);
-        setOutputOrURI(res, outputOrURI);
+        sendRequest(op);
+        Optional<Response> resOpt = waitForOKOrFail(op);
+
+        if (resOpt.isPresent() && outputOrURI != null) {
+            setOutputOrURI(resOpt.get(), outputOrURI);
+        }
     }
 
     /**
@@ -381,20 +381,22 @@ public class ThingArtifact extends HypermedeaArtifact {
      *
      * @param actionName the action's name.
      * @param targetOrVariableBindings URI of the target action or URI template variable bindings.
-     * @param output the status of the action.
+     * @param status the status of the action.
      */
     @OPERATION
-    public void queryAction(String actionName, Object targetOrVariableBindings, OpFeedbackParam<Object> output) {
+    public void queryAction(String actionName, Object targetOrVariableBindings, OpFeedbackParam<Object> status) {
         ActionAffordance action = getActionOrFail(actionName);
         Map<String, Object> varBindings = getBindings(action, TD.queryAction, targetOrVariableBindings);
 
         Operation op = bindForOperation(action, TD.queryAction, Optional.empty(), null, action.getUriVariables(), varBindings);
 
-        Optional<Response> resOpt = waitForResponse(op);
-        Response res = getResponseOrFail(resOpt);
+        sendRequest(op);
+        Optional<Response> resOpt = waitForOKOrFail(op);
 
-        JsonTermWrapper w = new JsonTermWrapper(res);
-        output.set(w.getTerm());
+        if (resOpt.isPresent()) {
+            JsonTermWrapper w = new JsonTermWrapper(resOpt.get());
+            status.set(w.getTerm());
+        }
     }
 
     /**
@@ -422,8 +424,8 @@ public class ThingArtifact extends HypermedeaArtifact {
 
         Operation op = bindForOperation(action, TD.cancelAction, Optional.empty(), null, action.getUriVariables(), varBindings);
 
-        Optional<Response> resOpt = waitForResponse(op);
-        getResponseOrFail(resOpt);
+        sendRequest(op);
+        waitForOKOrFail(op);
     }
 
     /**
@@ -489,20 +491,32 @@ public class ThingArtifact extends HypermedeaArtifact {
             }
         });
 
-        Optional<Response> resOpt = waitForResponse(op);
-        Response res = getResponseOrFail(resOpt);
-        setOutputOrURI(res, subscriptionURI);
+        sendRequest(op);
+        Optional<Response> resOpt = waitForOKOrFail(op);
+
+        if (resOpt.isPresent() && subscriptionURI != null) {
+            setOutputOrURI(resOpt.get(), subscriptionURI);
+        }
     }
 
     /**
-     * Equivalent to <code>subscribeEvent(eventName, null, outputOrURI)</code>.
+     * Equivalent to {@link #subscribeEvent(String, OpFeedbackParam) subscribeEvent(eventName, null, null)}.
      *
      * @param eventName
-     * @param outputOrURI
+     */
+    public void subscribeEvent(String eventName) {
+        subscribeEvent(eventName, null, null);
+    }
+
+    /**
+     * Equivalent to {@link #subscribeEvent(String, Object, OpFeedbackParam) subscribeEvent(eventName, null, subscriptionURI)}.
+     *
+     * @param eventName
+     * @param subscriptionURI
      */
     @OPERATION
-    public void subscribeEvent(String eventName, OpFeedbackParam<Object> outputOrURI) {
-        subscribeEvent(eventName, null);
+    public void subscribeEvent(String eventName, OpFeedbackParam<Object> subscriptionURI) {
+        subscribeEvent(eventName, null, subscriptionURI);
     }
 
     /**
@@ -522,12 +536,12 @@ public class ThingArtifact extends HypermedeaArtifact {
 
         Operation op = bindForOperation(event, TD.unsubscribeEvent, Optional.empty(), null, event.getUriVariables(), varBindings);
 
-        Optional<Response> resOpt = waitForResponse(op);
-        getResponseOrFail(resOpt);
+        sendRequest(op);
+        waitForOKOrFail(op);
     }
 
     /**
-     * Equivalent to <code>unsubscribeEvent(eventName, targetOrVariableBindings, null)</code>.
+     * Equivalent to {@link #unsubscribeEvent(String, String, Object) unsubscribeEvent(eventName, targetOrVariableBindings, null)}.
      *
      * @param eventName the event's name.
      * @param targetOrVariableBindings URI of the target subscription or URI template variable bindings.
@@ -763,16 +777,34 @@ public class ThingArtifact extends HypermedeaArtifact {
         return op;
     }
 
-    private Optional<Response> waitForResponse(Operation op) {
-        if (this.dryRun) {
-            log(op.toString());
-            return Optional.empty();
-        } else {
-            log(op.toString());
+    private void sendRequest(Operation op) {
+        log(op.toString());
+
+        if (!this.dryRun) {
             try {
                 op.sendRequest();
+            } catch (IOException e) {
+                failed(e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Wait for a response, check its status and return the response if not in dry run mode.
+     *
+     * @param op the operation for which a response is expected
+     * @return the response with status OK, if returned by the Thing or {@link Optional#empty()} if in dry run mode
+     */
+    private Optional<Response> waitForOKOrFail(Operation op) {
+        if (!this.dryRun) {
+            try {
                 Response res = op.getResponse();
-                log(String.format("[%s] Status: %s", res.getClass().getTypeName(), res.getStatus())); // TODO override res.toString()
+                log(res.toString());
+
+                if (!res.getStatus().equals(Response.ResponseStatus.OK)) {
+                    failed("Thing responded with status: " + res.getStatus());
+                }
+
                 return Optional.of(res);
             } catch (IOException e) {
                 failed(e.getMessage());
@@ -780,20 +812,6 @@ public class ThingArtifact extends HypermedeaArtifact {
         }
 
         return Optional.empty();
-    }
-
-    private Response getResponseOrFail(Optional<Response> opt) {
-        if (opt.isEmpty()) {
-            failed("No response returned by the Thing");
-        }
-
-        Response res = opt.get();
-
-        if (!res.getStatus().equals(Response.ResponseStatus.OK)) {
-            failed("The Thing responded with error status: " + res.getStatus());
-        }
-
-        return res;
     }
 
     private void setOutputOrURI(Response res, OpFeedbackParam<Object> outputOrURI) {
