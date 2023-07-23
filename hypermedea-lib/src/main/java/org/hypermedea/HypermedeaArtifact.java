@@ -24,7 +24,7 @@ public abstract class HypermedeaArtifact extends Artifact {
     protected RequestListener crawlerListener = null;
 
     protected void init() {
-        crawler.addListener(crawlerListener);
+        if (crawlerListener != null) crawler.addListener(crawlerListener);
     }
 
     @Override
