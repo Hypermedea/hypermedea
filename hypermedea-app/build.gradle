@@ -6,7 +6,7 @@ plugins {
     id 'application'
 }
 
-version '0.2'
+version '0.3'
 group   'org.hypermedea'
 
 startScripts.applicationName 'hypermedea'
