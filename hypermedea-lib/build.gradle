@@ -29,7 +29,7 @@ dependencies {
     implementation group: 'net.sourceforge.owlapi', name: 'org.semanticweb.hermit', version: '1.4.5.519'
 
     // Thing Description (TD) client dependencies
-    implementation group: 'com.github.Hypermedea', name: 'wot-td-java', version: 'fb2a2b7'
+    implementation group: 'com.github.Hypermedea', name: 'wot-td-java', version: 'ea17fda'
 
     // Planning Domain Description Language (PDDL) dependencies
     implementation group: 'com.github.pellierd', name: 'pddl4j', version: 'v3.8.3'

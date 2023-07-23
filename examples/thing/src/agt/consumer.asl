@@ -41,7 +41,7 @@ goal(hasValue("status", false)) .
     !switchOff ;
     +Goal .
 
-+status(LightStatus) :
++property_value("status", LightStatus) :
     true
     <-
     .print("light status (from obs. property): ", LightStatus) .

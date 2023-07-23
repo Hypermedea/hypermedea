@@ -62,10 +62,10 @@ import java.util.stream.Stream;
  * </ul>
  *
  * <p>
- *     The <code>observeProperty</code> operation that some TDs expose has a special role in CArtAgO:
- *     agents explicitly observe a property to receive notifications only when property values change.
- *     The <code>ThingArtifact</code> keeps this behavior, only acting as a proxy that caches values
- *     received from the Thing.
+ *     The <code>observeProperty</code> operation that some TDs expose slightly differs from the
+ *     operation of the same name defined in CArtAgO. Whenever, an agent observes a WoT property with
+ *     name <code>propertyName</code>, the <code>ThingArtifact</code> exposes these values in
+ *     observable properties of the form <code>propertyValue(PropertyName, Value)</code>.
  * </p>
  *
  * <p>
@@ -108,6 +108,8 @@ public class ThingArtifact extends HypermedeaArtifact {
      */
     public static final String RESOURCE_FUNCTOR = "resource";
 
+    public static final String PROPERTY_VALUE_FUNCTOR = "propertyValue";
+
     private static final String WEBID_PREFIX = "http://hypermedea.org/#";
 
     private ThingDescription td;
@@ -149,10 +151,6 @@ public class ThingArtifact extends HypermedeaArtifact {
             } else {
                 td = TDGraphReader.readFromFile(TDFormat.RDF_TURTLE, urlOrPath);
             }
-
-            for (PropertyAffordance property : td.getProperties()) {
-                defineObsProperty(property.getName(), Double.NaN);
-            }
         } catch (IOException e) {
             failed(e.getMessage());
         }
@@ -189,7 +187,6 @@ public class ThingArtifact extends HypermedeaArtifact {
      */
     @OPERATION
     public void readProperty(String propertyName) {
-        ObsProperty p = getObsProperty(propertyName);
         PropertyAffordance property = getPropertyOrFail(propertyName);
 
         Operation op = bindForOperation(property, TD.readProperty, Optional.empty(),  null, property.getUriVariables(), new HashMap<>());
@@ -197,7 +194,7 @@ public class ThingArtifact extends HypermedeaArtifact {
         sendRequest(op);
         Optional<Response> response = waitForOKOrFail(op);
 
-        if (!dryRun) updateValueFromResponse(p, response);
+        if (!dryRun) updateValueFromResponse(propertyName, response);
     }
 
     /**
@@ -216,8 +213,8 @@ public class ThingArtifact extends HypermedeaArtifact {
     public void readProperty(String propertyName, OpFeedbackParam<Object> output) {
         readProperty(propertyName);
 
-        ObsProperty p = getObsProperty(propertyName);
-        output.set(p.getValue());
+        ObsProperty p = getObsPropertyByTemplate(PROPERTY_VALUE_FUNCTOR, propertyName, null);
+        output.set(p.getValue(1));
     }
 
     /**
@@ -250,17 +247,15 @@ public class ThingArtifact extends HypermedeaArtifact {
      * </p>
      * <p>
      *     <i>
-     *         Note: the <code>ThingArtifact</code> classes overrides the behavior of
+     *         Note: this method has a distinct behavior from
      *         <code>Artifact.observeProperty(String, OpFeedbackParam)</code>.
      *     </i>
      * </p>
      *
      * @param propertyName the property's name (which will also be the name of the observable property created in the Artifact).
-     * @param propParam the observable property as exposed to agents
      */
     @OPERATION
-    public void observeProperty(String propertyName, OpFeedbackParam<ArtifactObsProperty> propParam) {
-        ObsProperty p = getObsProperty(propertyName);
+    public void observeProperty(String propertyName) {
         PropertyAffordance property = getPropertyOrFail(propertyName);
 
         Operation op = bindForOperation(property, TD.observeProperty, Optional.empty(),  null, property.getUriVariables(), new HashMap<>());
@@ -269,7 +264,7 @@ public class ThingArtifact extends HypermedeaArtifact {
             @Override
             public void onResponse(Response response) {
                 beginExternalSession();
-                updateValueFromResponse(p, Optional.of(response));
+                updateValueFromResponse(propertyName, Optional.of(response));
                 endExternalSession(true);
             }
 
@@ -282,8 +277,6 @@ public class ThingArtifact extends HypermedeaArtifact {
         });
 
         sendRequest(op);
-
-        propParam.set(getUserCopy(p));
     }
 
     /**
@@ -354,17 +347,6 @@ public class ThingArtifact extends HypermedeaArtifact {
     @OPERATION
     public void invokeAction(String actionName) {
         invokeAction(actionName, null, null);
-    }
-
-    /**
-     * Equivalent to <code>invokeAction(actionName, null, outputOrURI)}</code>.
-     *
-     * @param actionName the action's name.
-     * @param outputOrURI the output of the action, as provided by the Thing, or the URI of the ongoing action.
-     */
-    @OPERATION
-    public void invokeAction(String actionName, OpFeedbackParam<Object> outputOrURI) {
-        invokeAction(actionName, null, outputOrURI);
     }
 
     /**
@@ -501,24 +483,13 @@ public class ThingArtifact extends HypermedeaArtifact {
     }
 
     /**
-     * Equivalent to {@link #subscribeEvent(String, OpFeedbackParam) subscribeEvent(eventName, null, null)}.
+     * Equivalent to {@link #subscribeEvent(String, Object, OpFeedbackParam) subscribeEvent(eventName, null, null)}.
      *
      * @param eventName
      */
     @OPERATION
     public void subscribeEvent(String eventName) {
         subscribeEvent(eventName, null, null);
-    }
-
-    /**
-     * Equivalent to {@link #subscribeEvent(String, Object, OpFeedbackParam) subscribeEvent(eventName, null, subscriptionURI)}.
-     *
-     * @param eventName
-     * @param subscriptionURI
-     */
-    @OPERATION
-    public void subscribeEvent(String eventName, OpFeedbackParam<Object> subscriptionURI) {
-        subscribeEvent(eventName, null, subscriptionURI);
     }
 
     /**
@@ -834,9 +805,9 @@ public class ThingArtifact extends HypermedeaArtifact {
         }
     }
 
-    private void updateValueFromResponse(ObsProperty p, Optional<Response> responseOpt) {
+    private void updateValueFromResponse(String propertyName, Optional<Response> responseOpt) {
         if (!responseOpt.isPresent()) {
-            failed("Something went wrong with the read property request.");
+            failed("Something went wrong with the read/observe property request.");
         }
 
         Response response = responseOpt.get();
@@ -852,8 +823,14 @@ public class ThingArtifact extends HypermedeaArtifact {
         Object rawValue = responseOpt.get().getPayload().get();
         Term value = new JsonTermWrapper(rawValue).getTerm();
 
-        if (!p.getValue().equals(value)) {
-            p.updateValue(value);
+        if (hasObsPropertyByTemplate(PROPERTY_VALUE_FUNCTOR, propertyName, null)) {
+            ObsProperty p = getObsPropertyByTemplate(PROPERTY_VALUE_FUNCTOR, propertyName, null);
+
+            if (!p.getValue(1).equals(value)) {
+                p.updateValue(1, value);
+            }
+        } else {
+            defineObsProperty(PROPERTY_VALUE_FUNCTOR, propertyName, value);
         }
     }
 
