@@ -187,6 +187,7 @@ public class ThingArtifact extends HypermedeaArtifact {
      *
      * @param propertyName the property's name.
      */
+    @OPERATION
     public void readProperty(String propertyName) {
         ObsProperty p = getObsProperty(propertyName);
         PropertyAffordance property = getPropertyOrFail(propertyName);
@@ -504,6 +505,7 @@ public class ThingArtifact extends HypermedeaArtifact {
      *
      * @param eventName
      */
+    @OPERATION
     public void subscribeEvent(String eventName) {
         subscribeEvent(eventName, null, null);
     }
