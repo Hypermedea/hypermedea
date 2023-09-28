@@ -1,4 +1,4 @@
 /**
- * Wrapper classes for agents to handle JSON values (used by the {@link org.hypermedea.ThingArtifact}).
+ * Wrapper classes for agents to handle JSON values.
  */
 package org.hypermedea.json;

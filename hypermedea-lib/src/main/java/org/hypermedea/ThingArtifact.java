@@ -11,7 +11,7 @@ import ch.unisg.ics.interactions.wot.td.bindings.BindingNotRegisteredException;
 import ch.unisg.ics.interactions.wot.td.bindings.Operation;
 import ch.unisg.ics.interactions.wot.td.bindings.ProtocolBindings;
 import ch.unisg.ics.interactions.wot.td.bindings.Response;
-import ch.unisg.ics.interactions.wot.td.bindings.http.TDHttpOperation;
+import ch.unisg.ics.interactions.wot.td.bindings.http.HttpOperation;
 import ch.unisg.ics.interactions.wot.td.io.TDGraphReader;
 import ch.unisg.ics.interactions.wot.td.schemas.DataSchema;
 import ch.unisg.ics.interactions.wot.td.security.APIKeySecurityScheme;
@@ -470,16 +470,16 @@ public class ThingArtifact extends HypermedeaArtifact {
     }
 
     private Optional<Response> issueRequest(Operation op) {
-        if (apiKey.isPresent() && op instanceof TDHttpOperation) {
-            TDHttpOperation httpOp = (TDHttpOperation) op;
+        if (apiKey.isPresent() && op instanceof HttpOperation) {
+            HttpOperation httpOp = (HttpOperation) op;
             Optional<SecurityScheme> scheme = td.getFirstSecuritySchemeByType(WoTSec.APIKeySecurityScheme);
             if (scheme.isPresent()) httpOp.setAPIKey((APIKeySecurityScheme) scheme.get(), apiKey.get());
         } else if (apiKey.isPresent()) {
             log("Warning: API key auth is only supported for HTTP bindings. Key given to artifact was ignored.");
         }
 
-        if (basicAuth.isPresent() && op instanceof TDHttpOperation) {
-            TDHttpOperation httpOp = (TDHttpOperation) op;
+        if (basicAuth.isPresent() && op instanceof HttpOperation) {
+            HttpOperation httpOp = (HttpOperation) op;
             // TODO if future version of wot-td-java includes the whole vocab, replace string with constant
             Optional<SecurityScheme> scheme = td.getFirstSecuritySchemeByType("BasicSecurityScheme");
             //if (scheme.isPresent())
@@ -490,9 +490,9 @@ public class ThingArtifact extends HypermedeaArtifact {
 
         log("operating agent: " + getCurrentOpAgentId().getAgentName());
 
-        if (op instanceof TDHttpOperation) {
+        if (op instanceof HttpOperation) {
             // Set a header with the id of the operating agent
-            TDHttpOperation httpOp = (TDHttpOperation) op;
+            HttpOperation httpOp = (HttpOperation) op;
             httpOp.addHeader("X-Agent-WebID", WEBID_PREFIX + getCurrentOpAgentId().getAgentName());
         }
 

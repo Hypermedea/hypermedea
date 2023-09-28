@@ -28,8 +28,9 @@ dependencies {
     implementation group: 'com.github.owlcs', name: 'ontapi', version: '2.1.0'
     implementation group: 'net.sourceforge.owlapi', name: 'org.semanticweb.hermit', version: '1.4.5.519'
 
-    // Thing Description (TD) client dependencies
-    implementation group: 'com.github.Hypermedea', name: 'wot-td-java', version: '1f08cce'
+    // Web client dependencies
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
+    implementation 'com.google.code.gson:gson:2.10.1'
 
     // Planning Domain Description Language (PDDL) dependencies
     implementation group: 'com.github.pellierd', name: 'pddl4j', version: 'v3.8.3'
