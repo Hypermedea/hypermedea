@@ -6,7 +6,7 @@ plugins {
     id 'application'
 }
 
-version '0.2'
+version '0.3'
 group   'org.hypermedea'
 
 startScripts.applicationName 'hypermedea'
@@ -21,6 +21,9 @@ repositories {
 dependencies {
     implementation project(':hypermedea-lib')
     implementation group: 'org.jacamo', name: 'jacamo', version: '0.9'
+
+    // TODO already defined in wot-td-java (should be removed upstream?)
+    // implementation group: 'org.slf4j', name: 'slf4j-reload4j', version: '2.0.7'
 }
 
 mainClassName = 'jacamo.infra.JaCaMoLauncher'
