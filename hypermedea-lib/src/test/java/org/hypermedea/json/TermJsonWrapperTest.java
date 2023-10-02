@@ -3,6 +3,7 @@ package org.hypermedea.json;
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
+import org.hypermedea.ct.json.TermJsonWrapper;
 import org.junit.Test;
 
 import java.util.List;

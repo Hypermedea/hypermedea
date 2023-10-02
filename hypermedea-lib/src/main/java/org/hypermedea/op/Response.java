@@ -1,9 +1,8 @@
 package org.hypermedea.op;
 
-import ch.unisg.ics.interactions.wot.td.affordances.Link;
+import jason.asSyntax.Structure;
 
 import java.util.Collection;
-import java.util.Optional;
 
 public interface Response {
 
@@ -18,8 +17,12 @@ public interface Response {
 
   ResponseStatus getStatus();
 
-  Optional<Object> getPayload();
-
-  Collection<Link> getLinks();
+  /**
+   * Note: not only for GET/WATCH. If e.g. POST with creation of resource:
+   * this method should return the exposed link to new resource as a Jason term.
+   *
+   * @return a collection of Jason terms representing the response's payload.
+   */
+  Collection<Structure> getPayload();
 
 }

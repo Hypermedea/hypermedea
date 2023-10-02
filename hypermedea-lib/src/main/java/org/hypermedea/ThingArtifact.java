@@ -23,8 +23,8 @@ import jason.asSyntax.ListTerm;
 import jason.asSyntax.StringTerm;
 import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
-import org.hypermedea.json.JsonTermWrapper;
-import org.hypermedea.json.TermJsonWrapper;
+import org.hypermedea.ct.json.JsonTermWrapper;
+import org.hypermedea.ct.json.TermJsonWrapper;
 import org.hypermedea.ld.RequestListener;
 import org.hypermedea.ld.Resource;
 

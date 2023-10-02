@@ -1,4 +1,4 @@
-package org.hypermedea.json;
+package org.hypermedea.ct.json;
 
 import jason.asSyntax.*;
 

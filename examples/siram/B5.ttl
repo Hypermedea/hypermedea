@@ -16,7 +16,7 @@
         pto:Level_Sensor,
         pto:Sensor ;
     rdfs:label "Diffuse sensor with background suppression"@en ;
-    dct:title "B5" ;
+    td:title "B5" ;
     schema:manufacturer "Leuze" ;
     schema:subjectOf <https://www.leuze.com/en/usa/products_us/switching_sensors_us/optical_sensors_us/photoelectric_sensors_light_scanners_cubic_us/5_series_us/lichttaster_mit_hintergrundausblendung_us_5/ht_5_us/selector.php?supplier_aid=50135262&grp_id=1467795393506&lang=eng> ;
     rdfs:comment "It indicates the product presence in the bottle on DX10 machine of the IT'm factory."@en ;
@@ -24,7 +24,7 @@
     td:hasPropertyAffordance [ a js:BooleanSchema,
                 td:PropertyAffordance ;
             dct:description "Indicates bottle reaches to end of the conveyor belt and it detects the product presence in the bottle on DX10 machine of the IT'm factory." ;
-            dct:title "Accumulation_Aval_B5" ;
+            td:title "Accumulation_Aval_B5" ;
             js:readOnly false ;
             js:writeOnly false ;
             td:hasForm [ a hctl:Form ;

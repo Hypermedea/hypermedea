@@ -1,6 +1,9 @@
 package org.hypermedea.op;
 
+import jason.asSyntax.Structure;
+
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -22,6 +25,7 @@ public interface Operation {
   String POST = "POST";
   String PATCH = "PATCH";
   String DELETE = "DELETE";
+  String WATCH = "WATCH";
 
   /**
    * Return the URI of the resource targeted in the operation.
@@ -30,7 +34,7 @@ public interface Operation {
    */
   String getTargetURI();
 
-  /** Return the form passed as argument to the instantiation of the operation.
+  /** Return the filled-out form passed as argument to the instantiation of the operation.
    * A form is a collection of key-value pairs (fields) that parameterize the request sent to initiate the operation.
    *
    * @return a form
@@ -38,12 +42,20 @@ public interface Operation {
   Map<String, Object> getForm();
 
   /**
+   * Fill out the form with a payload. Convenience method for
+   * {@link #setPayload(Collection)} if the collection is a singleton.
+   *
+   * @param payload payload to send to the server
+   */
+  void setPayload(Structure payload);
+
+  /**
    * Fill out the form with a payload. The server may reject it and return
    * {@link Response.ResponseStatus#CLIENT_ERROR CLIENT_ERROR} status.
    *
    * @param payload payload to send to the server
    */
-  void setPayload(Object payload);
+  void setPayload(Collection<Structure> payload);
 
   /**
    * Start the operation by sending a message to the server with payload.

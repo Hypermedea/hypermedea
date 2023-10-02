@@ -22,6 +22,8 @@ public class ProtocolBindings {
   public static ProtocolBinding getBinding(String targetURI) throws BindingNotFoundException {
     String scheme = getScheme(targetURI);
 
+    // TODO bind here, instead of asking caller to bind (only thing a binding can do)
+
     if (!registeredBindings.containsKey(scheme)) throw new BindingNotFoundException();
     else return registeredBindings.get(scheme);
   }

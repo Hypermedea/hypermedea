@@ -1,22 +1,19 @@
 package org.hypermedea.op.http;
 
-import com.google.gson.Gson;
+import jason.asSyntax.Structure;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.core5.concurrent.FutureCallback;
-import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.io.CloseMode;
 import org.hypermedea.op.BaseOperation;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,7 +57,7 @@ public class HttpOperation extends BaseOperation {
     super(targetURI, formFields);
 
     this.target = targetURI;
-    this.handler = new TDHttpHandler();
+    this.handler = new HttpOperationHandler();
     this.client = HttpAsyncClients.createDefault();
 
     this.client.start();
@@ -68,7 +65,8 @@ public class HttpOperation extends BaseOperation {
     String methodName = getMethod();
     this.request = SimpleHttpRequest.create(methodName, getTargetURI());
 
-    this.request.setHeader(HttpHeaders.CONTENT_TYPE, form.getContentType());
+    // TODO take from form or get default ct
+    // this.request.setHeader(HttpHeaders.CONTENT_TYPE, form.getContentType());
   }
 
   @Override
@@ -87,39 +85,8 @@ public class HttpOperation extends BaseOperation {
   }
 
   @Override
-  protected void setBooleanPayload(Boolean value) {
-    request.setBody(String.valueOf(value), ContentType.create(form.getContentType()));
-  }
-
-  @Override
-  protected void setStringPayload(String value) {
-    request.setBody(value, ContentType.create(form.getContentType()));
-  }
-
-  @Override
-  protected void setIntegerPayload(Long value) {
-    request.setBody(String.valueOf(value), ContentType.create(form.getContentType()));
-  }
-
-  @Override
-  protected void setNumberPayload(Double value) {
-    request.setBody(String.valueOf(value), ContentType.create(form.getContentType()));
-  }
-
-  @Override
-  protected void setObjectPayload(Map<String, Object> payload) {
-    String body = new Gson().toJson(payload);
-    request.setBody(body, ContentType.create(form.getContentType()));
-  }
-
-  @Override
-  protected void setArrayPayload(List<Object> payload) {
-    String body = new Gson().toJson(payload);
-    request.setBody(body, ContentType.create(form.getContentType()));
-  }
-
-  public String getPayloadAsString() {
-    return request.getBodyText();
+  public void setPayload(Collection<Structure> payload) {
+    // TODO
   }
 
   @Override

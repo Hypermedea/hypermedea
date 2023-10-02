@@ -1,6 +1,8 @@
 package org.hypermedea.json;
 
 import jason.asSyntax.*;
+import org.hypermedea.ct.json.JsonTermWrapper;
+import org.hypermedea.ct.json.TermJsonWrapper;
 import org.junit.Test;
 
 import java.util.ArrayList;

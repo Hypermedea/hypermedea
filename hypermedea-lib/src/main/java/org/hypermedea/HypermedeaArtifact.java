@@ -2,9 +2,11 @@ package org.hypermedea;
 
 import cartago.Artifact;
 import cartago.OPERATION;
+import cartago.ObsProperty;
+import jason.asSyntax.ASSyntax;
+import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
-import org.hypermedea.ct.RepresentationWrapper;
-import org.hypermedea.ct.RepresentationWrappers;
+import jason.asSyntax.parser.ParseException;
 import org.hypermedea.ld.LinkedDataCrawler;
 import org.hypermedea.ld.RequestListener;
 import org.hypermedea.op.Operation;
@@ -14,8 +16,10 @@ import org.hypermedea.op.Response;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Hypermedea artifact, exposing abstract methods to perform operations on the Web.
@@ -23,6 +27,8 @@ import java.util.Optional;
  * In most application, there probably is a single Hypermedea artifact as well.
  */
 public abstract class HypermedeaArtifact extends Artifact {
+
+    public static final String SOURCE_FUNCTOR = "crawler_source";
 
     /**
      * Singleton Linked Data crawler to which all artifacts can attach a listener.
@@ -55,6 +61,27 @@ public abstract class HypermedeaArtifact extends Artifact {
     @OPERATION
     public void get(String resourceURI, Map<String, Object> formFields) {
         formFields.put(Operation.METHOD_NAME_FIELD, Operation.GET);
+        executeOperation(resourceURI, formFields, Optional.empty());
+    }
+
+    /**
+     * A+REST extension (for asynchronous communication).
+     *
+     * See <a href="https://doi.org/10.1109/ICSE.2004.1317465">
+     *     Extending the Representational State Transfer (REST)
+     *     Architectural Style for Decentralized Systems
+     * </a>.
+     *
+     * @param resourceURI
+     */
+    @OPERATION
+    public void watch(String resourceURI) {
+        watch(resourceURI, new HashMap<>());
+    }
+
+    @OPERATION
+    public void watch(String resourceURI, Map<String, Object> formFields) {
+        formFields.put(Operation.METHOD_NAME_FIELD, Operation.WATCH);
         executeOperation(resourceURI, formFields, Optional.empty());
     }
 
@@ -103,10 +130,15 @@ public abstract class HypermedeaArtifact extends Artifact {
     }
 
     private void executeOperation(String resourceURI, Map<String, Object> formFields, Optional<Object> requestPayloadOpt) {
+        // TODO merge into a single method: ProtocolBindings.bind()
         ProtocolBinding b = ProtocolBindings.getBinding(resourceURI);
         Operation op = b.bind(resourceURI, formFields);
+
         try {
-            if (requestPayloadOpt.isPresent()) op.setPayload(requestPayloadOpt.get());
+            if (requestPayloadOpt.isPresent()) {
+                Object requestPayload = requestPayloadOpt.get();
+                setPayload(op, requestPayload);
+            }
 
             op.sendRequest();
             Response res = op.getResponse();
@@ -115,27 +147,42 @@ public abstract class HypermedeaArtifact extends Artifact {
                 // TODO add request/response in error tuples
                 failed("The server returned an error: " + res.getStatus());
             } else {
-                Optional<Object> responsePayloadOpt = res.getPayload();
-
-                if (responsePayloadOpt.isPresent()) {
-                    Object responsePayload = responsePayloadOpt.get();
-                    // TODO instead, let the binding call RepresentationWrappers (content-type is protocol-specific)
-                    RepresentationWrapper w = RepresentationWrappers.wrap(responsePayload, "");
-                    Term t = w.getTerm();
-                    // TODO expose t as obs property
-                    // TODO resource(URI, Rep) or resource(URI) ; hasRepresentation(URI, Rep)
-                    // TODO or all in RDF: rdf(URI, a, rdfs:Resource) ; rdf(URI, rdf:value, ""^^Content-Type)
-
-                    // TODO RDF store: each resource is a named graph, rdf(S,P,O)[resource(R)]
-                    // TODO the entire graph is exposed to agents
-                    // TODO use https://www.w3.org/TR/Content-in-RDF10/ and dct:isFormat?
-                    // TODO or dct:hasFormat [ rdf:value ; dct:format "Content-Type" ] ?
-                }
+                for (Structure t : res.getPayload()) addPredicate(t, resourceURI);
+                // TODO delete previous representation of the resource?
             }
         } catch (IOException e) {
             // TODO add request/response in error tuples
             failed(e.getMessage());
         }
+    }
+
+    private void setPayload(Operation op, Object requestPayload) {
+        try {
+            Structure t = ASSyntax.parseStructure(requestPayload.toString());
+            op.setPayload(t);
+        } catch (ParseException e) {
+            try {
+                List<Term> l = ASSyntax.parseList(requestPayload.toString()).getAsList();
+
+                Optional<Term> nonStructureOpt = l.stream().filter(t -> !t.isStructure()).findAny();
+                if (nonStructureOpt.isPresent()) {
+                    String msg = "The provided request payload include a non-predicate term: " + nonStructureOpt.get();
+                    throw new IllegalArgumentException();
+                }
+
+                List<Structure> ls = l.stream().map(t -> (Structure) t).collect(Collectors.toList());
+
+                op.setPayload(ls);
+            } catch (ParseException e2) {
+                String msg = "The provided request payload isn't a proper (list of) Jason predicate(s): " + requestPayload;
+                throw new IllegalArgumentException(msg, e2);
+            }
+        }
+    }
+
+    private void addPredicate(Structure t, String src) {
+        ObsProperty p = defineObsProperty(t.getFunctor(), t.getTerms().toArray());
+        p.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, ASSyntax.createString(src)));
     }
 
 }

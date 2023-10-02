@@ -1,7 +1,8 @@
 package org.hypermedea.op;
 
+import jason.asSyntax.Structure;
+
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -75,13 +76,13 @@ public abstract class BaseOperation implements Operation {
   }
 
   /**
-   * Call an internal method to set the payload ({@link BaseOperation#setJSONPayload(Object)}).
+   * Wrap the Jason structure into a singleton array and call {@link #setPayload(Collection)}.
    *
-   * @param payload any payload that can map to a JSON value
+   * @param payload a Jason payload
    */
   @Override
-  public void setPayload(Object payload) {
-    setJSONPayload(payload);
+  public void setPayload(Structure payload) {
+    setPayload(Arrays.asList(payload));
   }
 
   /**
@@ -141,48 +142,6 @@ public abstract class BaseOperation implements Operation {
    * @return the payload, encapsulated in some arbitrary object
    */
   protected abstract Object getPayload();
-
-  /**
-   * Check the type of the input payload and defer setting the payload to methods with typed signatures
-   * corresponding each to a particular JSON value type:
-   * <ul>
-   *   <li>{@link BaseOperation#setArrayPayload(List)}</li>
-   *   <li>{@link BaseOperation#setObjectPayload(Map)}</li>
-   *   <li>{@link BaseOperation#setStringPayload(String)}</li>
-   *   <li>...</li>
-   * </ul>
-   * These methods are to be implemented per protocol binding. If a protocol binding allows arbitrary payloads,
-   * {@code setPayload(Object)} may be overridden as well.
-   *
-   * @param payload a payload expected to be equivalent to a JSON value (object, array, string, ...)
-   */
-  protected void setJSONPayload(Object payload) {
-    if (payload instanceof Map) setObjectPayload((Map<String, Object>) payload);
-    else if (payload instanceof List) setArrayPayload((List<Object>) payload);
-    else if (payload instanceof String) setStringPayload((String) payload);
-    else if (payload instanceof Boolean) setBooleanPayload((Boolean) payload);
-    else if (payload instanceof BigInteger
-          || payload instanceof Long
-          || payload instanceof Integer
-          || payload instanceof Short
-          || payload instanceof Byte)
-      setIntegerPayload(((Number) payload).longValue());
-    else if (payload instanceof Number)
-      setNumberPayload(((Number) payload).doubleValue());
-    else throw new IllegalArgumentException(String.format("Given payload type isn't supported: %s", payload.getClass()));
-  }
-
-  protected abstract void setObjectPayload(Map<String, Object> payload);
-
-  protected abstract void setArrayPayload(List<Object> payload);
-
-  protected abstract void setStringPayload(String payload);
-
-  protected abstract void setBooleanPayload(Boolean payload);
-
-  protected abstract void setIntegerPayload(Long payload);
-
-  protected abstract void setNumberPayload(Double payload);
 
   /**
    * Pass the input response to the semaphore and notify registered callbacks.
