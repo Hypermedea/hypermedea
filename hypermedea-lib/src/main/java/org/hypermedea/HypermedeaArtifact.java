@@ -10,7 +10,6 @@ import jason.asSyntax.parser.ParseException;
 import org.hypermedea.ld.LinkedDataCrawler;
 import org.hypermedea.ld.RequestListener;
 import org.hypermedea.op.Operation;
-import org.hypermedea.op.ProtocolBinding;
 import org.hypermedea.op.ProtocolBindings;
 import org.hypermedea.op.Response;
 
@@ -130,9 +129,7 @@ public abstract class HypermedeaArtifact extends Artifact {
     }
 
     private void executeOperation(String resourceURI, Map<String, Object> formFields, Optional<Object> requestPayloadOpt) {
-        // TODO merge into a single method: ProtocolBindings.bind()
-        ProtocolBinding b = ProtocolBindings.getBinding(resourceURI);
-        Operation op = b.bind(resourceURI, formFields);
+        Operation op = ProtocolBindings.bind(resourceURI, formFields);
 
         try {
             if (requestPayloadOpt.isPresent()) {

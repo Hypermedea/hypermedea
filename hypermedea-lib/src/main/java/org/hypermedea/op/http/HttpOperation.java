@@ -6,15 +6,15 @@ import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.core5.concurrent.FutureCallback;
-import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.io.CloseMode;
+import org.hypermedea.ct.RepresentationHandlers;
 import org.hypermedea.op.BaseOperation;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -64,19 +64,11 @@ public class HttpOperation extends BaseOperation {
 
     String methodName = getMethod();
     this.request = SimpleHttpRequest.create(methodName, getTargetURI());
-
-    // TODO take from form or get default ct
-    // this.request.setHeader(HttpHeaders.CONTENT_TYPE, form.getContentType());
   }
 
   @Override
   public void sendRequest() throws IOException {
     client.execute(request, handler);
-  }
-
-  public HttpOperation addHeader(String key, String value) {
-    this.request.addHeader(key, value);
-    return this;
   }
 
   @Override
@@ -86,33 +78,21 @@ public class HttpOperation extends BaseOperation {
 
   @Override
   public void setPayload(Collection<Structure> payload) {
-    // TODO
-  }
+    ContentType ct = ContentType.create(RepresentationHandlers.getDefaultContentType(payload));
 
-  @Override
-  public String toString() {
-    StringBuilder builder = new StringBuilder();
-    builder.append("[TDHttpRequest] Method: " + request.getMethod());
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    RepresentationHandlers.serialize(payload, out);
 
-    try {
-      builder.append(", Target: " + request.getUri().toString());
-
-      for (Header header : request.getHeaders()) {
-        builder.append(", " + header.getName() + ": " + header.getValue());
-      }
-
-      if (request.getBodyText() != null) {
-        builder.append(", Payload: " + request.getBodyText());
-      }
-    } catch (UnsupportedOperationException | URISyntaxException e) {
-      LOGGER.log(Level.WARNING, e.getMessage());
-    }
-
-    return builder.toString();
+    request.setBody(out.toByteArray(), ct);
   }
 
   SimpleHttpRequest getRequest() {
     return this.request;
+  }
+
+  public HttpOperation addHeader(String key, String value) {
+    this.request.addHeader(key, value);
+    return this;
   }
 
 }

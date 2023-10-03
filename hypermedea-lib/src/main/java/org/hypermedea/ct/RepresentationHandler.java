@@ -10,6 +10,10 @@ import java.util.List;
 /**
  * Object handling resource representation, capable of serializing Jason terms
  * in some well-known format, and round-tripping to Jason terms.
+ *
+ * Representation handlers should be liberal in the data they get as input.
+ * If parts of a stream or a Jason term have unexpected content, they should
+ * do their best to (de)serialize the rest of the stream or term.
  */
 public interface RepresentationHandler {
 
@@ -19,9 +23,9 @@ public interface RepresentationHandler {
      * returned by {@link #getSupportedContentTypes()}.
      *
      * @param terms some resource representation as Jason terms
-     * @return a stream in which the alternative representation will be serialized
+     * @param out a stream in which the alternative representation will be serialized
      */
-    OutputStream serialize(Collection<Structure> terms) throws UnsupportedRepresentationException;
+    void serialize(Collection<Structure> terms, OutputStream out) throws UnsupportedRepresentationException;
 
     /**
      * Deserialize the input representation into a collection of Jason terms.
@@ -38,7 +42,7 @@ public interface RepresentationHandler {
 
     /**
      * Return the functor appearing in the Jason structure(s) returned by {@link #deserialize(InputStream, String)}
-     * and accepted as input of {@link #serialize(Collection)}.
+     * and accepted as input of {@link #serialize(Collection, OutputStream)}.
      *
      * @return the functor of the Jason term(s) manipulated by the wrapper
      */

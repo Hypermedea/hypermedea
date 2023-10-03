@@ -6,7 +6,6 @@ import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.graph.Triple;
-import org.hypermedea.OntologyArtifact;
 import org.hypermedea.common.WrapperException;
 import org.hypermedea.ld.RDFTripleWrapper;
 
@@ -39,11 +38,11 @@ public class TermTriplePatternWrapper {
         } else {
             checkArbitraryPredicate(p);
 
-            Literal predicateURIAnnot = p.getAnnot(OntologyArtifact.PREDICATE_IRI_FUNCTOR);
-
-            if (predicateURIAnnot != null) {
-                // TODO get uri and construct triple
-            }
+//            Literal predicateURIAnnot = p.getAnnot(OntologyArtifact.PREDICATE_IRI_FUNCTOR);
+//
+//            if (predicateURIAnnot != null) {
+//                // TODO get uri and construct triple
+//            }
         }
 
         throw new WrapperException(String.format("Predicate %s has no known RDF equivalent", p));
@@ -64,21 +63,21 @@ public class TermTriplePatternWrapper {
     }
 
     private void checkArbitraryPredicate(Pred p) {
-        if (p.getArity() > 2) {
-            throw new WrapperException(String.format("Predicate %s isn't a triple", p.toStringAsTerm()));
-        }
-
-        Literal predicateURI = p.getAnnot(OntologyArtifact.PREDICATE_IRI_FUNCTOR);
-
-        if (predicateURI == null) {
-            throw new WrapperException(String.format("Predicate %s has no predicate URI", p.toStringAsTerm()));
-        }
-
-        // TODO distinguish object properties and datatype properties
-
-        if (p.getArity() == 2 && p.getTerm(1).isString()) {
-            throw new WrapperException(String.format("Predicate %s is ambiguous", p.toStringAsTerm()));
-        }
+//        if (p.getArity() > 2) {
+//            throw new WrapperException(String.format("Predicate %s isn't a triple", p.toStringAsTerm()));
+//        }
+//
+//        Literal predicateURI = p.getAnnot(OntologyArtifact.PREDICATE_IRI_FUNCTOR);
+//
+//        if (predicateURI == null) {
+//            throw new WrapperException(String.format("Predicate %s has no predicate URI", p.toStringAsTerm()));
+//        }
+//
+//        // TODO distinguish object properties and datatype properties
+//
+//        if (p.getArity() == 2 && p.getTerm(1).isString()) {
+//            throw new WrapperException(String.format("Predicate %s is ambiguous", p.toStringAsTerm()));
+//        }
     }
 
     private Node getPredicateNode(Term node) {

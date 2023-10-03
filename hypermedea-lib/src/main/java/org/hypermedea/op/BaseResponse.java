@@ -1,7 +1,9 @@
 package org.hypermedea.op;
 
-import ch.unisg.ics.interactions.wot.td.affordances.Link;
+import jason.asSyntax.Structure;
 
+import java.util.Collection;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,20 +26,10 @@ public abstract class BaseResponse implements Response {
 
     builder.append(String.format("[%s] %s", this.getClass().getSimpleName(), getStatus()));
 
-    builder.append(String.format(", Links: "));
+    builder.append(String.format(", Payload: "));
 
-    if (!getLinks().isEmpty()) {
-      for (Link lnk : getLinks()) {
-        builder.append(String.format("<%s>; rel=\"%s\", ", lnk.getTarget(), lnk.getRelationType()));
-      }
-    } else {
-      builder.append("<none>, ");
-    }
-
-    builder.append("Payload: ");
-
-    if (getPayload().isPresent()) {
-      String str = getOneLineString(getPayload().get());
+    if (!getPayload().isEmpty()) {
+      String str = getOneLineString(getPayload());
       builder.append(str);
     } else {
       builder.append("<none>");
@@ -46,11 +38,17 @@ public abstract class BaseResponse implements Response {
     return builder.toString();
   }
 
-  private String getOneLineString(Object obj) {
-    Pattern p = Pattern.compile("([^\\r\\n]*)\\r?\\n");
-    Matcher m = p.matcher(obj.toString());
+  private String getOneLineString(Collection<Structure> terms) {
+    Optional<Structure> tOpt = terms.stream().findAny();
 
-    return m.find() ? m.group(1) + "..." : obj.toString();
+    if (tOpt.isEmpty()) return "<none>";
+
+    Structure t = tOpt.get();
+
+    Pattern p = Pattern.compile("([^\\r\\n]*)\\r?\\n");
+    Matcher m = p.matcher(t.toString());
+
+    return m.find() ? m.group(1) + "..." : t.toString();
   }
 
 }
