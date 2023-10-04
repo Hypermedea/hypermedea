@@ -1,6 +1,6 @@
 package org.hypermedea.op;
 
-import jason.asSyntax.Structure;
+import jason.asSyntax.Literal;
 
 import java.io.IOException;
 import java.util.*;
@@ -81,7 +81,7 @@ public abstract class BaseOperation implements Operation {
    * @param payload a Jason payload
    */
   @Override
-  public void setPayload(Structure payload) {
+  public void setPayload(Literal payload) {
     setPayload(Arrays.asList(payload));
   }
 

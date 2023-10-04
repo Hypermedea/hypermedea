@@ -1,6 +1,6 @@
 package org.hypermedea.op;
 
-import jason.asSyntax.Structure;
+import jason.asSyntax.Literal;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -38,12 +38,12 @@ public abstract class BaseResponse implements Response {
     return builder.toString();
   }
 
-  private String getOneLineString(Collection<Structure> terms) {
-    Optional<Structure> tOpt = terms.stream().findAny();
+  private String getOneLineString(Collection<Literal> terms) {
+    Optional<Literal> tOpt = terms.stream().findAny();
 
     if (tOpt.isEmpty()) return "<none>";
 
-    Structure t = tOpt.get();
+    Literal t = tOpt.get();
 
     Pattern p = Pattern.compile("([^\\r\\n]*)\\r?\\n");
     Matcher m = p.matcher(t.toString());

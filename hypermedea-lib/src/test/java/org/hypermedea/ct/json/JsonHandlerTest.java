@@ -1,7 +1,7 @@
 package org.hypermedea.ct.json;
 
 import jason.asSyntax.ASSyntax;
-import jason.asSyntax.Structure;
+import jason.asSyntax.Literal;
 import jason.asSyntax.parser.ParseException;
 import org.junit.Test;
 
@@ -39,7 +39,7 @@ public class JsonHandlerTest {
 
     @Test
     public void testSerialize() throws ParseException {
-        Structure t = ASSyntax.parseStructure(TEST_JSON_TERM);
+        Literal t = ASSyntax.parseLiteral(TEST_JSON_TERM);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         h.serialize(Arrays.asList(t), out, "http://example.org/");
@@ -71,11 +71,11 @@ public class JsonHandlerTest {
     public void testDeserialize() throws UnsupportedEncodingException {
         InputStream in = new ByteArrayInputStream(TEST_JSON_OBJECT.getBytes("UTF-8"));
 
-        Collection<Structure> terms = h.deserialize(in, "http://example.org/", "application/json");
+        Collection<Literal> terms = h.deserialize(in, "http://example.org/", "application/json");
 
         assert terms.size() == 1;
 
-        Structure t = terms.stream().findAny().get();
+        Literal t = terms.stream().findAny().get();
 
         assert t.getFunctor().equals(JsonHandler.JSON_FUNCTOR);
         assert t.getArity() == 1;

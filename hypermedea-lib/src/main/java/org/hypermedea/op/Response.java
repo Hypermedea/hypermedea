@@ -1,6 +1,6 @@
 package org.hypermedea.op;
 
-import jason.asSyntax.Structure;
+import jason.asSyntax.Literal;
 
 import java.util.Collection;
 
@@ -23,6 +23,6 @@ public interface Response {
    *
    * @return a collection of Jason terms representing the response's payload.
    */
-  Collection<Structure> getPayload();
+  Collection<Literal> getPayload();
 
 }

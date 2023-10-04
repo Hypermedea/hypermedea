@@ -44,7 +44,7 @@ public class HttpOperationTest {
 
         assert res.getStatus().equals(Response.ResponseStatus.OK);
 
-        Optional<Structure> termOpt = res.getPayload().stream().findFirst();
+        Optional<Literal> termOpt = res.getPayload().stream().findFirst();
 
         assert termOpt.isPresent();
 

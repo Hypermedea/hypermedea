@@ -1,6 +1,6 @@
 package org.hypermedea.op.http;
 
-import jason.asSyntax.Structure;
+import jason.asSyntax.Literal;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
@@ -77,11 +77,15 @@ public class HttpOperation extends BaseOperation {
   }
 
   @Override
-  public void setPayload(Collection<Structure> payload) {
+  public void setPayload(Collection<Literal> payload) {
     ContentType ct = ContentType.create(RepresentationHandlers.getDefaultContentType(payload));
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    RepresentationHandlers.serialize(payload, out, target);
+    try {
+      RepresentationHandlers.serialize(payload, out, target);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
 
     request.setBody(out.toByteArray(), ct);
   }

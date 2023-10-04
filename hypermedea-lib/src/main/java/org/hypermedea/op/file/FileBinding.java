@@ -31,8 +31,23 @@ public class FileBinding extends BaseProtocolBinding {
   }
 
   @Override
-  public Operation bind(String targetURI, Map<String, Object> formFields) {
-    return new FileOperation(targetURI, formFields);
+  protected Operation bindGet(String targetURI, Map<String, Object> formFields) {
+    return new ReadFileOperation(targetURI, formFields);
+  }
+
+  @Override
+  protected Operation bindPut(String targetURI, Map<String, Object> formFields) {
+    return new WriteFileOperation(targetURI, formFields, false);
+  }
+
+  @Override
+  protected Operation bindPost(String targetURI, Map<String, Object> formFields) {
+    return new WriteFileOperation(targetURI, formFields, true);
+  }
+
+  @Override
+  protected Operation bindDelete(String targetURI, Map<String, Object> formFields) {
+    return new DeleteFileOperation(targetURI, formFields);
   }
 
 }

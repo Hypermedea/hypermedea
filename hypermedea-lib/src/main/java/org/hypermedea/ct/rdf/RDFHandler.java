@@ -1,6 +1,7 @@
 package org.hypermedea.ct.rdf;
 
 import jason.asSyntax.*;
+import jason.asSyntax.Literal;
 import org.apache.jena.rdf.model.*;
 import org.hypermedea.ct.BaseRepresentationHandler;
 import org.hypermedea.ct.UnsupportedRepresentationException;
@@ -83,10 +84,10 @@ public class RDFHandler extends BaseRepresentationHandler {
     }
 
     @Override
-    public void serialize(Collection<Structure> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException {
+    public void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException {
         Model m = ModelFactory.createDefaultModel();
 
-        for (Structure t : terms) {
+        for (Literal t : terms) {
             try {
                 if (t.getArity() != 3) continue;
 
@@ -117,9 +118,9 @@ public class RDFHandler extends BaseRepresentationHandler {
     }
 
     @Override
-    public Collection<Structure> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException {
+    public Collection<Literal> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException {
         Model m = ModelFactory.createDefaultModel().read(representation, resourceURI, contentType);
-        Collection<Structure> facts = new HashSet<>();
+        Collection<Literal> facts = new HashSet<>();
 
         for (Statement triple : m.listStatements().toList()) {
             RDFNode s = triple.getSubject();
@@ -135,7 +136,7 @@ public class RDFHandler extends BaseRepresentationHandler {
             Atom objectType = getRDFTypeAtom(o);
             Term typeMap = ASSyntax.createStructure(RDF_TYPE_MAP_FUNCTOR, subjectType, predicateType, objectType);
 
-            Structure fact = ASSyntax.createStructure(RDF_FUNCTOR, subject, predicate, object);
+            Literal fact = ASSyntax.createLiteral(RDF_FUNCTOR, subject, predicate, object);
             fact.addAnnot(typeMap);
 
             facts.add(fact);

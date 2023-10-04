@@ -1,10 +1,11 @@
 package org.hypermedea.ct;
 
-import jason.asSyntax.Structure;
+import jason.asSyntax.Literal;
 import org.apache.hc.core5.http.ContentType;
 import org.hypermedea.ct.json.JsonHandler;
 import org.hypermedea.ct.rdf.RDFHandler;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
@@ -25,7 +26,7 @@ public class RepresentationHandlers {
         registerHandler(JsonHandler.class.getCanonicalName());
     }
 
-    public static void serialize(Collection<Structure> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException {
+    public static void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException, IOException {
         String fn = getDefaultFunctor(terms);
 
         if (!registeredHandlers.containsKey(fn))
@@ -35,17 +36,18 @@ public class RepresentationHandlers {
         h.serialize(terms, out, resourceURI);
     }
 
-    public static Collection<Structure> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException {
+    public static Collection<Literal> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException, IOException {
         String mediaType = getMediaType(contentType);
 
         if (!registeredHandlers.containsKey(mediaType))
             throw new UnsupportedRepresentationException("No handler found for Content-Type: " + contentType);
 
         RepresentationHandler h = registeredHandlers.get(mediaType);
+        // TODO pass contentType instead, e.g. to retrieve charset
         return h.deserialize(representation, resourceURI, mediaType);
     }
 
-    public static String getDefaultContentType(Collection<Structure> terms) throws UnsupportedRepresentationException {
+    public static String getDefaultContentType(Collection<Literal> terms) throws UnsupportedRepresentationException {
         String fn = getDefaultFunctor(terms);
 
         if (!defaultContentTypes.containsKey(fn))
@@ -77,8 +79,8 @@ public class RepresentationHandlers {
     /**
      * TODO improve detection (give priority to RDF? To non-RDF?)
      */
-    private static String getDefaultFunctor(Collection<Structure> terms) {
-        Structure t = terms.stream().findFirst().get();
+    private static String getDefaultFunctor(Collection<Literal> terms) {
+        Literal t = terms.stream().findFirst().get();
         return t.getFunctor();
     }
 

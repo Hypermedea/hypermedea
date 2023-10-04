@@ -1,6 +1,7 @@
 package org.hypermedea.op.http;
 
 import jason.asSyntax.ASSyntax;
+import jason.asSyntax.Literal;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
@@ -10,6 +11,7 @@ import org.hypermedea.op.BaseResponse;
 import org.hypermedea.op.Operation;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashSet;
@@ -45,20 +47,24 @@ public class HttpResponse extends BaseResponse {
   }
 
   @Override
-  public Collection<Structure> getPayload() {
-    Collection<Structure> terms = new HashSet<>();
+  public Collection<Literal> getPayload() {
+    Collection<Literal> terms = new HashSet<>();
 
     InputStream in = new ByteArrayInputStream(response.getBodyBytes());
     String ct = response.getContentType().toString();
 
-    terms.addAll(RepresentationHandlers.deserialize(in, operation.getTargetURI(), ct));
+    try {
+      terms.addAll(RepresentationHandlers.deserialize(in, operation.getTargetURI(), ct));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     terms.addAll(getLinks());
 
     return terms;
   }
 
-  public Collection<Structure> getLinks() {
-    HashSet<Structure> links = new HashSet<>();
+  public Collection<Literal> getLinks() {
+    HashSet<Literal> links = new HashSet<>();
 
     for (Header h : response.getHeaders()) {
       if (h.getName().equals("Location") && response.getCode() == 201) {

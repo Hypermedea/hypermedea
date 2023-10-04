@@ -1,31 +1,18 @@
 package org.hypermedea.op.file;
 
-import jason.asSyntax.Structure;
 import org.hypermedea.op.BaseOperation;
 
-import java.io.IOException;
-import java.util.Collection;
+import java.io.File;
+import java.net.URI;
 import java.util.Map;
 
-public class FileOperation extends BaseOperation {
+public abstract class FileOperation extends BaseOperation {
+
+    protected final File file;
 
     public FileOperation(String targetURI, Map<String, Object> formFields) {
         super(targetURI, formFields);
-    }
-
-    @Override
-    public void setPayload(Collection<Structure> payload) {
-
-    }
-
-    @Override
-    public void sendRequest() throws IOException {
-
-    }
-
-    @Override
-    protected Object getPayload() {
-        return null;
+        file = new File(URI.create(targetURI));
     }
 
 }

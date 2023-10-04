@@ -32,7 +32,32 @@ public class HttpBinding extends BaseProtocolBinding {
   }
 
   @Override
-  public Operation bind(String targetURI, Map<String, Object> formFields) {
+  protected Operation bindGet(String targetURI, Map<String, Object> formFields) {
+    return new HttpOperation(targetURI, formFields);
+  }
+
+  @Override
+  protected Operation bindWatch(String targetURI, Map<String, Object> formFields) {
+    return new HttpOperation(targetURI, formFields);
+  }
+
+  @Override
+  protected Operation bindPut(String targetURI, Map<String, Object> formFields) {
+    return new HttpOperation(targetURI, formFields);
+  }
+
+  @Override
+  protected Operation bindPost(String targetURI, Map<String, Object> formFields) {
+    return new HttpOperation(targetURI, formFields);
+  }
+
+  @Override
+  protected Operation bindPatch(String targetURI, Map<String, Object> formFields) {
+    return new HttpOperation(targetURI, formFields);
+  }
+
+  @Override
+  protected Operation bindDelete(String targetURI, Map<String, Object> formFields) {
     return new HttpOperation(targetURI, formFields);
   }
 

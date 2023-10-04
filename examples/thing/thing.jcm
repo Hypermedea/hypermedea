@@ -3,8 +3,7 @@ mas thing_mas {
    agent consumer {
           goals: start
           join: thing_workspace
-          focus: thing_workspace.thing
-                 thing_workspace.planner
+          focus: thing_workspace.h
     }
 
     workspace thing_workspace  {
@@ -12,8 +11,7 @@ mas thing_mas {
          * note: this example requires to statically expose a simulated Thing.
          * Run 'node src/js/thing.js' to start the simulation.
          */
-        artifact thing: org.hypermedea.ThingArtifact("td.ttl")
-        artifact planner: org.hypermedea.PlannerArtifact()
+        artifact h: org.hypermedea.HypermedeaArtifact()
     }
 
 }

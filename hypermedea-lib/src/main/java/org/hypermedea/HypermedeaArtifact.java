@@ -4,11 +4,9 @@ import cartago.Artifact;
 import cartago.OPERATION;
 import cartago.ObsProperty;
 import jason.asSyntax.ASSyntax;
-import jason.asSyntax.Structure;
+import jason.asSyntax.Literal;
 import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
-import org.hypermedea.ld.LinkedDataCrawler;
-import org.hypermedea.ld.RequestListener;
 import org.hypermedea.op.Operation;
 import org.hypermedea.op.ProtocolBindings;
 import org.hypermedea.op.Response;
@@ -25,30 +23,16 @@ import java.util.stream.Collectors;
  * All Hypermedea artifacts share a reference to a singleton Web client.
  * In most application, there probably is a single Hypermedea artifact as well.
  */
-public abstract class HypermedeaArtifact extends Artifact {
+public class HypermedeaArtifact extends Artifact {
 
     public static final String SOURCE_FUNCTOR = "crawler_source";
 
-    /**
-     * Singleton Linked Data crawler to which all artifacts can attach a listener.
-     */
-    protected static LinkedDataCrawler crawler = new LinkedDataCrawler();
-
-    /**
-     * Request listener that is automatically attached to the <code>HypermedeaArtifact</code> crawler instance
-     * (and detached once disposed of).
-     *
-     * TODO add CArtAgO session management?
-     */
-    protected RequestListener crawlerListener = null;
-
-    protected void init() {
-        if (crawlerListener != null) crawler.addListener(crawlerListener);
+    public void init() {
+        // nothing to do
     }
 
     @Override
     protected void dispose() {
-        if (crawlerListener != null) crawler.removeListener(crawlerListener);
         super.dispose();
     }
 
@@ -144,7 +128,7 @@ public abstract class HypermedeaArtifact extends Artifact {
                 // TODO add request/response in error tuples
                 failed("The server returned an error: " + res.getStatus());
             } else {
-                for (Structure t : res.getPayload()) addPredicate(t, resourceURI);
+                for (Literal t : res.getPayload()) addPredicate(t, resourceURI);
                 // TODO delete previous representation of the resource?
             }
         } catch (IOException e) {
@@ -155,7 +139,7 @@ public abstract class HypermedeaArtifact extends Artifact {
 
     private void setPayload(Operation op, Object requestPayload) {
         try {
-            Structure t = ASSyntax.parseStructure(requestPayload.toString());
+            Literal t = ASSyntax.parseLiteral(requestPayload.toString());
             op.setPayload(t);
         } catch (ParseException e) {
             try {
@@ -167,7 +151,7 @@ public abstract class HypermedeaArtifact extends Artifact {
                     throw new IllegalArgumentException();
                 }
 
-                List<Structure> ls = l.stream().map(t -> (Structure) t).collect(Collectors.toList());
+                List<Literal> ls = l.stream().map(t -> (Literal) t).collect(Collectors.toList());
 
                 op.setPayload(ls);
             } catch (ParseException e2) {
@@ -177,7 +161,7 @@ public abstract class HypermedeaArtifact extends Artifact {
         }
     }
 
-    private void addPredicate(Structure t, String src) {
+    private void addPredicate(Literal t, String src) {
         ObsProperty p = defineObsProperty(t.getFunctor(), t.getTerms().toArray());
         p.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, ASSyntax.createString(src)));
     }

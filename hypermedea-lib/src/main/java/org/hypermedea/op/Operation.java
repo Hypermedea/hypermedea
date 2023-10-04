@@ -1,6 +1,6 @@
 package org.hypermedea.op;
 
-import jason.asSyntax.Structure;
+import jason.asSyntax.Literal;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -47,7 +47,7 @@ public interface Operation {
    *
    * @param payload payload to send to the server
    */
-  void setPayload(Structure payload);
+  void setPayload(Literal payload);
 
   /**
    * Fill out the form with a payload. The server may reject it and return
@@ -55,7 +55,7 @@ public interface Operation {
    *
    * @param payload payload to send to the server
    */
-  void setPayload(Collection<Structure> payload);
+  void setPayload(Collection<Literal> payload);
 
   /**
    * Start the operation by sending a message to the server with payload.

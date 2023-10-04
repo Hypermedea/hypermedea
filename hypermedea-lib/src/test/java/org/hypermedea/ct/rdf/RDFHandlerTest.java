@@ -1,9 +1,6 @@
 package org.hypermedea.ct.rdf;
 
-import jason.asSyntax.ASSyntax;
-import jason.asSyntax.ListTerm;
-import jason.asSyntax.Structure;
-import jason.asSyntax.Term;
+import jason.asSyntax.*;
 import jason.asSyntax.parser.ParseException;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -35,8 +32,8 @@ public class RDFHandlerTest {
         ListTerm l = ASSyntax.parseList(TEST_RDF_TERM);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        Collection<Structure> terms = new HashSet<>();
-        for (Term t : l.getAsList()) terms.add((Structure) t);
+        Collection<Literal> terms = new HashSet<>();
+        for (Term t : l.getAsList()) terms.add((Literal) t);
 
         h.serialize(terms, out, "http://example.org/");
         ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
@@ -53,7 +50,7 @@ public class RDFHandlerTest {
     public void testDeserialize() throws UnsupportedEncodingException {
         ByteArrayInputStream in = new ByteArrayInputStream(TEST_RDF_GRAPH.getBytes("UTF-8"));
 
-        Collection<Structure> terms = h.deserialize(in, "http://example.org/", "text/turtle");
+        Collection<Literal> terms = h.deserialize(in, "http://example.org/", "text/turtle");
 
         assert terms.size() == 4;
 

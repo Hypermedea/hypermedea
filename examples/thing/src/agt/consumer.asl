@@ -17,8 +17,12 @@ goal(hasValue("status", false)) .
 +!start :
     true
     <-
-    !toggle ;
-    !plan .
+    //!toggle ;
+    //!plan .
+    get("http://localhost:5000/td.ttl") ;
+    for (rdf(S, P, O)) {
+        .print(rdf(S, P, O))
+    } .
 
 +!toggle :
     true

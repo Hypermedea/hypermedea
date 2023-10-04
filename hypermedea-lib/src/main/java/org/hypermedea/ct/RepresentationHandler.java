@@ -1,7 +1,8 @@
 package org.hypermedea.ct;
 
-import jason.asSyntax.Structure;
+import jason.asSyntax.Literal;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
@@ -26,7 +27,7 @@ public interface RepresentationHandler {
      * @param out a stream in which the alternative representation will be serialized
      * @param resourceURI URI of the resource being represented
      */
-    void serialize(Collection<Structure> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException;
+    void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException, IOException;
 
     /**
      * Deserialize the input representation into a collection of Jason terms.
@@ -40,7 +41,7 @@ public interface RepresentationHandler {
      *
      * @return one or more Jason terms representing the input representation
      */
-    Collection<Structure> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException;
+    Collection<Literal> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException, IOException;
 
     /**
      * Return the functor appearing in the Jason structure(s) returned by {@link #deserialize(InputStream, String, String)}
