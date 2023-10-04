@@ -83,7 +83,7 @@ public class RDFHandler extends BaseRepresentationHandler {
     }
 
     @Override
-    public void serialize(Collection<Structure> terms, OutputStream out) throws UnsupportedRepresentationException {
+    public void serialize(Collection<Structure> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException {
         Model m = ModelFactory.createDefaultModel();
 
         for (Structure t : terms) {
@@ -113,12 +113,12 @@ public class RDFHandler extends BaseRepresentationHandler {
             }
         }
 
-        m.write(out, supportedContentTypes.get(0));
+        m.write(out, supportedContentTypes.get(0), resourceURI);
     }
 
     @Override
-    public Collection<Structure> deserialize(InputStream representation, String contentType) throws UnsupportedRepresentationException {
-        Model m = ModelFactory.createDefaultModel().read(representation, contentType);
+    public Collection<Structure> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException {
+        Model m = ModelFactory.createDefaultModel().read(representation, resourceURI, contentType);
         Collection<Structure> facts = new HashSet<>();
 
         for (Statement triple : m.listStatements().toList()) {

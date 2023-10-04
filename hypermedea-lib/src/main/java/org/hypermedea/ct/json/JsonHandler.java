@@ -70,7 +70,7 @@ public class JsonHandler extends BaseRepresentationHandler {
     }
 
     @Override
-    public void serialize(Collection<Structure> terms, OutputStream out) throws UnsupportedRepresentationException {
+    public void serialize(Collection<Structure> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException {
         JsonGenerator g = Json.createGenerator(out);
 
         Optional<Structure> termOpt = terms.stream().filter(t -> t.isStructure() && t.getFunctor().equals(JSON_FUNCTOR)).findAny();
@@ -83,7 +83,7 @@ public class JsonHandler extends BaseRepresentationHandler {
     }
 
     @Override
-    public Collection<Structure> deserialize(InputStream representation, String contentType) throws UnsupportedRepresentationException {
+    public Collection<Structure> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException {
         if (!contentType.equals(APPLICATION_JSON_CT))
             throw new UnsupportedRepresentationException("JSON handler does not support Content-Type: " + contentType);
 

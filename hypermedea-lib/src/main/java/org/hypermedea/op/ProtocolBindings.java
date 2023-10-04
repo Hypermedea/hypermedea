@@ -1,5 +1,6 @@
 package org.hypermedea.op;
 
+import org.hypermedea.op.file.FileBinding;
 import org.hypermedea.op.http.HttpBinding;
 
 import java.util.HashMap;
@@ -13,10 +14,8 @@ public class ProtocolBindings {
   private static final Map<String, ProtocolBinding> registeredBindings = new HashMap<>();
 
   static {
-    String httpBindingClass = HttpBinding.class.getName();
-
-    ProtocolBindings.registerBinding(httpBindingClass);
-    ProtocolBindings.registerBinding(httpBindingClass);
+    registerBinding(HttpBinding.class.getName());
+    registerBinding(FileBinding.class.getName());
   }
 
   public static Operation bind(String targetURI, Map<String, Object> formFields) throws BindingNotFoundException {

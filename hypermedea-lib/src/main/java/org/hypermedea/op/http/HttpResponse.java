@@ -51,7 +51,7 @@ public class HttpResponse extends BaseResponse {
     InputStream in = new ByteArrayInputStream(response.getBodyBytes());
     String ct = response.getContentType().toString();
 
-    terms.addAll(RepresentationHandlers.deserialize(in, ct));
+    terms.addAll(RepresentationHandlers.deserialize(in, operation.getTargetURI(), ct));
     terms.addAll(getLinks());
 
     return terms;

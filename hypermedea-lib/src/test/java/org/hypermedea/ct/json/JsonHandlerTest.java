@@ -42,7 +42,7 @@ public class JsonHandlerTest {
         Structure t = ASSyntax.parseStructure(TEST_JSON_TERM);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        h.serialize(Arrays.asList(t), out);
+        h.serialize(Arrays.asList(t), out, "http://example.org/");
         ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 
         JsonObject obj = Json.createReader(in).readObject();
@@ -71,7 +71,7 @@ public class JsonHandlerTest {
     public void testGetTerm() throws UnsupportedEncodingException {
         InputStream in = new ByteArrayInputStream(TEST_JSON_OBJECT.getBytes("UTF-8"));
 
-        Collection<Structure> terms = h.deserialize(in, "application/json");
+        Collection<Structure> terms = h.deserialize(in, "http://example.org/", "application/json");
 
         assert terms.size() == 1;
 

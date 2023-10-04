@@ -24,8 +24,9 @@ public interface RepresentationHandler {
      *
      * @param terms some resource representation as Jason terms
      * @param out a stream in which the alternative representation will be serialized
+     * @param resourceURI URI of the resource being represented
      */
-    void serialize(Collection<Structure> terms, OutputStream out) throws UnsupportedRepresentationException;
+    void serialize(Collection<Structure> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException;
 
     /**
      * Deserialize the input representation into a collection of Jason terms.
@@ -34,15 +35,16 @@ public interface RepresentationHandler {
      * an error is thrown.
      *
      * @param representation some serialized representation
+     * @param resourceURI URI of the resource being represented
      * @param contentType the Content-Type of the serialization
      *
      * @return one or more Jason terms representing the input representation
      */
-    Collection<Structure> deserialize(InputStream representation, String contentType) throws UnsupportedRepresentationException;
+    Collection<Structure> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException;
 
     /**
-     * Return the functor appearing in the Jason structure(s) returned by {@link #deserialize(InputStream, String)}
-     * and accepted as input of {@link #serialize(Collection, OutputStream)}.
+     * Return the functor appearing in the Jason structure(s) returned by {@link #deserialize(InputStream, String, String)}
+     * and accepted as input of {@link #serialize(Collection, OutputStream, String)}.
      *
      * @return the functor of the Jason term(s) manipulated by the wrapper
      */

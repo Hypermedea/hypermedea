@@ -1,6 +1,7 @@
 package org.hypermedea.ct;
 
 import jason.asSyntax.Structure;
+import org.apache.hc.core5.http.ContentType;
 import org.hypermedea.ct.json.JsonHandler;
 import org.hypermedea.ct.rdf.RDFHandler;
 
@@ -24,22 +25,24 @@ public class RepresentationHandlers {
         registerHandler(JsonHandler.class.getCanonicalName());
     }
 
-    public static void serialize(Collection<Structure> terms, OutputStream out) throws UnsupportedRepresentationException {
+    public static void serialize(Collection<Structure> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException {
         String fn = getDefaultFunctor(terms);
 
         if (!registeredHandlers.containsKey(fn))
             throw new UnsupportedRepresentationException("No handler found for Jason functor: " + fn);
 
         RepresentationHandler h = registeredHandlers.get(fn);
-        h.serialize(terms, out);
+        h.serialize(terms, out, resourceURI);
     }
 
-    public static Collection<Structure> deserialize(InputStream representation, String contentType) throws UnsupportedRepresentationException {
-        if (!registeredHandlers.containsKey(contentType))
+    public static Collection<Structure> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException {
+        String mediaType = getMediaType(contentType);
+
+        if (!registeredHandlers.containsKey(mediaType))
             throw new UnsupportedRepresentationException("No handler found for Content-Type: " + contentType);
 
-        RepresentationHandler h = registeredHandlers.get(contentType);
-        return h.deserialize(representation, contentType);
+        RepresentationHandler h = registeredHandlers.get(mediaType);
+        return h.deserialize(representation, resourceURI, mediaType);
     }
 
     public static String getDefaultContentType(Collection<Structure> terms) throws UnsupportedRepresentationException {
@@ -61,7 +64,7 @@ public class RepresentationHandlers {
             if (h.getFunctor() == null || h.getFunctor().isEmpty())
                 throw new IllegalArgumentException("Representation handler declares no Jason functor: " + handlerClass);
 
-            for (String ct : h.getSupportedContentTypes()) registeredHandlers.put(ct, h);
+            for (String ct : h.getSupportedContentTypes()) registeredHandlers.put(getMediaType(ct), h);
             registeredHandlers.put(h.getFunctor(), h);
 
             defaultContentTypes.put(h.getFunctor(), h.getSupportedContentTypes().get(0));
@@ -77,6 +80,11 @@ public class RepresentationHandlers {
     private static String getDefaultFunctor(Collection<Structure> terms) {
         Structure t = terms.stream().findFirst().get();
         return t.getFunctor();
+    }
+
+    private static String getMediaType(String contentType) {
+        ContentType ct = ContentType.parse(contentType);
+        return ct.getMimeType();
     }
 
     private RepresentationHandlers() {}

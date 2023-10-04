@@ -81,7 +81,7 @@ public class HttpOperation extends BaseOperation {
     ContentType ct = ContentType.create(RepresentationHandlers.getDefaultContentType(payload));
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    RepresentationHandlers.serialize(payload, out);
+    RepresentationHandlers.serialize(payload, out, target);
 
     request.setBody(out.toByteArray(), ct);
   }
