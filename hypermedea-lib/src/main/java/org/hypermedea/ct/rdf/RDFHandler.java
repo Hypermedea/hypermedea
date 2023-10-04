@@ -151,12 +151,14 @@ public class RDFHandler extends BaseRepresentationHandler {
         if (!p.isURIResource())
             throw new IllegalArgumentException("Non-property node appears as predicate of a triple: " + p);
 
-        return ResourceFactory.createStatement((Resource) s, (Property) p, o);
+        Property pp = ResourceFactory.createProperty(((Resource) p).getURI());
+
+        return ResourceFactory.createStatement(s.asResource(), pp, o);
     }
 
     private RDFNode getNode(Term term, Term type) {
         if (type.equals(RDF_TYPE_URI_ATOM)) {
-            if (!term.isString() || !term.isAtom())
+            if (!term.isString() && !term.isAtom())
                 throw new IllegalArgumentException("URI term isn't represented as a string: " + term);
 
             return ResourceFactory.createResource(((StringTerm) term).getString());

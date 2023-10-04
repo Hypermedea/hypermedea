@@ -35,7 +35,7 @@ public class JsonHandlerTest {
             "   \"members\": [1, 1.5, 2]" +
             "}";
 
-    public final JsonHandler h = new JsonHandler();
+    private final JsonHandler h = new JsonHandler();
 
     @Test
     public void testSerialize() throws ParseException {
@@ -68,7 +68,7 @@ public class JsonHandlerTest {
     }
 
     @Test
-    public void testGetTerm() throws UnsupportedEncodingException {
+    public void testDeserialize() throws UnsupportedEncodingException {
         InputStream in = new ByteArrayInputStream(TEST_JSON_OBJECT.getBytes("UTF-8"));
 
         Collection<Structure> terms = h.deserialize(in, "http://example.org/", "application/json");
