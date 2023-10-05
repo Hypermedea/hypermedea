@@ -8,25 +8,31 @@ plugins {
     id 'maven-publish'
 }
 
-version '0.3'
+version '0.3.2'
 group   'org.hypermedea'
+
+java {
+    toolchain {
+        // ensures compatibility with JaCaMo 1.2
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
 
 repositories {
     mavenCentral()
     // artifact repository for JaCaMo-related project
+    maven { url 'https://repo.gradle.org/gradle/libs-releases' }
     maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
     maven { url "https://jitpack.io" }
 }
 
 dependencies {
-    compileOnly group: 'org.jacamo', name: 'jacamo', version: '0.9'
+    compileOnly group: 'org.jacamo', name: 'jacamo', version: '1.2'
 
-    testImplementation group: 'org.jacamo', name: 'jacamo', version: '0.9'
+    testImplementation group: 'org.jacamo', name: 'jacamo', version: '1.2'
     testImplementation 'junit:junit:4.13.1'
 
     // RDF dependencies
-    // TODO some of the Jena modules already dependent on others?
-    implementation group: 'org.apache.jena', name: 'jena-base', version: '3.16.0'
     implementation group: 'org.apache.jena', name: 'jena-core', version: '3.16.0'
     implementation group: 'org.apache.jena', name: 'jena-arq', version: '3.16.0'
     implementation group: 'org.apache.jena', name: 'jena-iri', version: '3.16.0'
