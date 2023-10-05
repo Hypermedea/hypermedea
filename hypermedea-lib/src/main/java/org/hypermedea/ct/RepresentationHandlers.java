@@ -4,6 +4,7 @@ import jason.asSyntax.Literal;
 import org.apache.hc.core5.http.ContentType;
 import org.hypermedea.ct.json.JsonHandler;
 import org.hypermedea.ct.rdf.RDFHandler;
+import org.hypermedea.ct.txt.PlainTextHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +25,7 @@ public class RepresentationHandlers {
     static {
         registerHandler(RDFHandler.class.getCanonicalName());
         registerHandler(JsonHandler.class.getCanonicalName());
+        registerHandler(PlainTextHandler.class.getCanonicalName());
     }
 
     public static void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException, IOException {

@@ -1,9 +1,10 @@
 package org.hypermedea.tools;
 
-import jason.asSyntax.*;
-import org.semanticweb.owlapi.model.IRI;
+import jason.asSyntax.StringTerm;
+import jason.asSyntax.Term;
 
 import java.io.File;
+import java.net.URI;
 
 /**
  * Various methods to handle identifiers (Jason/PDDL identifiers, IRIs).
@@ -48,9 +49,9 @@ public class Identifiers {
         return null;
     }
 
-    public static IRI getFileIRI(String filename) {
+    public static URI getFileIRI(String filename) {
         File f = new File(filename);
-        return IRI.create(f);
+        return URI.create("file://" + f.getAbsolutePath());
     }
 
 }

@@ -22,7 +22,15 @@ goal(hasValue("status", false)) .
     get("http://localhost:5000/td.ttl") ;
     for (rdf(S, P, O)) {
         .print(rdf(S, P, O))
-    } .
+    } ;
+    //post("http://localhost:5000/toremove", json([kv(plop, 2)])) ;
+    //put("http://localhost:5000/toremove", text("Some content")) ;
+    //post("file:///home/victor.charpenay/Bureau/toremove.txt", text("Some content")) ;
+    //put("file:///home/victor.charpenay/Bureau/toremove.txt", text("Some more content?")) ;
+    //delete("file:///home/victor.charpenay/Bureau/toremove.txt") ;
+    //get("file:///home/victor.charpenay/Bureau/toremove.txt") ;
+    //?text(Cnt) ; .print(Cnt) ;
+    .
 
 +!toggle :
     true

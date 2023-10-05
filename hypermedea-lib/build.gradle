@@ -24,16 +24,15 @@ dependencies {
     testImplementation group: 'org.jacamo', name: 'jacamo', version: '0.9'
     testImplementation 'junit:junit:4.13.1'
 
-    // Linked Data (LD) and Web Ontology Language (OWL) dependencies
-    implementation group: 'com.github.owlcs', name: 'ontapi', version: '2.1.0'
-    implementation group: 'net.sourceforge.owlapi', name: 'org.semanticweb.hermit', version: '1.4.5.519'
+    // RDF dependencies
+    // TODO some of the Jena modules already dependent on others?
+    implementation group: 'org.apache.jena', name: 'jena-base', version: '3.16.0'
+    implementation group: 'org.apache.jena', name: 'jena-core', version: '3.16.0'
+    implementation group: 'org.apache.jena', name: 'jena-arq', version: '3.16.0'
+    implementation group: 'org.apache.jena', name: 'jena-iri', version: '3.16.0'
 
-    // Web client dependencies
+    // HTTP dependencies
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
-    implementation 'com.google.code.gson:gson:2.10.1'
-
-    // Planning Domain Description Language (PDDL) dependencies
-    implementation group: 'com.github.pellierd', name: 'pddl4j', version: 'v3.8.3'
 }
 
 publishing {
