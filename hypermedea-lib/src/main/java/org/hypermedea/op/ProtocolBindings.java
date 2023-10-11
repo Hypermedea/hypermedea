@@ -3,6 +3,7 @@ package org.hypermedea.op;
 import org.hypermedea.op.file.FileBinding;
 import org.hypermedea.op.http.HttpBinding;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,11 +22,13 @@ public class ProtocolBindings {
   }
 
   public static Operation bind(String targetURI, Map<String, Object> formFields) throws BindingNotFoundException {
+    targetURI = resolve(targetURI);
     ProtocolBinding b = getBinding(targetURI);
     return b.bind(targetURI, formFields);
   }
 
   public static Operation bind(String targetURITemplate, Map<String, Object> formFields, Map<String, Object> uriVariableMappings) {
+    targetURITemplate = resolve(targetURITemplate);
     ProtocolBinding b = getBinding(targetURITemplate);
     return b.bind(targetURITemplate, formFields, uriVariableMappings);
   }
@@ -69,6 +72,11 @@ public class ProtocolBindings {
 
     if (!registeredBindings.containsKey(scheme)) throw new BindingNotFoundException();
     else return registeredBindings.get(scheme);
+  }
+
+  private static String resolve(String uriOrFilename) {
+    if (uriOrFilename.indexOf(":") > 0) return uriOrFilename;
+    else return new File(uriOrFilename).toURI().toString();
   }
 
   private ProtocolBindings() {};

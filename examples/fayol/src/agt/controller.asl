@@ -1,14 +1,9 @@
-knownVocab("https://w3id.org/bot#") .
+knownVocab("https://w3id.org/bot") .
+//knownVocab("bot.ttl") .
 
 +!start :
     true
     <-
-    // create Linked Data artifact
-    makeArtifact(ld, "org.hypermedea.NavigationArtifact", [], LDArtId) ;
-    focus(LDArtId) ;
-    // create ontology artifact
-    makeArtifact(owl, "org.hypermedea.OntologyArtifact", [true], OWLArtId) ;
-    focus(OWLArtId) ;
     // crawl the building's topology
     !crawl("https://territoire.emse.fr/kg/emse/fayol/index.ttl") .
 
@@ -18,50 +13,36 @@ knownVocab("https://w3id.org/bot#") .
     for (knownVocab(Vocab)) {
         .print("Retrieving OWL definitions of ", Vocab) ;
         get(Vocab) ;
-        // synchronous call (wait for action's end)
-        .wait({ +visited(_) }) ;
     }
     +crawling ;
+    .print("Retrieving ", URI) ;
     get(URI) ;
   .
 
-+rdf(S, "https://w3id.org/bot#hasSpace", O)[rdf_type_map(_, _, uri), crawler_source(Anchor)] :
++rdf(S, "https://w3id.org/bot#hasSpace", O)[rdf_type_map(_, _, uri), source(Anchor)] :
     crawling
     <-
-    getParentURI(O, Target) ;
-    +barrier_resource(Anchor, Target)
+    !!get(O) ;
   .
 
-+rdf(S, "https://w3id.org/bot#hasStorey", O)[rdf_type_map(_, _, uri), crawler_source(Anchor)] :
++rdf(S, "https://w3id.org/bot#hasStorey", O)[rdf_type_map(_, _, uri), source(Anchor)] :
     crawling
     <-
-    getParentURI(O, Target) ;
-    // append index.ttl at the end of the resource URI (until redirection is fixed)
-    .concat(Target, "index.ttl", TargetIndex) ;
-    +barrier_resource(Anchor, TargetIndex) ;
+    !!get(O) ;
   .
 
-+visited(URI) :
++!get(URI) :
     crawling
     <-
-    .print("Retrieved representation of ", URI) ;
-    !expandCrawl(URI) ;
-  .
-
-+!expandCrawl(Anchor) :
-    crawling
-    <-
-    for (barrier_resource(Anchor, URI)) {
-        getParentURI(URI, URIp) ;
-        if (not visited(URIp) | to_visit(URIp)) { get(URIp) }
-    }
+    // TODO check that no representation already exists
+    get(URI) ;
     !!checkEndCrawl ;
   .
 
 +!checkEndCrawl :
     crawling
     <-
-    if (crawler_status(false) & not .intend(expandCrawl(_))) { !endCrawl }
+    if (not .intend(get(_))) { !endCrawl }
   .
 
 +!endCrawl :
@@ -70,6 +51,7 @@ knownVocab("https://w3id.org/bot#") .
     -crawling ;
     .print("End crawling...") ;
     !countTriples ;
+    // TODO perform inference
     !countZones ;
   .
 

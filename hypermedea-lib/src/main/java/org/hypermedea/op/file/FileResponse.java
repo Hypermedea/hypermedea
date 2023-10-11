@@ -29,9 +29,9 @@ public class FileResponse extends BaseResponse {
         knownContentTypes.put("txt", "text/plain");
     }
 
-    private final ResponseStatus status;
+    private ResponseStatus status;
 
-    private final Optional<FileInputStream> payloadOpt;
+    private Collection<Literal> payload;
 
     public FileResponse(Operation op) {
         this(op, ResponseStatus.OK);
@@ -40,14 +40,23 @@ public class FileResponse extends BaseResponse {
     public FileResponse(Operation op, ResponseStatus status) {
         super(op);
         this.status = status;
-        this.payloadOpt = Optional.empty();
+        this.payload = new HashSet<>();
     }
 
     public FileResponse(Operation op, FileInputStream in) {
         super(op);
-        // TODO deserialize before setting response status (in ReadFileOperation)?
-        this.status = ResponseStatus.OK;
-        this.payloadOpt = Optional.of(in);
+
+        try {
+            String uri = op.getTargetURI();
+            Collection<Literal> representation = RepresentationHandlers.deserialize(in, uri, getContentType(uri));
+
+            this.status = ResponseStatus.OK;
+            this.payload = representation;
+        } catch (IOException e) {
+            // TODO log error (and include in response payload?)
+            this.status = ResponseStatus.SERVER_ERROR;
+            this.payload = new HashSet<>();
+        }
     }
 
     @Override
@@ -57,15 +66,7 @@ public class FileResponse extends BaseResponse {
 
     @Override
     public Collection<Literal> getPayload() {
-        if (payloadOpt.isEmpty()) return new HashSet<>();
-
-        FileInputStream in = payloadOpt.get();
-        try {
-            String uri = operation.getTargetURI();
-            return RepresentationHandlers.deserialize(in, uri, getContentType(uri));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return payload;
     }
 
     private String getContentType(String targetURI) {

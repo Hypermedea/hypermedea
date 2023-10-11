@@ -3,10 +3,11 @@ mas fayol_mas {
     agent controller {
         goals: start
         join: fayol_workspace
+        focus: fayol_workspace.h
     }
 
     workspace fayol_workspace  {
-        // artifacts will be created by the agent. See controller.asl.
+        artifact h: org.hypermedea.HypermedeaArtifact()
     }
 
 }

@@ -7,6 +7,7 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.io.CloseMode;
 import org.hypermedea.ct.RepresentationHandlers;
 import org.hypermedea.op.BaseOperation;
@@ -22,6 +23,17 @@ import java.util.logging.Logger;
  * When constructing the request, clients can set payloads that conform to a <code>DataSchema</code>.
  */
 public class HttpOperation extends BaseOperation {
+
+  /**
+   * Accept header set by default, favoring RDF representations.
+   */
+  public final static String ACCEPT_HEADER = "application/ld+json;q=1," +
+          "text/turtle;q=1," +
+          "application/n-triples;q=1," +
+          "application/trig;q=0.9," +
+          "application/n-quads;q=0.9," +
+          "application/rdf+xml;q=0.75," +
+          "*/*;q=0.5";
 
   private final static Logger LOGGER = Logger.getLogger(HttpOperation.class.getCanonicalName());
 
@@ -64,6 +76,8 @@ public class HttpOperation extends BaseOperation {
 
     String methodName = getMethod();
     this.request = SimpleHttpRequest.create(methodName, getTargetURI());
+
+    addHeader(HttpHeaders.ACCEPT, ACCEPT_HEADER);
   }
 
   @Override

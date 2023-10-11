@@ -121,7 +121,10 @@ public class HypermedeaArtifact extends Artifact {
             }
 
             op.sendRequest();
+            log(op.toString());
+
             Response res = op.getResponse();
+            log(res.toString());
 
             if (!res.getStatus().equals(Response.ResponseStatus.OK)) {
                 // TODO add request/response in error tuples
@@ -131,6 +134,8 @@ public class HypermedeaArtifact extends Artifact {
 
                 for (Literal t : res.getPayload()) {
                     ObsProperty p = defineObsProperty(t.getFunctor(), t.getTerms().toArray());
+                    for (Term a : t.getAnnots().getAsList()) p.addAnnot(a);
+                    
                     p.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, ASSyntax.createString(resourceURI)));
 
                     props.add(p);
@@ -142,6 +147,7 @@ public class HypermedeaArtifact extends Artifact {
                     }
                 }
 
+                commit();
                 representations.put(resourceURI, props);
             }
         } catch (IOException e) {
