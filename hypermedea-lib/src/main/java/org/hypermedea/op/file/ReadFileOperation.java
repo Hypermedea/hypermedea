@@ -20,7 +20,7 @@ public class ReadFileOperation extends FileOperation {
     }
 
     @Override
-    public void sendRequest() throws IOException {
+    protected void sendSingleRequest() throws IOException {
         if (file.exists() && file.canRead()) {
             FileInputStream in = new FileInputStream(file);
             onResponse(new FileResponse(this, in));

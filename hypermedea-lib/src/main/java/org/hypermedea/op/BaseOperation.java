@@ -33,6 +33,11 @@ public abstract class BaseOperation implements Operation {
   protected final Map<String, Object> form;
 
   /**
+   * Flag that the operation has already started (no further request can be sent)
+   */
+  protected boolean operationStarted = false;
+
+  /**
    * Semaphore to block getter if no response sent before call
    * (if an error occurs, an empty value is passed to the semaphore)
    */
@@ -52,8 +57,6 @@ public abstract class BaseOperation implements Operation {
   public BaseOperation(String targetURI, Map<String, Object> formFields) {
     this.target = targetURI;
     this.form = formFields;
-
-    // TODO check method field is a string and one of the allowed methods
   }
 
   @Override
@@ -86,11 +89,19 @@ public abstract class BaseOperation implements Operation {
   }
 
   /**
-   * Implementations are protocol binding-dependent.
-   * See {@link Operation#sendRequest()} for expected behavior.
+   * Ensure that only a single request is sent.
+   * protocol binding-dependent behavior is implemented in {@link #sendSingleRequest()}.
+   *
+   * @throws OperationAlreadyStartedException
+   * @throws IOException
    */
   @Override
-  public abstract void sendRequest() throws IOException;
+  public void sendRequest() throws OperationAlreadyStartedException, IOException {
+    if (operationStarted) throw new OperationAlreadyStartedException();
+
+    sendSingleRequest();
+    operationStarted = true;
+  }
 
   /**
    * Use a semaphore ({@link BlockingDeque} of size 1) to implement
@@ -142,6 +153,12 @@ public abstract class BaseOperation implements Operation {
    * @return the payload, encapsulated in some arbitrary object
    */
   protected abstract Object getPayload();
+
+  /**
+   * Implementations are protocol binding-dependent.
+   * See {@link Operation#sendRequest()} for expected behavior.
+   */
+  protected abstract void sendSingleRequest() throws IOException;
 
   /**
    * Pass the input response to the semaphore and notify registered callbacks.

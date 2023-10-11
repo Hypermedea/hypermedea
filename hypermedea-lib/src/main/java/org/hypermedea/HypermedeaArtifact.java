@@ -12,10 +12,7 @@ import org.hypermedea.op.ProtocolBindings;
 import org.hypermedea.op.Response;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -25,7 +22,9 @@ import java.util.stream.Collectors;
  */
 public class HypermedeaArtifact extends Artifact {
 
-    public static final String SOURCE_FUNCTOR = "crawler_source";
+    public static final String SOURCE_FUNCTOR = "source";
+
+    private final Map<String, Collection<ObsProperty>> representations = new HashMap<>();
 
     public void init() {
         // nothing to do
@@ -128,10 +127,25 @@ public class HypermedeaArtifact extends Artifact {
                 // TODO add request/response in error tuples
                 failed("The server returned an error: " + res.getStatus());
             } else {
-                for (Literal t : res.getPayload()) addPredicate(t, resourceURI);
-                // TODO delete previous representation of the resource?
+                Set<ObsProperty> props = new HashSet<>();
+
+                for (Literal t : res.getPayload()) {
+                    ObsProperty p = defineObsProperty(t.getFunctor(), t.getTerms().toArray());
+                    p.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, ASSyntax.createString(resourceURI)));
+
+                    props.add(p);
+                }
+
+                if (representations.containsKey(resourceURI)) {
+                    for (ObsProperty p : representations.get(resourceURI)) {
+                        removeObsPropertyByTemplate(p.getName(), p.getValues());
+                    }
+                }
+
+                representations.put(resourceURI, props);
             }
         } catch (IOException e) {
+            // TODO clean representations cache if error occurs in the above block
             // TODO add request/response in error tuples
             failed("I/O error occurred: " + e.getMessage());
         }
@@ -159,11 +173,6 @@ public class HypermedeaArtifact extends Artifact {
                 throw new IllegalArgumentException(msg, e2);
             }
         }
-    }
-
-    private void addPredicate(Literal t, String src) {
-        ObsProperty p = defineObsProperty(t.getFunctor(), t.getTerms().toArray());
-        p.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, ASSyntax.createString(src)));
     }
 
 }

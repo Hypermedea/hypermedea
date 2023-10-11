@@ -27,7 +27,7 @@ public class WriteFileOperation extends FileOperation {
     }
 
     @Override
-    public void sendRequest() throws IOException {
+    protected void sendSingleRequest() throws IOException {
         FileOutputStream out = new FileOutputStream(file, append);
         RepresentationHandlers.serialize(payload, out, target);
 

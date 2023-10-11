@@ -67,7 +67,7 @@ public class HttpOperation extends BaseOperation {
   }
 
   @Override
-  public void sendRequest() throws IOException {
+  protected void sendSingleRequest() {
     client.execute(request, handler);
   }
 

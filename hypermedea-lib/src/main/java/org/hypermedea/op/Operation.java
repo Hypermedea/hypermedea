@@ -58,16 +58,21 @@ public interface Operation {
   void setPayload(Collection<Literal> payload);
 
   /**
-   * Start the operation by sending a message to the server with payload.
-   * When the method returns, the client may assume the request was received by the server.
-   * This doesn't imply that the server already responded, though.
-   * To synchronously wait for a response, use {@link Operation#getResponse()}.
+   * <p>
+   *   Start the operation by sending a message to the server with payload.
+   *   When the method returns, the client may assume the request was received by the server.
+   *   This doesn't imply that the server already responded, though.
+   *   To synchronously wait for a response, use {@link Operation#getResponse()}.
+   * </p>
+   * <p>
+   *   An operation is supposed to include only one request.
+   *   An exception must be raised if multiple requests are sent within the same operation.
+   * </p>
    *
+   * @throws OperationAlreadyStartedException if the caller attempts to send more than one request
    * @throws IOException if connection to the server is lost or if the request is never received by the server
    */
-  void sendRequest() throws IOException;
-
-  // TODO should the operation fail if request is sent several times?
+  void sendRequest() throws OperationAlreadyStartedException, IOException;
 
   /**
    * Wait synchronously for a response from the server and return it.

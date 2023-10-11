@@ -3,7 +3,6 @@ package org.hypermedea.op.file;
 import jason.asSyntax.Literal;
 import org.hypermedea.op.Response;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -19,7 +18,7 @@ public class DeleteFileOperation extends FileOperation {
     }
 
     @Override
-    public void sendRequest() throws IOException {
+    protected void sendSingleRequest() {
         boolean success = file.delete();
 
         if (success) onResponse(new FileResponse(this));

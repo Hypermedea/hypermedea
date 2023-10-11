@@ -99,6 +99,8 @@ public class FileOperationTest {
         Literal actualCnt = r.getResponse().getPayload().stream().findAny().get();
 
         assert actualCnt.equals(cnt);
+
+        new File(filename).delete();
     }
 
 }
