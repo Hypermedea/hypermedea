@@ -11,6 +11,7 @@ import javax.json.stream.JsonGenerator;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -19,7 +20,7 @@ import java.util.*;
  * <p>
  *     The mapping between JSON objects and Jason terms is inspired by
  *     <a href="https://www.swi-prolog.org/pldoc/man?section=jsonsupport">the SWI-Prolog JSON library</a>.
- *     Simple JSON values and arrays have an straightforward equivalent in Jason. JSON objects are represented
+ *     Simple JSON values and arrays have a straightforward equivalent in Jason. JSON objects are represented
  *     in Jason as unary structures holding a list of key-value pairs, themselves represented as binary structures.
  *     See examples:
  * </p>
@@ -53,6 +54,12 @@ import java.util.*;
  *         <td><code>json([kv("a", 12.5), kv("b", [...])])</code> (object keys may also be Jason atoms)</td>
  *     </tr>
  * </table>
+ *
+ * <p>
+ *     Any root JSON value must be enclosed in a <code>json</code> structure.
+ *     For instance, the primitive value <code>"abc"</code> or the object <code>[kv("a", 12.5), kv("b", [...])]</code>
+ *     are represented respectively as <code>json("abc")</code> and <code>json([kv("a", 12.5), kv("b", [...])])</code>.
+ * </p>
  */
 public class JsonHandler extends BaseRepresentationHandler {
 
@@ -73,11 +80,16 @@ public class JsonHandler extends BaseRepresentationHandler {
     public void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException {
         JsonGenerator g = Json.createGenerator(out);
 
-        Optional<Literal> termOpt = terms.stream().filter(t -> t.isLiteral() && t.getFunctor().equals(JSON_FUNCTOR)).findAny();
+        Collection<Literal> jsonTerms = terms.stream().filter(t -> isJsonTerm(t)).collect(Collectors.toSet());
 
-        // TODO minimize duplicates between generateJsonValue and generateJsonObjectMember...
-        if (termOpt.isPresent()) generateJsonValue(termOpt.get(), g);
-        else throw new UnsupportedRepresentationException("No " + JSON_FUNCTOR + " structure found in representation: " + terms);
+        if (jsonTerms.isEmpty())
+            throw new UnsupportedRepresentationException("No " + JSON_FUNCTOR + " structure found in representation: " + terms);
+
+        boolean wrappedInArray = jsonTerms.size() > 1;
+
+        if (wrappedInArray) g.writeStartArray();
+        for (Literal t : jsonTerms) generateJsonValue(t.getTerm(0), g);
+        if (wrappedInArray) g.writeEnd();
 
         g.close();
     }
@@ -88,95 +100,144 @@ public class JsonHandler extends BaseRepresentationHandler {
             throw new UnsupportedRepresentationException("JSON handler does not support Content-Type: " + contentType);
 
         JsonReader reader = Json.createReader(representation);
-        JsonStructure value = reader.read();
+        JsonValue value = reader.readValue();
 
-        // FIXME not always a structure. If not a structure?
-        Literal t = (Literal) readJsonValue(value);
+        Term t = readJsonValue(value);
 
-        return Arrays.asList(t);
+        return Arrays.asList(ASSyntax.createStructure(JSON_FUNCTOR, t));
     }
 
     private void generateJsonValue(Term t, JsonGenerator g) {
+        acceptVisitor(t, new JsonTermVisitor() {
+            @Override
+            public void visit(Boolean val) {
+                g.write(val);
+            }
+
+            @Override
+            public void visit(Double val) {
+                g.write(val);
+            }
+
+            @Override
+            public void visit(Long val) {
+                g.write(val);
+            }
+
+            @Override
+            public void visit() {
+                g.writeNull();
+            }
+
+            @Override
+            public void visit(String val) {
+                g.write(val);
+            }
+
+            @Override
+            public void visit(List<Term> val) {
+                g.writeStartArray();
+                for (Term m : val) generateJsonValue(m, g);
+                g.writeEnd();
+            }
+
+            @Override
+            public void visit(Map<String, Term> val) {
+                g.writeStartObject();
+                for (Map.Entry<String, Term> m : val.entrySet()) generateJsonObjectMember(m.getKey(), m.getValue(), g);
+                g.writeEnd();
+            }
+        });
+    }
+
+    private void generateJsonObjectMember(String key, Term t, JsonGenerator g) {
+        acceptVisitor(t, new JsonTermVisitor() {
+            @Override
+            public void visit(Boolean val) {
+                g.write(key, val);
+            }
+
+            @Override
+            public void visit(Double val) {
+                g.write(key, val);
+            }
+
+            @Override
+            public void visit(Long val) {
+                g.write(key, val);
+            }
+
+            @Override
+            public void visit() {
+                g.writeNull(key);
+            }
+
+            @Override
+            public void visit(String val) {
+                g.write(key, val);
+            }
+
+            @Override
+            public void visit(List<Term> val) {
+                g.writeStartArray(key);
+                for (Term m : val) generateJsonValue(m, g);
+                g.writeEnd();
+            }
+
+            @Override
+            public void visit(Map<String, Term> val) {
+                g.writeStartObject(key);
+                for (Map.Entry<String, Term> m : val.entrySet()) generateJsonObjectMember(m.getKey(), m.getValue(), g);
+                g.writeEnd();
+            }
+        });
+    }
+
+    private void acceptVisitor(Term t, JsonTermVisitor v) {
         if (t.isAtom() && t.equals(Literal.LTrue)) {
-            g.write(true);
+            v.visit(true);
         } else if (t.isAtom() && t.equals(Literal.LFalse)) {
-            g.write(false);
+            v.visit(false);
         } else if (t.isNumeric()) {
             try {
                 double d = ((NumberTerm) t).solve();
-                // TODO if integral, write integral, not double
-                g.write(d);
+                if (isIntegral(d)) v.visit((long) d);
+                else v.visit(d);
             } catch (NoValueException e) {
                 // TODO log
                 e.printStackTrace();
             }
         } else if (t.isString() || t.isAtom()) {
             if (t.isAtom() && ((Atom) t).getFunctor().equals("null")) {
-                g.writeNull();
+                v.visit();
             } else {
                 String s = Identifiers.getLexicalForm(t);
-                g.write(s);
+                v.visit(s);
             }
         } else if (t.isList()) {
-            g.writeStartArray();
-            for (Term member : ((ListTerm) t).getAsList()) generateJsonValue(member, g);
-            g.writeEnd();
-        } else if (t.isStructure()) {
-            Structure json = (Structure) t;
+            List<Term> l = ((ListTerm) t).getAsList();
+            List<Term> objectMembers = l.stream().filter(m -> isObjectMember(m)).collect(Collectors.toList());
 
-            if (!json.getFunctor().equals(JSON_FUNCTOR) || json.getArity() != 1 || !json.getTerm(0).isList()) return;
+            if (objectMembers.isEmpty()) {
+                v.visit(l);
+            } else {
+                // TODO warn if some non-kv members were found
 
-            ListTerm l = (ListTerm) json.getTerm(0);
+                Map<String, Term> obj = new HashMap<>();
 
-            g.writeStartObject();
-            for (Term member : l.getAsList()) generateJsonObjectMember(member, g);
-            g.writeEnd();
-        }
-    }
+                for (Term m : objectMembers) {
+                    Structure kv = (Structure) m;
 
-    private void generateJsonObjectMember(Term t, JsonGenerator g) {
-        if (t.isStructure()) {
-            Structure kv = (Structure) t;
+                    // TODO warn if invalid kv was found
+                    if (kv.getArity() == 2 && kv.getTerm(0).isAtom()) {
+                        String key = Identifiers.getLexicalForm(kv.getTerm(0));
+                        Term val = kv.getTerm(1);
 
-            if (!kv.getFunctor().equals(JSON_MEMBER_FUNCTOR) && kv.getArity() != 2 && !kv.getTerm(0).isAtom()) return;
-
-            String key = Identifiers.getLexicalForm(kv.getTerm(0));
-            Term value = kv.getTerm(1);
-
-            if (value.isAtom() && value.equals(Literal.LTrue)) {
-                g.write(key, true);
-            } else if (value.isAtom() && value.equals(Literal.LFalse)) {
-                g.write(key,false);
-            } else if (value.isNumeric()) {
-                try {
-                    double d = ((NumberTerm) value).solve();
-                    // TODO if integral, write integral, not double
-                    g.write(key, d);
-                } catch (NoValueException e) {
-                    // TODO log
-                    e.printStackTrace();
+                        obj.put(key, val);
+                    }
                 }
-            } else if (value.isString() || value.isAtom()) {
-                if (value.isAtom() && ((Atom) value).getFunctor().equals("null")) {
-                    g.writeNull(key);
-                } else {
-                    String s = Identifiers.getLexicalForm(value);
-                    g.write(key, s);
-                }
-            } else if (value.isList()) {
-                g.writeStartArray(key);
-                for (Term member : ((ListTerm) value).getAsList()) generateJsonValue(member, g);
-                g.writeEnd();
-            } else if (value.isStructure()) {
-                Structure json = (Structure) value;
 
-                if (!json.getFunctor().equals(JSON_FUNCTOR) || json.getArity() != 1 || !json.getTerm(0).isList()) return;
-
-                ListTerm l = (ListTerm) json.getTerm(0);
-
-                g.writeStartObject(key);
-                for (Term member : l.getAsList()) generateJsonObjectMember(member, g);
-                g.writeEnd();
+                v.visit(obj);
             }
         }
     }
@@ -188,7 +249,6 @@ public class JsonHandler extends BaseRepresentationHandler {
         } else if (type.equals(JsonValue.ValueType.FALSE)) {
             return Literal.LFalse;
         } else if (type.equals(JsonValue.ValueType.NUMBER)) {
-            // TODO or int?
             return ASSyntax.createNumber(((JsonNumber) value).doubleValue());
         } else if (type.equals(JsonValue.ValueType.NULL)) {
             return ASSyntax.createAtom("null");
@@ -210,11 +270,22 @@ public class JsonHandler extends BaseRepresentationHandler {
                 members.add(ASSyntax.createStructure(JSON_MEMBER_FUNCTOR, k, v));
             }
 
-            ListTerm pairs = ASSyntax.createList(members);
-            return ASSyntax.createStructure(JSON_FUNCTOR, pairs);
+            return ASSyntax.createList(members);
         } else {
             throw new IllegalArgumentException("JSON value not recognized by handler: " + value);
         }
+    }
+
+    private boolean isJsonTerm(Literal t) {
+        return t.getFunctor().equals(JSON_FUNCTOR) && t.getArity() == 1 && !t.negated();
+    }
+
+    private boolean isObjectMember(Term t) {
+        return t.isStructure() && ( (Structure) t).getFunctor().equals(JSON_MEMBER_FUNCTOR);
+    }
+
+    private boolean isIntegral(double d) {
+        return d == Math.round(d);
     }
 
 }

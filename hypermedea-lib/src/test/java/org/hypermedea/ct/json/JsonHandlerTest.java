@@ -1,7 +1,6 @@
 package org.hypermedea.ct.json;
 
-import jason.asSyntax.ASSyntax;
-import jason.asSyntax.Literal;
+import jason.asSyntax.*;
 import jason.asSyntax.parser.ParseException;
 import org.junit.Test;
 
@@ -15,11 +14,12 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 
 public class JsonHandlerTest {
 
     public static final String TEST_JSON_TERM = "json([ kv(name, \"Demo term\"),\n" +
-            "       kv(created, json([kv(day, null), kv(month, \"December\"), kv(year, 2007)])),\n" +
+            "       kv(created, [kv(day, null), kv(month, \"December\"), kv(year, 2007)]),\n" +
             "       kv(confirmed, true),\n" +
             "       kv(members, [1, 1.5, 2])\n" +
             "     ])";
@@ -80,7 +80,45 @@ public class JsonHandlerTest {
         assert t.getFunctor().equals(JsonHandler.JSON_FUNCTOR);
         assert t.getArity() == 1;
 
-        // TODO check deep structure of term
+        Term val = t.getTerm(0);
+
+        assert val.isList();
+        assert ((ListTerm) val).size() == 4;
+
+        Term m0 = ((ListTerm) val).get(0);
+
+        assert m0.isStructure() && ((Structure) m0).getFunctor().equals(JsonHandler.JSON_MEMBER_FUNCTOR);
+        assert ((Structure) m0).getTerm(0).isAtom();
+
+        Optional<Term> m1 = ((ListTerm) val).stream().filter(m -> hasValue(m, "name")).findAny();
+        Optional<Term> m2 = ((ListTerm) val).stream().filter(m -> hasValue(m, "created")).findAny();
+        Optional<Term> m3 = ((ListTerm) val).stream().filter(m -> hasValue(m, "confirmed")).findAny();
+        Optional<Term> m4 = ((ListTerm) val).stream().filter(m -> hasValue(m, "members")).findAny();
+
+        assert m1.isPresent() && m2.isPresent() && m3.isPresent() && m4.isPresent();
+
+        Term t1 = ((Structure) m1.get()).getTerm(1);
+        Term t2 = ((Structure) m2.get()).getTerm(1);
+        Term t3 = ((Structure) m3.get()).getTerm(1);
+        Term t4 = ((Structure) m4.get()).getTerm(1);
+
+        assert t1.isString() && t1.toString().equals("\"Demo term\"");
+        assert t2.isList() && ((ListTerm) t2).size() == 3;
+        assert t3.equals(Atom.LTrue);
+        assert t4.isList() && ((ListTerm) t2).size() == 3;
+    }
+
+    private boolean hasValue(Term t, String key) {
+        if (t.isStructure() && ( (Structure) t).getFunctor().equals(JsonHandler.JSON_MEMBER_FUNCTOR)) {
+            Structure st = (Structure) t;
+
+            if (st.getArity() == 2) {
+                Term k = st.getTerm(0);
+                return k.isAtom() && k.toString().equals(key);
+            }
+        }
+
+        return false;
     }
 
 }

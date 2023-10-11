@@ -11,6 +11,8 @@ import java.util.Map;
  */
 public class ProtocolBindings {
 
+  public static final String DEFAULT_SCHEME = "file";
+
   private static final Map<String, ProtocolBinding> registeredBindings = new HashMap<>();
 
   static {
@@ -58,7 +60,7 @@ public class ProtocolBindings {
   private static String getScheme(String uriOrTemplate) {
     int i = uriOrTemplate.indexOf(":");
 
-    if (i < 0) return null;
+    if (i < 0) return DEFAULT_SCHEME; // assuming uriOrTemplate is a relative path
     else return uriOrTemplate.substring(0, i);
   }
 

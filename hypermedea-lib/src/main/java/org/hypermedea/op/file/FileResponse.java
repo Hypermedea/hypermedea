@@ -7,11 +7,27 @@ import org.hypermedea.op.Operation;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Optional;
+import java.util.*;
 
 public class FileResponse extends BaseResponse {
+
+    public static final String DEFAULT_FILE_CT = "text/plain";
+
+    private static final Map<String, String> knownContentTypes = new HashMap<>();
+
+    static {
+        // TODO write in file resource instead
+        knownContentTypes.put("ttl", "text/turtle");
+        knownContentTypes.put("nt", "application/n-triples");
+        knownContentTypes.put("jsonld", "application/ld+json");
+        knownContentTypes.put("trig", "application/trig");
+        knownContentTypes.put("nq", "application/n-quads");
+        knownContentTypes.put("rdf", "application/rdf+xml");
+
+        knownContentTypes.put("json", "application/json");
+
+        knownContentTypes.put("txt", "text/plain");
+    }
 
     private final ResponseStatus status;
 
@@ -29,6 +45,7 @@ public class FileResponse extends BaseResponse {
 
     public FileResponse(Operation op, FileInputStream in) {
         super(op);
+        // TODO deserialize before setting response status (in ReadFileOperation)?
         this.status = ResponseStatus.OK;
         this.payloadOpt = Optional.of(in);
     }
@@ -43,13 +60,26 @@ public class FileResponse extends BaseResponse {
         if (payloadOpt.isEmpty()) return new HashSet<>();
 
         FileInputStream in = payloadOpt.get();
-        // TODO check file extension to guess Content-Type
-        // TODO deserialize in Op object instead?
         try {
-            return RepresentationHandlers.deserialize(in, operation.getTargetURI(), "text/plain");
+            String uri = operation.getTargetURI();
+            return RepresentationHandlers.deserialize(in, uri, getContentType(uri));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String getContentType(String targetURI) {
+        int i = targetURI.lastIndexOf(".");
+
+        if (i > 0) {
+            String ext = targetURI.substring(i + 1);
+
+            if (knownContentTypes.containsKey(ext))
+                return knownContentTypes.get(ext);
+        }
+
+        // note: if i == 0, assuming file is hidden and has no extension
+        return DEFAULT_FILE_CT;
     }
 
 }

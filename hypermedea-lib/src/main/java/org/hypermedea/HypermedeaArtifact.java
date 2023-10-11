@@ -133,7 +133,7 @@ public class HypermedeaArtifact extends Artifact {
             }
         } catch (IOException e) {
             // TODO add request/response in error tuples
-            failed(e.getMessage());
+            failed("I/O error occurred: " + e.getMessage());
         }
     }
 
