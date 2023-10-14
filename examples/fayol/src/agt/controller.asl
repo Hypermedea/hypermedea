@@ -1,11 +1,14 @@
 knownVocab("https://w3id.org/bot") .
 //knownVocab("bot.ttl") .
 
+knownResource(URI) :- rdf(_, _, _)[source(URI)] .
+
 +!start :
     true
     <-
     // crawl the building's topology
-    !crawl("https://territoire.emse.fr/kg/emse/fayol/index.ttl") .
+    !crawl("https://territoire.emse.fr/kg/emse/fayol/index.ttl")
+  .
 
 +!crawl(URI) :
     true
@@ -20,23 +23,24 @@ knownVocab("https://w3id.org/bot") .
   .
 
 +rdf(S, "https://w3id.org/bot#hasSpace", O)[rdf_type_map(_, _, uri), source(Anchor)] :
-    crawling
+    crawling & h.target(O, Target)
     <-
-    !!get(O) ;
+    !!get(Target) ;
   .
 
 +rdf(S, "https://w3id.org/bot#hasStorey", O)[rdf_type_map(_, _, uri), source(Anchor)] :
-    crawling
+    crawling & h.target(O, Target)
     <-
-    !!get(O) ;
+    !!get(Target) ;
   .
 
 +!get(URI) :
     crawling
     <-
-    // TODO check that no representation already exists
-    get(URI) ;
-    !!checkEndCrawl ;
+    if (not (knownResource(URI) | .intend(get(URI)))) {
+        get(URI) ;
+        !!checkEndCrawl ;
+    }
   .
 
 +!checkEndCrawl :
@@ -60,14 +64,16 @@ knownVocab("https://w3id.org/bot") .
     <-
     // all crawled triples are exposed to the agent as rdf/3 terms
     .count(rdf(S, P, O), Count) ;
-    .print("found ", Count, " triples in the KG.") .
+    .print("found ", Count, " triples in the KG.") ;
+  .
 
 +!countZones :
     true
     <-
     // zone/1 is a unary predicate generated after vocabulary registration
     .count(zone(Zone), Count) ;
-    .print("found ", Count, " zones in Espace Fauriel.") .
+    .print("found ", Count, " zones in Espace Fauriel.") ;
+  .
 
 { include("$jacamoJar/templates/common-cartago.asl") }
 { include("$jacamoJar/templates/common-moise.asl") }
