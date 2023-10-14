@@ -1,62 +1,51 @@
-domain(domain(lighting, [
-    action("readProperty", ["?property", "?value"],
-        hasValue("?property", "?value"),
-        nothing),
-    action("writeProperty", ["?property", "?value"],
-        nothing,
-        hasValue("?property", "?value"))
-])) .
+hasForm(AffordanceName, Form) :-
+    rdf(Aff, "https://www.w3.org/2019/wot/td#name", AffordanceName) &
+    rdf(Aff, "https://www.w3.org/2019/wot/td#hasForm", Form)
+  .
 
-problem(problem(switchOff, lighting, Facts, Goal)) :-
-    .findall(hasValue(Property, Value), hasValue(Property, Value), HasValueFacts)
-    & .concat(HasValueFacts, [nothing], Facts)
-    & goal(Goal) .
+hasTarget(Form, Target) :-
+    rdf(Form, "https://www.w3.org/2019/wot/hypermedia#hasTarget", Target)
+  .
 
-goal(hasValue("status", false)) .
+hasOperationType(Form, OpType) :-
+    rdf(Form, "https://www.w3.org/2019/wot/hypermedia#hasOperationType", OpType)
+  .
 
 +!start :
     true
     <-
-    //!toggle ;
-    //!plan .
-    get("http://localhost:5000/td.ttl") ;
-    for (rdf(S, P, O)) {
-        .print(rdf(S, P, O))
-    } ;
-    //post("http://localhost:5000/toremove", json([kv(plop, 2)])) ;
-    //put("http://localhost:5000/toremove", text("Some content")) ;
-    //post("file:///home/victor.charpenay/Bureau/toremove.txt", text("Some content")) ;
-    //put("file:///home/victor.charpenay/Bureau/toremove.txt", text("Some more content?")) ;
-    //delete("file:///home/victor.charpenay/Bureau/toremove.txt") ;
-    //get("file:///home/victor.charpenay/Bureau/toremove.txt") ;
-    //?text(Cnt) ; .print(Cnt) ;
-    .
+    get("http://localhost:8080/td") ;
+    !toggle ;
+  .
 
 +!toggle :
     true
     <-
-    readProperty("status", Status) ;
+    !readProperty("status", Status) ;
     .print("light status: ", Status) ;
-    invokeAction("toggle") ;
-    readProperty("status", NewStatus) ;
+    !invokeAction("toggle") ;
+    !readProperty("status", NewStatus) ;
     .print("light status: ", NewStatus) .
 
-+!plan :
-    domain(Domain) & problem(Pb) & goal(Goal)
++!readProperty(PropertyName, Val) :
+    hasForm(PropertyName, Form) &
+    hasTarget(Form, Target) &
+    hasOperationType(Form, "https://www.w3.org/2019/wot/td#readProperty")
     <-
-    getAsPDDL(Domain, DomainStr) ;
-    getAsPDDL(Pb, PbStr) ;
-    .print("planning with the following domain and problem: ", DomainStr, "\n", PbStr) ;
-    buildPlan(Domain, Pb, Plan) ;
-    .print("found the following Jason plan: ", Plan) ;
-    .add_plan(Plan) ;
-    !switchOff ;
-    +Goal .
+    get(Target) ;
+    ?(text(Val)[source(Target)]) ;
+    //?(json(Val)[source(Target)]) ;
+  .
 
-+property_value("status", LightStatus) :
-    true
++!invokeAction(ActionName) :
+    hasForm(ActionName, Form) &
+    hasTarget(Form, Target) &
+    hasOperationType(Form, "https://www.w3.org/2019/wot/td#invokeAction")
     <-
-    .print("light status (from obs. property): ", LightStatus) .
+    // TODO POST by default; look at http: annotation
+    // TODO have generic op?
+    put(Target, text("null")) ;
+  .
 
 { include("$jacamoJar/templates/common-cartago.asl") }
 { include("$jacamoJar/templates/common-moise.asl") }

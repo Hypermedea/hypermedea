@@ -136,7 +136,7 @@ public abstract class BaseOperation implements Operation {
     String method = (String) this.getForm().get(Operation.METHOD_NAME_FIELD);
 
     builder.append(String.format("[%s] Method: %s", getClass().getSimpleName(), method));
-    builder.append(String.format(", Target: ", getTargetURI()));
+    builder.append(String.format(", Target: %s", getTargetURI()));
     builder.append(String.format(", Payload: %s", getPayload()));
 
     return builder.toString();

@@ -134,7 +134,9 @@ public class HypermedeaArtifact extends Artifact {
 
                 for (Literal t : res.getPayload()) {
                     ObsProperty p = defineObsProperty(t.getFunctor(), t.getTerms().toArray());
-                    for (Term a : t.getAnnots().getAsList()) p.addAnnot(a);
+
+                    if (t.hasAnnot())
+                        for (Term a : t.getAnnots().getAsList()) p.addAnnot(a);
                     
                     p.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, ASSyntax.createString(resourceURI)));
 

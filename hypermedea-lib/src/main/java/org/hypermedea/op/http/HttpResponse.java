@@ -5,6 +5,7 @@ import jason.asSyntax.Literal;
 import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.Header;
 import org.hypermedea.ct.RepresentationHandlers;
 import org.hypermedea.op.BaseResponse;
@@ -26,7 +27,10 @@ import java.util.regex.Pattern;
  *
  */
 public class HttpResponse extends BaseResponse {
+
   private final static Logger LOGGER = Logger.getLogger(HttpResponse.class.getCanonicalName());
+
+  public static final String DEFAULT_HTTP_CT = "text/plain";
 
   private final static Pattern LINK_HEADER_PATTERN = Pattern.compile("\\w*<(?<target>.*)>;\\w*rel=\"(?<rel>.*)\"");
 
@@ -49,15 +53,19 @@ public class HttpResponse extends BaseResponse {
   @Override
   public Collection<Literal> getPayload() {
     Collection<Literal> terms = new HashSet<>();
+    byte[] bytes = response.getBodyBytes();
 
-    InputStream in = new ByteArrayInputStream(response.getBodyBytes());
-    String ct = response.getContentType().toString();
+    if (bytes == null) return terms;
+
+    InputStream in = new ByteArrayInputStream(bytes);
+    String ct = getContentType();
 
     try {
       terms.addAll(RepresentationHandlers.deserialize(in, operation.getTargetURI(), ct));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+
     terms.addAll(getLinks());
 
     return terms;
@@ -89,6 +97,15 @@ public class HttpResponse extends BaseResponse {
     }
 
     return links;
+  }
+
+  private String getContentType() {
+    ContentType ct = response.getContentType();
+
+    if (ct != null) return ct.toString();
+    return DEFAULT_HTTP_CT;
+
+    // TODO if Content-Type not provided in response, could be provided in form.
   }
 
 }
