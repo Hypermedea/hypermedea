@@ -29,9 +29,4 @@ public class ReadFileOperation extends FileOperation {
         }
     }
 
-    @Override
-    protected Object getPayload() {
-        return null;
-    }
-
 }

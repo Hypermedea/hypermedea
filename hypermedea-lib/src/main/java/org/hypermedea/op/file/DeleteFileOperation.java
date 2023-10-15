@@ -25,9 +25,4 @@ public class DeleteFileOperation extends FileOperation {
         else onResponse(new FileResponse(this, Response.ResponseStatus.CLIENT_ERROR));
     }
 
-    @Override
-    protected Object getPayload() {
-        return null;
-    }
-
 }

@@ -42,6 +42,13 @@ public interface Operation {
   Map<String, Object> getForm();
 
   /**
+   * Return the request's payload, as one or more Jason literals.
+   *
+   * @return the currently set payload
+   */
+  Collection<Literal> getPayload();
+
+  /**
    * Fill out the form with a payload. Convenience method for
    * {@link #setPayload(Collection)} if the collection is a singleton.
    *

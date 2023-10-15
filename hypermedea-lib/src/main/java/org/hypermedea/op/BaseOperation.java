@@ -1,6 +1,7 @@
 package org.hypermedea.op;
 
 import jason.asSyntax.Literal;
+import org.hypermedea.tools.Terms;
 
 import java.io.IOException;
 import java.util.*;
@@ -31,6 +32,11 @@ public abstract class BaseOperation implements Operation {
    * Form from which the operation was instantiated.
    */
   protected final Map<String, Object> form;
+
+  /**
+   * Payload to send with the operation's request.
+   */
+  protected final Collection<Literal> payload = new HashSet<>();
 
   /**
    * Flag that the operation has already started (no further request can be sent)
@@ -69,6 +75,11 @@ public abstract class BaseOperation implements Operation {
     return this.form;
   }
 
+  @Override
+  public Collection<Literal> getPayload() {
+    return payload;
+  }
+
   /**
    * Set timeout between request and (first) response.
    *
@@ -79,13 +90,19 @@ public abstract class BaseOperation implements Operation {
   }
 
   /**
-   * Wrap the Jason structure into a singleton array and call {@link #setPayload(Collection)}.
+   * Wrap the input term into an array and call {@link #setPayload(Collection)}.
    *
-   * @param payload a Jason payload
+   * @param p a single Jason term
    */
   @Override
-  public void setPayload(Literal payload) {
-    setPayload(Arrays.asList(payload));
+  public void setPayload(Literal p) {
+    setPayload(Arrays.asList(p));
+  }
+
+  @Override
+  public void setPayload(Collection<Literal> p) {
+    payload.clear();
+    payload.addAll(p);
   }
 
   /**
@@ -137,7 +154,7 @@ public abstract class BaseOperation implements Operation {
 
     builder.append(String.format("[%s] Method: %s", getClass().getSimpleName(), method));
     builder.append(String.format(", Target: %s", getTargetURI()));
-    builder.append(String.format(", Payload: %s", getPayload()));
+    builder.append(String.format(", Payload: %s", Terms.getOneLineString(getPayload())));
 
     return builder.toString();
   }
@@ -145,14 +162,6 @@ public abstract class BaseOperation implements Operation {
   protected String getMethod() {
     return (String) this.form.get(Operation.METHOD_NAME_FIELD);
   }
-
-  /**
-   * Return a binding-dependent encapsulation of the payload for the request initiating the operation.
-   * <i>This method is used in <code>toString()</code></i>.
-   *
-   * @return the payload, encapsulated in some arbitrary object
-   */
-  protected abstract Object getPayload();
 
   /**
    * Implementations are protocol binding-dependent.

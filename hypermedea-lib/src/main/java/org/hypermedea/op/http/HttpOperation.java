@@ -86,11 +86,6 @@ public class HttpOperation extends BaseOperation {
   }
 
   @Override
-  protected Object getPayload() {
-    return this.request.getBody();
-  }
-
-  @Override
   public void setPayload(Collection<Literal> payload) {
     ContentType ct = ContentType.create(RepresentationHandlers.getDefaultContentType(payload));
 
