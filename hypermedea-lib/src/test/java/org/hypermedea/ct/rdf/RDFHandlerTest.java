@@ -14,12 +14,12 @@ import java.util.HashSet;
 
 public class RDFHandlerTest {
 
-    public final String TEST_RDF_TERM = "[ rdf(\"http://example.org/alice\", \"http://www.w3.org/1999/02/22-rdf-syntax-ns#type\", \"http://example.org/Person\") [ rdf_type_map(uri, uri, uri) ] ,\n" +
+    public static final String TEST_RDF_TERM = "[ rdf(\"http://example.org/alice\", \"http://www.w3.org/1999/02/22-rdf-syntax-ns#type\", \"http://example.org/Person\") [ rdf_type_map(uri, uri, uri) ] ,\n" +
             " rdf(\"http://example.org/alice\", \"http://example.org/name\", \"Alice\") [ rdf_type_map(uri, uri, literal) ] ,\n" +
             " rdf(\"http://example.org/alice\", \"http://example.org/age\", 42) [ rdf_type_map(uri, uri, literal) ] ,\n" +
             " rdf(\"http://example.org/alice\", \"http://example.org/knows\", someone) [ rdf_type_map(uri, uri, bnode) ] ]";
 
-    public final String TEST_RDF_GRAPH = "@prefix ex: <http://example.org/> .\n" +
+    public static final String TEST_RDF_GRAPH = "@prefix ex: <http://example.org/> .\n" +
             "ex:alice a ex:Person .\n" +
             " ex:alice ex:name \"Alice\" .\n" +
             " ex:alice ex:age 42 .\n" +

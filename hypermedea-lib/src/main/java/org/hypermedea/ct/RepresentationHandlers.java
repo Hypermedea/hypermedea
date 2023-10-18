@@ -2,51 +2,40 @@ package org.hypermedea.ct;
 
 import jason.asSyntax.Literal;
 import org.apache.hc.core5.http.ContentType;
-import org.hypermedea.ct.json.JsonHandler;
-import org.hypermedea.ct.rdf.RDFHandler;
-import org.hypermedea.ct.txt.PlainTextHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * TODO manage conflicts (on Content-Types, functors and priority)
  */
 public class RepresentationHandlers {
 
-    private static final Map<String, RepresentationHandler> registeredHandlers = new HashMap<>();
-
     private static final Map<String, String> defaultContentTypes = new HashMap<>();
 
-    static {
-        registerHandler(RDFHandler.class.getCanonicalName());
-        registerHandler(JsonHandler.class.getCanonicalName());
-        registerHandler(PlainTextHandler.class.getCanonicalName());
-    }
+    private static final ServiceLoader<RepresentationHandler> loader = ServiceLoader.load(RepresentationHandler.class);
 
     public static void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException, IOException {
         String fn = getDefaultFunctor(terms);
+        Optional<RepresentationHandler> opt = loadFromFunctor(fn);
 
-        if (!registeredHandlers.containsKey(fn))
+        if (opt.isEmpty())
             throw new UnsupportedRepresentationException("No handler found for Jason functor: " + fn);
 
-        RepresentationHandler h = registeredHandlers.get(fn);
-        h.serialize(terms, out, resourceURI);
+        opt.get().serialize(terms, out, resourceURI);
     }
 
     public static Collection<Literal> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException, IOException {
         String mediaType = getMediaType(contentType);
+        Optional<RepresentationHandler> opt = loadFromContentType(mediaType);
 
-        if (!registeredHandlers.containsKey(mediaType))
+        if (opt.isEmpty())
             throw new UnsupportedRepresentationException("No handler found for Content-Type: " + contentType);
 
-        RepresentationHandler h = registeredHandlers.get(mediaType);
         // TODO pass contentType instead, e.g. to retrieve charset
-        return h.deserialize(representation, resourceURI, mediaType);
+        return opt.get().deserialize(representation, resourceURI, mediaType);
     }
 
     public static String getDefaultContentType(Collection<Literal> terms) throws UnsupportedRepresentationException {
@@ -56,26 +45,6 @@ public class RepresentationHandlers {
             throw new UnsupportedRepresentationException("No handler found for Jason functor: " + fn);
 
         return defaultContentTypes.get(fn);
-    }
-
-    public static void registerHandler(String handlerClass) {
-        try {
-            RepresentationHandler h = (RepresentationHandler) Class.forName(handlerClass).newInstance();
-
-            if (h.getSupportedContentTypes().isEmpty())
-                throw new IllegalArgumentException("Representation handler must at least support one Content-Type: " + handlerClass);
-
-            if (h.getFunctor() == null || h.getFunctor().isEmpty())
-                throw new IllegalArgumentException("Representation handler declares no Jason functor: " + handlerClass);
-
-            for (String ct : h.getSupportedContentTypes()) registeredHandlers.put(getMediaType(ct), h);
-            registeredHandlers.put(h.getFunctor(), h);
-
-            defaultContentTypes.put(h.getFunctor(), h.getSupportedContentTypes().get(0));
-        } catch (Exception e) {
-            // TODO throw specific exception instead
-            throw new RuntimeException(e);
-        }
     }
 
     /**
@@ -89,6 +58,23 @@ public class RepresentationHandlers {
     private static String getMediaType(String contentType) {
         ContentType ct = ContentType.parse(contentType);
         return ct.getMimeType();
+    }
+
+    private static Optional<RepresentationHandler> loadFromFunctor(String fn) {
+        for (RepresentationHandler h : loader) {
+            if (h.getFunctor().equals(fn)) return Optional.of(h);
+        }
+
+        return Optional.empty();
+    }
+
+    private static Optional<RepresentationHandler> loadFromContentType(String ct) {
+        for (RepresentationHandler h : loader) {
+            // TODO hierarchy of Content-Types: take handler with highest rank for ct
+            if (h.getSupportedContentTypes().contains(ct)) return Optional.of(h);
+        }
+
+        return Optional.empty();
     }
 
     private RepresentationHandlers() {}
