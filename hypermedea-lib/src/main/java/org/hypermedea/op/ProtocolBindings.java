@@ -1,11 +1,9 @@
 package org.hypermedea.op;
 
-import org.hypermedea.op.file.FileBinding;
-import org.hypermedea.op.http.HttpBinding;
-
 import java.io.File;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.ServiceLoader;
 
 /**
  * Factory class to generate generic operations from TD forms.
@@ -14,12 +12,7 @@ public class ProtocolBindings {
 
   public static final String DEFAULT_SCHEME = "file";
 
-  private static final Map<String, ProtocolBinding> registeredBindings = new HashMap<>();
-
-  static {
-    registerBinding(HttpBinding.class.getName());
-    registerBinding(FileBinding.class.getName());
-  }
+  private static final ServiceLoader<ProtocolBinding> loader = ServiceLoader.load(ProtocolBinding.class);
 
   public static Operation bind(String targetURI, Map<String, Object> formFields) throws BindingNotFoundException {
     targetURI = resolve(targetURI);
@@ -33,33 +26,6 @@ public class ProtocolBindings {
     return b.bind(targetURITemplate, formFields, uriVariableMappings);
   }
 
-  public static void registerBinding(String bindingClass) throws BindingNotRegisteredException {
-    for (Map.Entry<String, ProtocolBinding> entry : registeredBindings.entrySet()) {
-      if (entry.getValue().getClass().getName().equals(bindingClass)) {
-        // TODO warn that no change is performed
-        return;
-      }
-    }
-
-    Map<String, ProtocolBinding> newBindings = new HashMap<>();
-
-    try {
-      ProtocolBinding binding = (ProtocolBinding) Class.forName(bindingClass).newInstance();
-
-      for (String scheme : binding.getSupportedSchemes()) {
-        if (registeredBindings.containsKey(scheme)) {
-          // TODO warn that bindings have conflict
-        }
-
-        newBindings.put(scheme, binding);
-      }
-    } catch (Exception e) {
-      throw new BindingNotRegisteredException(e);
-    }
-
-    registeredBindings.putAll(newBindings);
-  }
-
   private static String getScheme(String uriOrTemplate) {
     int i = uriOrTemplate.indexOf(":");
 
@@ -69,14 +35,23 @@ public class ProtocolBindings {
 
   private static ProtocolBinding getBinding(String targetURI) {
     String scheme = getScheme(targetURI);
+    Optional<ProtocolBinding> opt = loadFromScheme(scheme);
 
-    if (!registeredBindings.containsKey(scheme)) throw new BindingNotFoundException();
-    else return registeredBindings.get(scheme);
+    if (opt.isEmpty()) throw new BindingNotFoundException();
+    else return opt.get();
   }
 
   private static String resolve(String uriOrFilename) {
     if (uriOrFilename.indexOf(":") > 0) return uriOrFilename;
     else return new File(uriOrFilename).toURI().toString();
+  }
+
+  private static Optional<ProtocolBinding> loadFromScheme(String scheme) {
+    for (ProtocolBinding b : loader) {
+      if (b.getSupportedSchemes().contains(scheme)) return Optional.of(b);
+    }
+
+    return Optional.empty();
   }
 
   private ProtocolBindings() {};
