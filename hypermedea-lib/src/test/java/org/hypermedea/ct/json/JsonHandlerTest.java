@@ -16,6 +16,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
+import static junit.framework.TestCase.assertFalse;
+
 public class JsonHandlerTest {
 
     public static final String TEST_JSON_TERM = "json([ kv(name, \"Demo term\"),\n" +
@@ -34,6 +36,27 @@ public class JsonHandlerTest {
             "   \"confirmed\": true," +
             "   \"members\": [1, 1.5, 2]" +
             "}";
+
+    public static final String TEST_ROS_MSG = "json([\n" +
+            "        kv(\"target_pose\", [\n" +
+            "            kv(\"header\", [\n" +
+            "                kv(\"frame_id\", \"map\")\n" +
+            "            ]),\n" +
+            "            kv(\"pose\", [\n" +
+            "                kv(\"position\", [\n" +
+            "                        kv(\"x\", -0.80),\n" +
+            "                        kv(\"y\", -1.68),\n" +
+            "                        kv(\"z\", 0.0)\n" +
+            "                ]),\n" +
+            "                kv(\"orientation\", [\n" +
+            "                        kv(\"x\", 0.0),\n" +
+            "                        kv(\"y\", 0.0),\n" +
+            "                        kv(\"z\", -0.51),\n" +
+            "                        kv(\"w\", 0.86)\n" +
+            "                ])\n" +
+            "            ])\n" +
+            "        ])\n" +
+            "    ])";
 
     private final JsonHandler h = new JsonHandler();
 
@@ -106,6 +129,18 @@ public class JsonHandlerTest {
         assert t2.isList() && ((ListTerm) t2).size() == 3;
         assert t3.equals(Atom.LTrue);
         assert t4.isList() && ((ListTerm) t2).size() == 3;
+    }
+
+    @Test
+    public void testStringKeys() throws ParseException {
+        Literal t = ASSyntax.parseLiteral(TEST_ROS_MSG);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        h.serialize(Arrays.asList(t), out, "http://example.org/");
+
+        String json = out.toString();
+
+        assertFalse(json.equals("{}"));
     }
 
     private boolean hasValue(Term t, String key) {

@@ -229,7 +229,7 @@ public class JsonHandler extends BaseRepresentationHandler {
                     Structure kv = (Structure) m;
 
                     // TODO warn if invalid kv was found
-                    if (kv.getArity() == 2 && kv.getTerm(0).isAtom()) {
+                    if (kv.getArity() == 2 && isObjectMemberKey(kv.getTerm(0))) {
                         String key = Identifiers.getLexicalForm(kv.getTerm(0));
                         Term val = kv.getTerm(1);
 
@@ -282,6 +282,10 @@ public class JsonHandler extends BaseRepresentationHandler {
 
     private boolean isObjectMember(Term t) {
         return t.isStructure() && ( (Structure) t).getFunctor().equals(JSON_MEMBER_FUNCTOR);
+    }
+
+    private boolean isObjectMemberKey(Term t) {
+        return t.isAtom() || t.isString();
     }
 
     private boolean isIntegral(double d) {
