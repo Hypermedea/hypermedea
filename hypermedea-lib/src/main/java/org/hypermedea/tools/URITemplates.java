@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Utilities to deal with URI templates. See <a href="">https://tools.ietf.org/html/rfc6570</a>.
+ * Utilities to deal with URI templates. See <a href="https://tools.ietf.org/html/rfc6570">RFC 6570</a>.
  */
 public class URITemplates {
 

@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
  *     See examples:
  * </p>
  * <table>
+ *     <caption>Mapping between JSON and Jason structures</caption>
  *     <tr>
  *         <th>JSON</th>
  *         <th>Jason</th>

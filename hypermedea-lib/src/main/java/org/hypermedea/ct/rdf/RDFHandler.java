@@ -21,6 +21,7 @@ import java.util.HashSet;
  *   The mapping from RDF to Jason is as follows:
  * </p>
  * <table>
+ *   <caption>Mapping between RDF and Jason structures</caption>
  *   <tr>
  *       <th>RDF type</th>
  *       <th>Jason type</th>
