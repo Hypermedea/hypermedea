@@ -18,6 +18,7 @@ let srv = http.createServer((req, resp) => {
         } else if (req.method == 'GET' && req.url == '/status') {
             console.log('>> GET /status');
 
+            resp.setHeader('Content-Type', 'application/json');
             resp.statusCode = 200;
             resp.end(JSON.stringify(status));
 
@@ -37,8 +38,8 @@ let srv = http.createServer((req, resp) => {
                 resp.statusCode = 204;
                 resp.end();
             });
-        } else if (req.method == 'PUT' && req.url == '/toggle') {
-            console.log('>> PUT /toggle');
+        } else if (req.method == 'POST' && req.url == '/toggle') {
+            console.log('>> POST /toggle');
 
             status = !status;
 

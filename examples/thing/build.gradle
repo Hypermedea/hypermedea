@@ -10,23 +10,20 @@ apply plugin: 'java'
 version '0.1'
 group   'org.jacamo'
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
 repositories {
     mavenCentral()
-    // artifact repository for JaCaMo-related project
-    maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
-    // artifact repository for Linked-Data-Fu
-    maven { url 'https://paul.ti.rw.fau.de/maven/repository/' }
 
-    // only used for testing new versions of hypermedia-jacamo
-    // TODO replace with publications on Maven Central
-    mavenLocal()
+    // artifact repository for JaCaMo-related project
+    maven { url "https://raw.githubusercontent.com/jacamo-lang/mvn-repo/master" }
+    maven { url "https://repo.gradle.org/gradle/libs-releases" }
+
+    // artifact repository for Hypermedea dependencies
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
-    compile group: 'org.jacamo', name: 'hypermedea', version: '0.1'
+    implementation('org.jacamo:jacamo:1.2.1')
+    implementation('com.github.Hypermedea:hypermedea:0.4')
 }
 
 sourceSets {

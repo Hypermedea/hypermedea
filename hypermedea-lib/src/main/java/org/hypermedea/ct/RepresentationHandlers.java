@@ -13,8 +13,6 @@ import java.util.*;
  */
 public class RepresentationHandlers {
 
-    private static final Map<String, String> defaultContentTypes = new HashMap<>();
-
     private static final ServiceLoader<RepresentationHandler> loader = ServiceLoader.load(RepresentationHandler.class);
 
     public static void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException, IOException {
@@ -40,11 +38,12 @@ public class RepresentationHandlers {
 
     public static String getDefaultContentType(Collection<Literal> terms) throws UnsupportedRepresentationException {
         String fn = getDefaultFunctor(terms);
+        Optional<RepresentationHandler> opt = loadFromFunctor(fn);
 
-        if (!defaultContentTypes.containsKey(fn))
+        if (opt.isEmpty())
             throw new UnsupportedRepresentationException("No handler found for Jason functor: " + fn);
 
-        return defaultContentTypes.get(fn);
+        return opt.get().getSupportedContentTypes().get(0);
     }
 
     /**

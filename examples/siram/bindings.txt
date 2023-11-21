@@ -1,2 +1,0 @@
-org.hypermedea.opcua.OpcUaBinding
-org.hypermedea.ros.ROSBinding

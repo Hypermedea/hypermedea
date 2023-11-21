@@ -4,6 +4,7 @@ import jason.asSyntax.ASSyntax;
 import jason.asSyntax.ListTerm;
 import jason.asSyntax.Literal;
 import jason.asSyntax.parser.ParseException;
+import org.hypermedea.ct.rdf.RDFHandler;
 import org.hypermedea.ct.rdf.RDFHandlerTest;
 import org.junit.Test;
 
@@ -13,7 +14,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class RepresentationHandlersTest {
 
@@ -33,6 +34,16 @@ public class RepresentationHandlersTest {
         Collection<Literal> t = RepresentationHandlers.deserialize(in, "http://example.org/", "text/turtle");
 
         assertTrue(t.size() > 0);
+    }
+
+    @Test
+    public void testGetDefaultContentType() throws IOException {
+        ByteArrayInputStream in = new ByteArrayInputStream(RDFHandlerTest.TEST_RDF_GRAPH.getBytes());
+        Collection<Literal> t = RepresentationHandlers.deserialize(in, "http://example.org/", "text/turtle");
+
+        String ct = RepresentationHandlers.getDefaultContentType(t);
+
+        assertEquals(ct, RDFHandler.RDF_CT[0]);
     }
 
 }

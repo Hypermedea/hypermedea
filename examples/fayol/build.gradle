@@ -1,32 +1,26 @@
-/**
- * Example project using the ThingArtifact class to ease interaction with WoT devices desribed by Thing Descriptions.
- *
- */
-
 defaultTasks 'run'
 
 apply plugin: 'java'
 
-version '0.1'
-group   'org.jacamo'
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+version '1.0'
+group   'org.hypermedea'
 
 repositories {
     mavenCentral()
+    
     // artifact repository for JaCaMo-related project
-    maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
-    // artifact repository for Linked-Data-Fu
-    maven { url 'https://paul.ti.rw.fau.de/maven/repository/' }
-
-    // only used for testing new versions of hypermedia-jacamo
-    // TODO replace with publications on Maven Central
-    mavenLocal()
+    maven { url "https://raw.githubusercontent.com/jacamo-lang/mvn-repo/master" }
+    maven { url "https://repo.gradle.org/gradle/libs-releases" }
+    
+    // artifact repository for Hypermedea dependencies
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
-    compile group: 'org.jacamo', name: 'hypermedea', version: '0.1'
+    implementation('org.jacamo:jacamo:1.2.1')
+    implementation('com.github.Hypermedea:hypermedea:0.4')
+
+    runtimeOnly('org.slf4j:slf4j-reload4j:2.0.6')
 }
 
 sourceSets {
@@ -44,13 +38,13 @@ sourceSets {
 }
 
 task run (type: JavaExec, dependsOn: 'classes') {
-    group ' JaCaMo'
+    group       ' JaCaMo'
     description 'runs the JaCaMo application'
     doFirst {
         mkdir 'log'
     }
     main 'jacamo.infra.JaCaMoLauncher'
-    args 'leubot.jcm'
+    args 'fayol.jcm'
     classpath sourceSets.main.runtimeClasspath
 }
 

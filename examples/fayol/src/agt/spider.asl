@@ -7,7 +7,7 @@ knownResource(URI) :- rdf(_, _, _)[source(URI)] .
     true
     <-
     // crawl the building's topology
-    !crawl("https://territoire.emse.fr/kg/emse/fayol/index.ttl")
+    !crawl("https://territoire.emse.fr/kg/emse/fayol/")
   .
 
 +!crawl(URI) :
@@ -37,7 +37,7 @@ knownResource(URI) :- rdf(_, _, _)[source(URI)] .
 +!get(URI) :
     crawling
     <-
-    if (not (knownResource(URI) | .intend(get(URI)))) {
+    if (not (knownResource(URI))) {
         get(URI) ;
         !!checkEndCrawl ;
     }

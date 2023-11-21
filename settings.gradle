@@ -1,2 +1,2 @@
 rootProject.name = 'hypermedea'
-include 'hypermedea-lib', 'hypermedea-app'
+include 'hypermedea-lib', 'hypermedea-jacamo'

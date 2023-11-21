@@ -33,8 +33,7 @@ hasOperationType(Form, OpType) :-
     hasOperationType(Form, "https://www.w3.org/2019/wot/td#readProperty")
     <-
     get(Target) ;
-    ?(text(Val)[source(Target)]) ;
-    //?(json(Val)[source(Target)]) ;
+    ?(json(Val)[source(Target)]) ;
   .
 
 +!invokeAction(ActionName) :
@@ -42,9 +41,8 @@ hasOperationType(Form, OpType) :-
     hasTarget(Form, Target) &
     hasOperationType(Form, "https://www.w3.org/2019/wot/td#invokeAction")
     <-
-    // TODO POST by default; look at http: annotation
-    // TODO have generic op?
-    put(Target, text("null")) ;
+    // TODO POST without payload (payload below not taken into account)
+    post(Target, json(null)) ;
   .
 
 { include("$jacamoJar/templates/common-cartago.asl") }
