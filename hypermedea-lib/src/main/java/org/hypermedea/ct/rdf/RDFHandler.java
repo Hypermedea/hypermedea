@@ -13,53 +13,16 @@ import java.util.HashSet;
 
 /**
  * <p>
- *   Map RDF statements (triples) to/from Jason terms of the form
+ *   Handler for representations with any of the RDF Content-Types:
  * </p>
- * <pre>rdf(S, P, O)[ rdf_type_map(uri|bnode, uri, uri|bnode|literal) ]</pre>
- *
- * <p>
- *   The mapping from RDF to Jason is as follows:
- * </p>
- * <table>
- *   <caption>Mapping between RDF and Jason structures</caption>
- *   <tr>
- *       <th>RDF type</th>
- *       <th>Jason type</th>
- *       <th>Value of <code>rdf_type_map</code></th>
- *   </tr>
- *   <tr>
- *       <td>Named resource (URI)</td>
- *       <td>String</td>
- *       <td><code>uri</code></td>
- *   </tr>
- *   <tr>
- *       <td>Blank node</td>
- *       <td>Atom</td>
- *       <td><code>bnode</code></td>
- *   </tr>
- *   <tr>
- *       <td>Literal (number)</td>
- *       <td>Number</td>
- *       <td><code>literal</code></td>
- *   </tr>
- *   <tr>
- *       <td>Literal (any other type)</td>
- *       <td>String</td>
- *       <td><code>literal</code></td>
- *   </tr>
- * </table>
- *
- * <p>
- *     For example, the RDF graph and Jason belief base given below are equivalent:
- * </p>
- * <pre>ex:alice a ex:Person .
- *ex:alice ex:name "Alice" .
- *ex:alice ex:age 42 .
- *ex:alice ex:knows _:someone .</pre>
- * <pre>rdf("http://example.org/alice", "http://www.w3.org/1999/02/22-rdf-syntax-ns#type", "http://example.org/Person") [ rdf_type_map(uri, uri, uri) ] .
- *rdf("http://example.org/alice", "http://example.org/name", "Alice") [ rdf_type_map(uri, uri, literal) ] .
- *rdf("http://example.org/alice", "http://example.org/age", 42) [ rdf_type_map(uri, uri, literal) ] .
- *rdf("http://example.org/alice", "http://example.org/knows", someone) [ rdf_type_map(uri, uri, bnode) ] .</pre>
+ * <ul>
+ *   <li><code>text/turtle</code></li>
+ *   <li><code>application/n-triples</code></li>
+ *   <li><code>application/ld+json</code></li>
+ *   <li><code>application/trig</code></li>
+ *   <li><code>application/n-quads</code></li>
+ *   <li><code>application/rdf+xml</code></li>
+ * </ul>
  *
  * @author Victor Charpenay
  */

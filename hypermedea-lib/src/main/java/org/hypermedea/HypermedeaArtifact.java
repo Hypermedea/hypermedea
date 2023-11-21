@@ -79,8 +79,6 @@ public class HypermedeaArtifact extends Artifact {
 
     /**
      * Executes {@link #get(String, Object[])} with an empty form.
-     *
-     * @param resourceURI
      */
     @OPERATION
     public void get(String resourceURI) {
@@ -113,8 +111,9 @@ public class HypermedeaArtifact extends Artifact {
      *   Note that a resource representation may correspond to one or more literals,
      *   depending on the response payload's Content-Type. In RDF, it is indeed more
      *   convenient for programmers to have access to RDF triples individually rather than
-     *   as members of a list but in JSON, there is a single literal with a
-     *   tree-shaped structure. See {@link org.hypermedea.op op}.
+     *   as members of a list, whereas in JSON, there is a single literal with a
+     *   tree-shaped structure. See {@link org.hypermedea.ct ct} for details on
+     *   representation handlers.
      * </p>
      *
      * @param resourceURI the URI of a resource
@@ -130,8 +129,6 @@ public class HypermedeaArtifact extends Artifact {
 
     /**
      * Executes {@link #watch(String, Object[])} with an empty form.
-     *
-     * @param resourceURI
      */
     @OPERATION
     public void watch(String resourceURI) {
@@ -169,8 +166,15 @@ public class HypermedeaArtifact extends Artifact {
     .print("Received: ", Val) ;
   .</code></pre>
      * <p>
+     *   In the above example, the agent must know in advance what Content-Type to expect. Certain
+     *   protocol bindings have limitations as to what Content-Type can be exchanged with the server.
+     *   In case the server supports it, though, the agent may leverage
+     *   <a href="https://en.wikipedia.org/wiki/Content_negotiation">content negotiation</a>
+     *   to request the server to return a specific Content-Type.
+     * </p>
+     * <p>
      *   {@link h.target} is a Hypermedea internal action, {@link jason.stdlib.wait wait} is part of the
-     *   Jason standard library.
+     *   <a href="https://jason-lang.github.io/api/jason/stdlib/package-summary.html">Jason standard library</a>.
      * </p>
      *
      * @param resourceURI the URI of a resource
@@ -186,9 +190,6 @@ public class HypermedeaArtifact extends Artifact {
 
     /**
      * Executes {@link #put(String, String, Object[])} with an empty form.
-     *
-     * @param resourceURI
-     * @param representation
      */
     @OPERATION
     public void put(String resourceURI, String representation) {
@@ -199,15 +200,16 @@ public class HypermedeaArtifact extends Artifact {
      * <p>
      *   Asks the server to replace the current representation(s) it has of {@code resourceURI} with
      *   the provided {@code representation}. This parameter must be provided as a Jason literal, in
-     *   order to be serialized in a standard format by the proper representation handler.
+     *   order to be serialized in a standard format by the proper representation handler (see
+     *   package {@link org.hypermedea.ct ct}).
      * </p>
      * <p>
      *   After the call returns, the caller agent may assume the new representation of {@code resourceURI}
-     *   on server side is the provided one. The server may alter this representation, though, e.g.
-     *   to maintain consistency with other resources it manages or to add metadata (modification date,
-     *   author, etc.). This is why, the Hypermedea artifact makes no assumption about what the new
-     *   representation is. If the caller agent wants to cache the new representation, it should
-     *   execute a {@link #get(String, Object[]) get} operation right after the {@link #put(String,
+     *   on server side is the provided one. There is however no strict guarantee. The server may also
+     *   alter this representation, e.g. to maintain consistency with other resources it manages or to add
+     *   metadata (modification date, author, etc.). This is why the Hypermedea artifact makes no assumption
+     *   about what the new representation is. If the caller agent wants to cache the new representation, it
+     *   should execute a {@link #get(String, Object[]) get} operation right after the {@link #put(String,
      *   String, Object[]) put}, as follows:
      * </p>
      * <pre><code>+!put_then_get(URI) &lt;-
@@ -236,9 +238,6 @@ public class HypermedeaArtifact extends Artifact {
 
     /**
      * Executes {@link #post(String, String, Object[])} with an empty form.
-     *
-     * @param resourceURI
-     * @param representationPart
      */
     @OPERATION
     public void post(String resourceURI, String representationPart) {
@@ -253,17 +252,14 @@ public class HypermedeaArtifact extends Artifact {
      *   to maintain consistency or add more information to it.
      * </p>
      * <p>
-     *   Notably, a server may also create a new resource, as a side effect of the operation. This new
-     *   resource may either be linked from the (new) representation of {@code resourceURI}, if its
-     *   Content-Type supports hypermedia, but the new resource may also be exposed in a message header,
-     *   hidden by the protocol binding.
-     * </p>
-     * <p>
-     *   For instance, in response to a POST request, an HTTP server
-     *   may return a {@code 201 Created} response that includes a {@code Location} header pointing to
-     *   the new resource. To expose this information to the caller agent, the Hypermedea artifact
-     *   builds an RDF triple from the location header and adds it to the representation of {@code
-     *   resourceURI}. The agent may then query that RDF triple, as follows:
+     *   Notably, a server may also create a new resource as a side effect of the operation. This new
+     *   resource should either be linked from the (new) representation of {@code resourceURI}, if its
+     *   Content-Type supports hypermedia, or be exposed in a message header, hidden by the protocol binding.
+     *   For instance, in response to a POST request, an HTTP server may return a {@code 201 Created}
+     *   response that includes a {@code Location} header pointing to the new resource. To expose this
+     *   information to the caller agent, the Hypermedea artifact builds an RDF triple from the location
+     *   header and adds it to the representation of {@code resourceURI}. The agent may then query that
+     *   RDF triple, as follows:
      * </p>
      * <pre><code>+!post_then_follow_link(URI) &lt;-
     h.target(URI, TargetURI) ;
@@ -300,9 +296,6 @@ public class HypermedeaArtifact extends Artifact {
 
     /**
      * Executes {@link #patch(String, String, Object[])} with an empty form.
-     *
-     * @param resourceURI
-     * @param representationDiff
      */
     @OPERATION
     public void patch(String resourceURI, String representationDiff) {
@@ -333,8 +326,6 @@ public class HypermedeaArtifact extends Artifact {
 
     /**
      * Executes {@link #delete(String)} with an empty form.
-     *
-     * @param resourceURI
      */
     @OPERATION
     public void delete(String resourceURI) {
@@ -345,7 +336,7 @@ public class HypermedeaArtifact extends Artifact {
      * <p>
      *   Asks the server to delete all known representations of {@code resourceURI}. The Hypermedea
      *   artifact does delete all representations locally, as there is no ambiguity as to what should
-     *   happen on the server. However, other resources may be have altered representations after the
+     *   happen on the server. However, other resources may have altered representations after the
      *   operation, which the artifact is unaware of. For instance, the server might delete all
      *   references of the resource in the representation of other resources it manages.
      * </p>

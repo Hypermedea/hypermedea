@@ -9,7 +9,7 @@ import java.io.OutputStream;
 import java.util.*;
 
 /**
- * TODO manage conflicts (on Content-Types, functors and priority)
+ * Factory class to (de)serialize resource representations in (from) known Content-Types.
  */
 public class RepresentationHandlers {
 
@@ -62,6 +62,7 @@ public class RepresentationHandlers {
 
     private static Optional<RepresentationHandler> loadFromFunctor(String fn) {
         for (RepresentationHandler h : loader) {
+            // TODO same as for loadFromContentType: manage hierarchy
             if (h.getFunctor().equals(fn)) return Optional.of(h);
         }
 

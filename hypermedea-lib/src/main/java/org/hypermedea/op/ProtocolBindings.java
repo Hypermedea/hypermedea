@@ -6,7 +6,7 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 
 /**
- * Factory class to generate generic operations from TD forms.
+ * Factory class to execute generic operations from Web forms.
  */
 public class ProtocolBindings {
 

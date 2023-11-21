@@ -12,6 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 
+/**
+ * Handler for representations with Content-Type <code>text/plain</code>.
+ */
 public class PlainTextHandler extends BaseRepresentationHandler {
 
     public static final String TXT_FUNCTOR = "text";

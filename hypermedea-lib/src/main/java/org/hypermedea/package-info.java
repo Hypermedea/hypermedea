@@ -1,6 +1,6 @@
 /**
  * <p>
- *   Main Hypermedea package. Hypermedea is a collection of utilities to develop Web
+ *   <b>Main Hypermedea package</b>. Hypermedea is a collection of utilities to develop Web
  *   agents written in the <a href="https://jason-lang.github.io/doc/">Jason</a> language,
  *   opening up to the <a href="http://jacamo-lang.github.io/jacamo/">JaCaMo</a>
  *   multi-agent oriented programming framework.
