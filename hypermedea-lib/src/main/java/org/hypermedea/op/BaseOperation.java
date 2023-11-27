@@ -127,12 +127,15 @@ public abstract class BaseOperation implements Operation {
   @Override
   public Response getResponse() throws NoResponseException {
     try {
-      Optional<Response> r = timeout > 0 ? lastResponse.poll(timeout, TimeUnit.SECONDS) : lastResponse.take();
+      Optional<Response> rOpt = timeout > 0 ? lastResponse.poll(timeout, TimeUnit.SECONDS) : lastResponse.take();
 
-      if (r != null && r.isPresent()) return r.get();
-      else throw new NoResponseException();
-    } catch (InterruptedException e) {
-      throw new NoResponseException(e);
+      if (rOpt == null || rOpt.isEmpty()) throw new NoResponseException();
+
+      Response r = rOpt.get();
+      end();
+      return r;
+    } catch (InterruptedException | IOException e) {
+      throw new RuntimeException(e);
     }
   }
 

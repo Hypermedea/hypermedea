@@ -14,11 +14,13 @@ repositories {
     
     // artifact repository for Hypermedea dependencies
     maven { url 'https://jitpack.io' }
+
+    mavenLocal()
 }
 
 dependencies {
     implementation('org.jacamo:jacamo:1.2.1')
-    implementation('com.github.Hypermedea:hypermedea:0.4')
+    implementation('com.github.Hypermedea:hypermedea:0.4.1')
 
     runtimeOnly('org.slf4j:slf4j-reload4j:2.0.6')
 }
