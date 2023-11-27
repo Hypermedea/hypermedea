@@ -11,6 +11,7 @@ import jason.asSyntax.parser.ParseException;
 import org.hypermedea.op.Operation;
 import org.hypermedea.op.ProtocolBindings;
 import org.hypermedea.op.Response;
+import org.hypermedea.op.ResponseCallback;
 import org.hypermedea.tools.Identifiers;
 
 import java.io.IOException;
@@ -62,9 +63,53 @@ import java.util.stream.Collectors;
 */
 public class HypermedeaArtifact extends Artifact {
 
+    private class Subscription implements ResponseCallback {
+
+        public static final Map<String, Subscription> subscriptions = new HashMap<>();
+
+        private final String subscriptionURI;
+
+        private Subscription(String uri) {
+            subscriptionURI = uri;
+            subscriptions.put(uri, this);
+
+            // TODO if subscription exists for URI, unregister first
+        }
+
+        @Override
+        public void onResponse(Response res) {
+            log(res.toString());
+
+            if (!res.getStatus().equals(Response.ResponseStatus.OK)) {
+                // TODO do something?
+            } else {
+                beginExtSession();
+                updateRepresentation(subscriptionURI, res.getPayload());
+                endExtSession();
+            }
+        }
+
+        @Override
+        public void onError() {
+            // TODO annotate latest resource representation as outdated?
+            log("Connection with server lost during WATCH operation on: " + subscriptionURI);
+        }
+
+        public static Subscription get(String resourceURI) {
+            return subscriptions.get(resourceURI);
+        }
+
+        public static void remove(String resourceURI) {
+            subscriptions.remove(resourceURI);
+        }
+
+    }
+
     public static final String SOURCE_FUNCTOR = "source";
 
     private final Map<String, Collection<ObsProperty>> representations = new HashMap<>();
+
+    private final Map<String, Operation> activeOperations = new HashMap<>();
 
     private final Object[] emptyForm = {};
 
@@ -124,7 +169,9 @@ public class HypermedeaArtifact extends Artifact {
     public void get(String resourceURI, Object[] formFields) {
         Map<String, Object> f = parseFormFields(formFields);
         f.put(Operation.METHOD_NAME_FIELD, Operation.GET);
-        executeOperation(resourceURI, f, Optional.empty());
+
+        Operation op = ProtocolBindings.bind(resourceURI, f);
+        initiateOperation(op, Optional.empty());
     }
 
     /**
@@ -185,7 +232,40 @@ public class HypermedeaArtifact extends Artifact {
     public void watch(String resourceURI, Object[] formFields) {
         Map<String, Object> f = parseFormFields(formFields);
         f.put(Operation.METHOD_NAME_FIELD, Operation.WATCH);
-        executeOperation(resourceURI, f, Optional.empty());
+
+        Operation op = ProtocolBindings.bind(resourceURI, f);
+        // registration must occur before the operation starts
+        op.registerResponseCallback(new Subscription(resourceURI));
+        activeOperations.put(resourceURI, op);
+
+        initiateOperation(op, Optional.empty());
+    }
+
+    /**
+     * Executes {@link #forget(String, Object[])} with an empty form.
+     */
+    @OPERATION
+    public void forget(String resourceURI) {
+        forget(resourceURI, emptyForm);
+    }
+
+    /**
+     * Deletes the local representation of {@code resourceURI} and, if the resource is being watched,
+     * removes the active subscription. No future change on {@code resourceURI} will be notified to agents.
+     *
+     * @param resourceURI the URI of a resource
+     * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the
+     *                   protocol binding or the payload binding
+     */
+    @OPERATION
+    public void forget(String resourceURI, Object[] formFields) {
+        updateRepresentation(resourceURI, new HashSet<>());
+
+        if (activeOperations.containsKey(resourceURI)) {
+            Operation op = activeOperations.remove(resourceURI);
+            // if no further callback, this call should end the operation
+            op.unregisterResponseCallback(Subscription.get(resourceURI));
+        }
     }
 
     /**
@@ -233,7 +313,9 @@ public class HypermedeaArtifact extends Artifact {
     public void put(String resourceURI, String representation, Object[] formFields) {
         Map<String, Object> f = parseFormFields(formFields);
         f.put(Operation.METHOD_NAME_FIELD, Operation.PUT);
-        executeOperation(resourceURI, f, Optional.of(representation));
+
+        Operation op = ProtocolBindings.bind(resourceURI, f);
+        initiateOperation(op, Optional.of(representation));
     }
 
     /**
@@ -291,7 +373,9 @@ public class HypermedeaArtifact extends Artifact {
     public void post(String resourceURI, String representationPart, Object[] formFields) {
         Map<String, Object> f = parseFormFields(formFields);
         f.put(Operation.METHOD_NAME_FIELD, Operation.POST);
-        executeOperation(resourceURI, f, Optional.of(representationPart));
+
+        Operation op = ProtocolBindings.bind(resourceURI, f);
+        initiateOperation(op, Optional.of(representationPart));
     }
 
     /**
@@ -321,7 +405,9 @@ public class HypermedeaArtifact extends Artifact {
     public void patch(String resourceURI, String representationDiff, Object[] formFields) {
         Map<String, Object> f = parseFormFields(formFields);
         f.put(Operation.METHOD_NAME_FIELD, Operation.PATCH);
-        executeOperation(resourceURI, f, Optional.of(representationDiff));
+
+        Operation op = ProtocolBindings.bind(resourceURI, f);
+        initiateOperation(op, Optional.of(representationDiff));
     }
 
     /**
@@ -349,12 +435,22 @@ public class HypermedeaArtifact extends Artifact {
     public void delete(String resourceURI, Object[] formFields) {
         Map<String, Object> f = parseFormFields(formFields);
         f.put(Operation.METHOD_NAME_FIELD, Operation.DELETE);
-        executeOperation(resourceURI, f, Optional.empty());
+
+        Operation op = ProtocolBindings.bind(resourceURI, f);
+        initiateOperation(op, Optional.empty());
     }
 
-    private void executeOperation(String resourceURI, Map<String, Object> formFields, Optional<String> requestPayloadOpt) {
-        Operation op = ProtocolBindings.bind(resourceURI, formFields);
-
+    /**
+     * Sends the request that will start an operation and waits for an initial response from the server.
+     * If the operation is a WATCH operation, the operation remains active after this method returns
+     * (until {@link #forget(String)} is called on the target resource). Otherwise, the operation must
+     * have ended before the method returns.
+     *
+     * @param op an operation bound to a protocol binding
+     * @param requestPayloadOpt an optional paylaod to add to the request
+     * @return the input operation, for further
+     */
+    private Operation initiateOperation(Operation op, Optional<String> requestPayloadOpt) {
         try {
             if (requestPayloadOpt.isPresent()) {
                 String requestPayload = requestPayloadOpt.get();
@@ -371,35 +467,15 @@ public class HypermedeaArtifact extends Artifact {
                 // TODO add request/response in error tuples
                 failed("The server returned an error: " + res.getStatus());
             } else {
-                Set<ObsProperty> props = new HashSet<>();
-
-                for (Literal t : res.getPayload()) {
-                    ObsProperty p = defineObsProperty(t.getFunctor(), t.getTerms().toArray());
-
-                    if (t.hasAnnot())
-                        for (Term a : t.getAnnots().getAsList()) p.addAnnot(a);
-                    
-                    p.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, ASSyntax.createString(resourceURI)));
-
-                    props.add(p);
-                }
-
-                if (representations.containsKey(resourceURI)) {
-                    for (ObsProperty p : representations.get(resourceURI)) {
-                        removeObsPropertyByTemplate(p.getName(), p.getValues());
-                    }
-                }
-
+                updateRepresentation(op.getTargetURI(), res.getPayload());
                 commit();
-
-                if (props.isEmpty()) representations.remove(resourceURI);
-                else representations.put(resourceURI, props);
             }
         } catch (IOException e) {
-            // TODO clean representations cache if error occurs in the above block
             // TODO add request/response in error tuples
             failed("I/O error occurred: " + e.getMessage());
         }
+
+        return op;
     }
 
     private void setPayload(Operation op, String requestPayload) {
@@ -446,6 +522,30 @@ public class HypermedeaArtifact extends Artifact {
         }
 
         return f;
+    }
+
+    private void updateRepresentation(String resourceURI, Collection<Literal> newRepresentation) {
+        Set<ObsProperty> props = new HashSet<>();
+
+        for (Literal t : newRepresentation) {
+            ObsProperty p = defineObsProperty(t.getFunctor(), t.getTerms().toArray());
+
+            if (t.hasAnnot())
+                for (Term a : t.getAnnots().getAsList()) p.addAnnot(a);
+
+            p.addAnnot(ASSyntax.createStructure(SOURCE_FUNCTOR, ASSyntax.createString(resourceURI)));
+
+            props.add(p);
+        }
+
+        if (representations.containsKey(resourceURI)) {
+            for (ObsProperty p : representations.get(resourceURI)) {
+                removeObsPropertyByTemplate(p.getName(), p.getValues());
+            }
+        }
+
+        if (props.isEmpty()) representations.remove(resourceURI);
+        else representations.put(resourceURI, props);
     }
 
 }

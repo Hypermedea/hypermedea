@@ -99,7 +99,13 @@ public interface Operation {
   void registerResponseCallback(ResponseCallback callback);
 
   /**
-   * Remove a callback from the list of registered callbacks for the operation.
+   * <p>
+   *   Remove a callback from the list of registered callbacks for the operation.
+   * </p>
+   * <p>
+   *   If no callback is registered, the operation should end (and connection with the server may be dropped).
+   *   Any subsequent call to the operation's methods should raise an error.
+   * </p>
    *
    * @param callback response callback already registered via {@link Operation#registerResponseCallback(ResponseCallback)}
    */

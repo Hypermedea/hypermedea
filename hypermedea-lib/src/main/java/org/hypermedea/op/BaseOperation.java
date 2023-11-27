@@ -144,6 +144,12 @@ public abstract class BaseOperation implements Operation {
   @Override
   public void unregisterResponseCallback(ResponseCallback callback) {
     callbacks.remove(callback);
+
+    try {
+      if (callbacks.isEmpty()) end();
+    } catch (IOException e) {
+      // TODO log op may be hanging
+    }
   }
 
   @Override
@@ -168,6 +174,19 @@ public abstract class BaseOperation implements Operation {
    * See {@link Operation#sendRequest()} for expected behavior.
    */
   protected abstract void sendSingleRequest() throws IOException;
+
+  /**
+   * <p>
+   *   This method is called as a side effect of {@link Operation#unregisterResponseCallback(ResponseCallback)},
+   *   if more callback is registered for the operation.
+   * </p>
+   * <p>
+   *   Some implementations are protocol binding-dependent. The default implementation does nothing.
+   * </p>
+   */
+  protected void end() throws IOException {
+    // do nothing
+  }
 
   /**
    * Pass the input response to the semaphore and notify registered callbacks.
