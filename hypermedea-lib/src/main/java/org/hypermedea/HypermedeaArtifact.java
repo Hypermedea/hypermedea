@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
  *   Available operations are
  *   {@link #get(String, Object[]) get},
  *   {@link #watch(String, Object[]) watch},
+ *   {@link #forget(String, Object[]) forget},
  *   {@link #put(String, String, Object[]) put},
  *   {@link #post(String, String, Object[]) post},
  *   {@link #patch(String, String, Object[]) patch} and
@@ -251,7 +252,8 @@ public class HypermedeaArtifact extends Artifact {
 
     /**
      * Deletes the local representation of {@code resourceURI} and, if the resource is being watched,
-     * removes the active subscription. No future change on {@code resourceURI} will be notified to agents.
+     * unsubscribes from server notification. No future change on {@code resourceURI} will be notified
+     * to agents.
      *
      * @param resourceURI the URI of a resource
      * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the

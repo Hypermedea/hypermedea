@@ -5,7 +5,6 @@
  *   opening up to the <a href="http://jacamo-lang.github.io/jacamo/">JaCaMo</a>
  *   multi-agent oriented programming framework.
  * </p>
- *
  * <p>
  *   Hypermedea can be used in two ways:
  * </p>
@@ -25,6 +24,11 @@
  *   operations' signature). These operations are atomic operations to be perform on Web resources,
  *   as per the A+REST architectural style (A for asynchronous): retrieval (GET, WATCH), creation
  *   or extension (POST), replacement (PUT), update (PATCH) and removal (DELETE).
+ * </p>
+ * <p>
+ *   Retrieval operations (GET, WATCH) have the effect that the retrieved representation is stored
+ *   locally by the artifact. To delete it, a FORGET operation is also available. FORGET also
+ *   allows agents to "unwatch" a resource, i.e. to unsubscribe from server notifications.
  * </p>
  * <p>
  *   Operations are independent of the underlying communication protocol and of the representation
