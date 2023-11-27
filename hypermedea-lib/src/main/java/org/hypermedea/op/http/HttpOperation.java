@@ -10,7 +10,7 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.io.CloseMode;
 import org.hypermedea.ct.RepresentationHandlers;
-import org.hypermedea.op.BaseOperation;
+import org.hypermedea.op.SynchronousOperation;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,11 +18,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.logging.Logger;
 
-/**
- * Wrapper for constructing and executing an HTTP request based on a given <code>ThingDescription</code>.
- * When constructing the request, clients can set payloads that conform to a <code>DataSchema</code>.
- */
-public class HttpOperation extends BaseOperation {
+public class HttpOperation extends SynchronousOperation {
 
   /**
    * Accept header set by default, favoring RDF representations.

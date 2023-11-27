@@ -462,15 +462,17 @@ public class HypermedeaArtifact extends Artifact {
             op.sendRequest();
             log(op.toString());
 
-            Response res = op.getResponse();
-            log(res.toString());
+            if (!op.isAsync()) {
+                Response res = op.getResponse();
+                log(res.toString());
 
-            if (!res.getStatus().equals(Response.ResponseStatus.OK)) {
-                // TODO add request/response in error tuples
-                failed("The server returned an error: " + res.getStatus());
-            } else {
-                updateRepresentation(op.getTargetURI(), res.getPayload());
-                commit();
+                if (!res.getStatus().equals(Response.ResponseStatus.OK)) {
+                    // TODO add request/response in error tuples
+                    failed("The server returned an error: " + res.getStatus());
+                } else {
+                    updateRepresentation(op.getTargetURI(), res.getPayload());
+                    commit();
+                }
             }
         } catch (IOException e) {
             // TODO add request/response in error tuples

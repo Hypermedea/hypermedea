@@ -65,11 +65,35 @@ public interface Operation {
   void setPayload(Collection<Literal> payload);
 
   /**
+   * Return whether the operation is safe, i.e. if it has no side effect.
+   *
+   * @return {@code true} if the operation is safe, {@code false} otherwise
+   */
+  boolean isSafe();
+
+  /**
+   * Return whether the operation is idempotent, i.e. if it can be called repeatedly with the same effect.
+   *
+   * @return {@code true} if the operation is idempotent, {@code false} otherwise
+   */
+  boolean isIdempotent();
+
+  /**
+   * Return whether the operation is asynchronous, implying that a server may acknowledge a request
+   * before sending any response and that the server may return an arbitrary number of responses,
+   * asynchronously. Conversely, if the operation is synchronous, it should end as soon as a
+   * response is available.
+   *
+   * @return {@code true} if the operation is asynchronous (WATCH), {@code false} otherwise
+   */
+  boolean isAsync();
+
+  /**
    * <p>
    *   Start the operation by sending a message to the server with payload.
-   *   When the method returns, the client may assume the request was received by the server.
-   *   This doesn't imply that the server already responded, though.
-   *   To synchronously wait for a response, use {@link Operation#getResponse()}.
+   *   When the method returns, the client may assume the request was received (and possibly
+   *   acknowledged by the server). This doesn't always imply that the server already responded,
+   *   though. To synchronously wait for a response, use {@link Operation#getResponse()}.
    * </p>
    * <p>
    *   An operation is supposed to include only one request.
@@ -85,7 +109,7 @@ public interface Operation {
    * Wait synchronously for a response from the server and return it.
    * If the method is called after the server responded, it immediately returns the cached response.
    *
-   * @return the unique response sent by the server
+   * @return the (last) response sent by the server
    * @throws NoResponseException if no response has been received after some timeout
    * or if connection to the server was lost
    */

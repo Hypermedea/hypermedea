@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Implementation of basic operation features, including:
  * <ul>
- *   <li>validation of JSON payload</li>
+ *   <li>management of operation states</li>
  *   <li>management of asynchronous calls and blocking calls</li>
  * </ul>
  */
@@ -105,6 +105,28 @@ public abstract class BaseOperation implements Operation {
     payload.addAll(p);
   }
 
+  @Override
+  public boolean isSafe() {
+    return getMethod().equals(GET)
+        || getMethod().equals(WATCH);
+  }
+
+  @Override
+  public boolean isIdempotent() {
+    return getMethod().equals(GET)
+        || getMethod().equals(WATCH)
+        || getMethod().equals(PUT)
+        || getMethod().equals(DELETE);
+  }
+
+  /**
+   * Note: to implement synchronous operations, use {@link SynchronousOperation}.
+   */
+  @Override
+  public boolean isAsync() {
+    return getMethod().equals(WATCH);
+  }
+
   /**
    * Ensure that only a single request is sent.
    * protocol binding-dependent behavior is implemented in {@link #sendSingleRequest()}.
@@ -118,6 +140,9 @@ public abstract class BaseOperation implements Operation {
 
     sendSingleRequest();
     operationStarted = true;
+
+    if (callbacks.isEmpty()) end();
+    // TODO add operationEnded flag (in case getResponse is called afterwards)
   }
 
   /**
@@ -130,10 +155,7 @@ public abstract class BaseOperation implements Operation {
       Optional<Response> rOpt = timeout > 0 ? lastResponse.poll(timeout, TimeUnit.SECONDS) : lastResponse.take();
 
       if (rOpt == null || rOpt.isEmpty()) throw new NoResponseException();
-
-      Response r = rOpt.get();
-      end();
-      return r;
+      else return rOpt.get();
     } catch (InterruptedException | IOException e) {
       throw new RuntimeException(e);
     }
