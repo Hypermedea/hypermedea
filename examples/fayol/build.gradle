@@ -11,16 +11,15 @@ repositories {
     // artifact repository for JaCaMo-related project
     maven { url "https://raw.githubusercontent.com/jacamo-lang/mvn-repo/master" }
     maven { url "https://repo.gradle.org/gradle/libs-releases" }
-    
     // artifact repository for Hypermedea dependencies
-    maven { url 'https://jitpack.io' }
+    maven { url 'https://hypermedea.github.io/maven' }
 
     mavenLocal()
 }
 
 dependencies {
     implementation('org.jacamo:jacamo:1.2.1')
-    implementation('com.github.Hypermedea:hypermedea:0.4.1')
+    implementation('org.hypermedea:hypermedea:0.4.1')
 
     runtimeOnly('org.slf4j:slf4j-reload4j:2.0.6')
 }

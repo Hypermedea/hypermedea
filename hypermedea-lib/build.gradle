@@ -43,12 +43,20 @@ dependencies {
 
 publishing {
     publications {
-        maven(MavenPublication) {
+        hypermedea(MavenPublication) {
             groupId = group
             artifactId = 'hypermedea'
             version = version
 
             from components.java
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'Hypermedea'
+            // assumes the hypermedea.github.io repo is cloned next to this repo
+            url = "../..//hypermedea.github.io/maven"
         }
     }
 }

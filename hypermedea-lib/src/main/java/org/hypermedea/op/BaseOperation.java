@@ -141,7 +141,7 @@ public abstract class BaseOperation implements Operation {
     sendSingleRequest();
     operationStarted = true;
 
-    if (callbacks.isEmpty()) end();
+    if (isAsync() && callbacks.isEmpty()) end();
     // TODO add operationEnded flag (in case getResponse is called afterwards)
   }
 
