@@ -47,31 +47,59 @@ public class RDFHandler extends BaseRepresentationHandler {
         super(RDF_FUNCTOR, RDF_CT);
     }
 
+    public Statement getTriple(Literal t) throws IllegalArgumentException {
+        try {
+            if (t.getArity() != 3)
+                throw new IllegalArgumentException("RDF term must be ternary: " + t);
+
+            Term s = t.getTerm(0);
+            Term p = t.getTerm(1);
+            Term o = t.getTerm(2);
+
+            // TODO or no type map?
+            Structure typeMap = (Structure) t.getAnnot(RDF_TYPE_MAP_FUNCTOR);
+
+            Term sType = typeMap.getTerm(0);
+            Term pType = typeMap.getTerm(1);
+            Term oType = typeMap.getTerm(2);
+
+            RDFNode subject = getNode(s, sType);
+            RDFNode predicate = getNode(p, pType);
+            RDFNode object = getNode(o, oType);
+
+            return getTripleFromNodes(subject, predicate, object);
+        } catch (IllegalArgumentException e) {
+            throw e;
+        }
+    }
+
+    public Literal getLiteral(Statement triple) {
+        RDFNode s = triple.getSubject();
+        RDFNode p = triple.getPredicate();
+        RDFNode o = triple.getObject();
+
+        Term subject = getRDFNodeTerm(s);
+        Term predicate = getRDFNodeTerm(p);
+        Term object = getRDFNodeTerm(o);
+
+        Atom subjectType = getRDFTypeAtom(s);
+        Atom predicateType = getRDFTypeAtom(p);
+        Atom objectType = getRDFTypeAtom(o);
+        Term typeMap = ASSyntax.createStructure(RDF_TYPE_MAP_FUNCTOR, subjectType, predicateType, objectType);
+
+        Literal fact = ASSyntax.createLiteral(RDF_FUNCTOR, subject, predicate, object);
+        fact.addAnnot(typeMap);
+
+        return fact;
+    }
+
     @Override
     public void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException {
         Model m = ModelFactory.createDefaultModel();
 
         for (Literal t : terms) {
             try {
-                if (t.getArity() != 3) continue;
-
-                Term s = t.getTerm(0);
-                Term p = t.getTerm(1);
-                Term o = t.getTerm(2);
-
-                Term typeMap = t.getAnnot(RDF_TYPE_MAP_FUNCTOR);
-                if (!typeMap.isStructure()) continue;
-
-                Structure typeMap2 = (Structure) typeMap;
-                Term sType = typeMap2.getTerm(0);
-                Term pType = typeMap2.getTerm(1);
-                Term oType = typeMap2.getTerm(2);
-
-                RDFNode subject = getNode(s, sType);
-                RDFNode predicate = getNode(p, pType);
-                RDFNode object = getNode(o, oType);
-
-                m.add(getStatement(subject, predicate, object));
+                m.add(getTriple(t));
             } catch (IllegalArgumentException e) {
                 // TODO log
                 e.printStackTrace();
@@ -87,29 +115,13 @@ public class RDFHandler extends BaseRepresentationHandler {
         Collection<Literal> facts = new HashSet<>();
 
         for (Statement triple : m.listStatements().toList()) {
-            RDFNode s = triple.getSubject();
-            RDFNode p = triple.getPredicate();
-            RDFNode o = triple.getObject();
-
-            Term subject = getRDFNodeTerm(s);
-            Term predicate = getRDFNodeTerm(p);
-            Term object = getRDFNodeTerm(o);
-
-            Atom subjectType = getRDFTypeAtom(s);
-            Atom predicateType = getRDFTypeAtom(p);
-            Atom objectType = getRDFTypeAtom(o);
-            Term typeMap = ASSyntax.createStructure(RDF_TYPE_MAP_FUNCTOR, subjectType, predicateType, objectType);
-
-            Literal fact = ASSyntax.createLiteral(RDF_FUNCTOR, subject, predicate, object);
-            fact.addAnnot(typeMap);
-
-            facts.add(fact);
+            facts.add(getLiteral(triple));
         }
 
         return facts;
     }
 
-    private Statement getStatement(RDFNode s, RDFNode p, RDFNode o) {
+    private Statement getTripleFromNodes(RDFNode s, RDFNode p, RDFNode o) {
         if (!s.isResource())
             throw new IllegalArgumentException("Non-resource node appears as subject of a triple: " + s);
 

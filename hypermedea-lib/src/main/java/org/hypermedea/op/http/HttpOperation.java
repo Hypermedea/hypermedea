@@ -8,7 +8,7 @@ import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpHeaders;
-import org.apache.hc.core5.io.CloseMode;
+import org.apache.hc.core5.reactor.IOReactorStatus;
 import org.hypermedea.ct.RepresentationHandlers;
 import org.hypermedea.op.SynchronousOperation;
 
@@ -16,7 +16,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class HttpOperation extends SynchronousOperation {
 
@@ -31,25 +30,23 @@ public class HttpOperation extends SynchronousOperation {
           "application/rdf+xml;q=0.75," +
           "*/*;q=0.5";
 
-  private final static Logger LOGGER = Logger.getLogger(HttpOperation.class.getCanonicalName());
+  private static CloseableHttpAsyncClient client = HttpAsyncClients.createDefault();
 
   private final class HttpOperationHandler implements FutureCallback<SimpleHttpResponse> {
 
     @Override
     public void completed(SimpleHttpResponse r) {
       onResponse(new HttpResponse(r, HttpOperation.this));
-      client.close(CloseMode.GRACEFUL);
     }
 
     @Override
     public void failed(Exception ex) {
       onError();
-      client.close(CloseMode.GRACEFUL);
     }
 
     @Override
     public void cancelled() {
-      client.close(CloseMode.GRACEFUL);
+      // TODO do something?
     }
 
   }
@@ -59,16 +56,14 @@ public class HttpOperation extends SynchronousOperation {
   private final HttpOperationHandler handler;
   private final SimpleHttpRequest request;
 
-  private CloseableHttpAsyncClient client;
-
   public HttpOperation(String targetURI, Map<String, Object> formFields) {
     super(targetURI, formFields);
 
     this.target = targetURI;
     this.handler = new HttpOperationHandler();
-    this.client = HttpAsyncClients.createDefault();
 
-    this.client.start();
+    // TODO when to close the client?
+    if (client.getStatus().equals(IOReactorStatus.INACTIVE)) client.start();
 
     String methodName = getMethod();
     this.request = SimpleHttpRequest.create(methodName, getTargetURI());
