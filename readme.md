@@ -26,7 +26,7 @@ Examples of Gradle configurations are provided in the examples.
 
 ## Documentation
 
-For a documentation of operations made available to agents, refer to the [Javadoc of the latest release](https://hypermedea.github.io/javadoc/latest).
+For a documentation of operations made available to agents, refer to the [Javadoc of the latest release](https://hypermedea.github.io/javadoc/hypermedea/latest/).
 
 For documentation of the latest code base, run `./gradlew javadoc` and browse the generated
 Javadoc starting from `hypermedea-lib/build/docs/javadoc/index.html`.
