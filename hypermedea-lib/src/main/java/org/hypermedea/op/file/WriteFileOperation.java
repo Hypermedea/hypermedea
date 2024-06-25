@@ -14,6 +14,8 @@ public class WriteFileOperation extends FileOperation {
     public WriteFileOperation(String targetURI, Map<String, Object> formFields, Boolean append) {
         super(targetURI, formFields);
         this.append = append;
+
+        if (!formFields.containsKey(METHOD_NAME_FIELD)) formFields.put(METHOD_NAME_FIELD, append ? POST : PUT);
     }
 
     @Override

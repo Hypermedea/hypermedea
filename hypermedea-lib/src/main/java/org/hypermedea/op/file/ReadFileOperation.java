@@ -12,6 +12,8 @@ public class ReadFileOperation extends FileOperation {
 
     public ReadFileOperation(String targetURI, Map<String, Object> formFields) {
         super(targetURI, formFields);
+
+        if (!formFields.containsKey(METHOD_NAME_FIELD)) formFields.put(METHOD_NAME_FIELD, GET);
     }
 
     @Override
