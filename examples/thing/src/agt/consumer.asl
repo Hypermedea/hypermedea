@@ -6,26 +6,11 @@ coffeeMachineAction("http://localhost:8080/smart-coffee-machine/actions/makeDrin
 
 preferredCoffee("espresso") .
 
-hasForm(AffordanceName, Form) :-
-    rdf(Aff, "https://www.w3.org/2019/wot/td#name", AffordanceName) &
-    rdf(Aff, "https://www.w3.org/2019/wot/td#hasForm", Form)
-  .
-
-hasTarget(Form, Target) :-
-    rdf(Form, "https://www.w3.org/2019/wot/hypermedia#hasTarget", Target)
-  .
-
-hasOperationType(Form, OpType) :-
-    rdf(Form, "https://www.w3.org/2019/wot/hypermedia#hasOperationType", OpType)
-  .
-
 +!start
     <-
     // !detectPresence ;
-    // !monitorCoffeeMachineState ;
+    !monitorCoffeeMachineState ;
     !makeCoffee ;
-    // get("td.ttl") ;
-    // !toggle ;
   .
 
 +!detectPresence : presenceProperty(P)
@@ -53,43 +38,15 @@ hasOperationType(Form, OpType) :-
 
 +!makeCoffee : coffeeMachineAction(A) & preferredCoffee(Type)
     <-
-    h.expand_template(A, [kv(drinkId, Type)], Ap);
+    h.expand_template(A, [kv(drinkId, Type), kv(size, s)], Ap);
     post(Ap) ;
-    .wait({ +json(Out)[source(A)] }) ;
+    ?(json(Out)[source(Ap)]) ;
     .print(Out) ;
   .
 
 +json(Val)[source(P)] : watching(P)
     <-
     .print(Val) ;
-  .
-
-+!toggle :
-    true
-    <-
-    !readProperty("status", Status) ;
-    .print("light status: ", Status) ;
-    !invokeAction("toggle") ;
-    !readProperty("status", NewStatus) ;
-    .print("light status: ", NewStatus) .
-
-+!readProperty(PropertyName, Val) :
-    hasForm(PropertyName, Form) &
-    hasTarget(Form, Target) &
-    hasOperationType(Form, "https://www.w3.org/2019/wot/td#readProperty")
-    <-
-    get(Target) ;
-    ?(json(Val)[source(Target)]) ;
-  .
-
-+!invokeAction(ActionName) :
-    hasForm(ActionName, Form) &
-    hasTarget(Form, Target) &
-    hasOperationType(Form, "https://www.w3.org/2019/wot/td#invokeAction")
-    <-
-    // TODO POST without payload (payload below not taken into account)
-    // TODO use meta-programming to invoke the right method (Op =.. [Method, ...])?
-    post(Target, json(null)) ;
   .
 
 { include("$jacamoJar/templates/common-cartago.asl") }

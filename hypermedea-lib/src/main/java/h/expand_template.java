@@ -20,9 +20,7 @@ import java.util.Map;
  * with the mapping provided in the second argument. This mapping should be a list of key-value pairs of the form
  * <code>kv(Var, Val)</code>, which maps variable <code>Var</code> to term <code>Val</code>, interpreted as a
  * string. For instance, after executing the following action:
- * <pre>
- *     <code>expand_template("http://example.org/{id}{?ts,user}", [kv(id, res123), kv(user, alice), ...], URI)</code>
- * </pre>
+ * <pre><code>expand_template("http://example.org/{id}{?ts,user}", [kv(id, res123), kv(user, alice), ...], URI)</code></pre>
  * <code>URI</code> unifies with <code>"http://example.org/res123?user=alice"</code> (and the missing variable mapping
  * for <code>ts</code> is ignored).
  */
@@ -46,7 +44,7 @@ public class expand_template extends DefaultInternalAction {
         }
 
         // TODO if uriTerm not var: check equality
-        // TODO manage multiple variable assignment
+        // TODO manage multiple variable assignments (to same var)
 
         URITemplate tpl = new URITemplate(Identifiers.getLexicalForm(tplTerm));
 

@@ -1,3 +1,8 @@
+/*
+ * Note: this example assumes a "smart coffee machine" is running locally.
+ * This Thing is provided as example in the node-wot distribution. See
+ * https://github.com/eclipse-thingweb/node-wot/tree/master/examples/scripts
+ */
 mas thing_mas {
 
    agent consumer {
@@ -7,10 +12,6 @@ mas thing_mas {
     }
 
     workspace thing_workspace  {
-        /*
-         * note: this example requires to statically expose a simulated Thing.
-         * Run 'node src/js/thing.js' to start the simulation.
-         */
         artifact h: org.hypermedea.HypermedeaArtifact()
     }
 
