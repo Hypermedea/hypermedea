@@ -321,6 +321,18 @@ public class HypermedeaArtifact extends Artifact {
     }
 
     /**
+     * Executes {@link #post(String, String, Object[])} with an empty payload and an empty form.
+     */
+    @OPERATION
+    public void post(String resourceURI) {
+        Map<String, Object> f = new HashMap<>();
+        f.put(Operation.METHOD_NAME_FIELD, Operation.POST);
+
+        Operation op = ProtocolBindings.bind(resourceURI, f);
+        initiateOperation(op, Optional.empty());
+    }
+
+    /**
      * Executes {@link #post(String, String, Object[])} with an empty form.
      */
     @OPERATION

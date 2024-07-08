@@ -5,6 +5,7 @@ import jason.asSyntax.*;
 import org.hypermedea.ct.BaseRepresentationHandler;
 import org.hypermedea.ct.UnsupportedRepresentationException;
 import org.hypermedea.tools.Identifiers;
+import org.hypermedea.tools.KVPairs;
 
 import javax.json.*;
 import javax.json.stream.JsonGenerator;
@@ -170,30 +171,11 @@ public class JsonHandler extends BaseRepresentationHandler {
                 v.visit(s);
             }
         } else if (t.isList()) {
-            List<Term> l = ((ListTerm) t).getAsList();
-            List<Term> objectMembers = l.stream().filter(m -> isObjectMember(m)).collect(Collectors.toList());
+            ListTerm l = (ListTerm) t;
+            Map<String, Term> obj = KVPairs.getAsMap(l);
 
-            if (objectMembers.isEmpty()) {
-                v.visit(l);
-            } else {
-                // TODO warn if some non-kv members were found
-
-                Map<String, Term> obj = new HashMap<>();
-
-                for (Term m : objectMembers) {
-                    Structure kv = (Structure) m;
-
-                    // TODO warn if invalid kv was found
-                    if (kv.getArity() == 2 && isObjectMemberKey(kv.getTerm(0))) {
-                        String key = Identifiers.getLexicalForm(kv.getTerm(0));
-                        Term val = kv.getTerm(1);
-
-                        obj.put(key, val);
-                    }
-                }
-
-                v.visit(obj);
-            }
+            if (obj.isEmpty()) v.visit(l.getAsList());
+            else v.visit(obj);
         }
     }
 
@@ -233,14 +215,6 @@ public class JsonHandler extends BaseRepresentationHandler {
 
     private boolean isJsonTerm(Literal t) {
         return t.getFunctor().equals(JSON_FUNCTOR) && t.getArity() == 1 && !t.negated();
-    }
-
-    private boolean isObjectMember(Term t) {
-        return t.isStructure() && ( (Structure) t).getFunctor().equals(JSON_MEMBER_FUNCTOR);
-    }
-
-    private boolean isObjectMemberKey(Term t) {
-        return t.isAtom() || t.isString();
     }
 
     private boolean isIntegral(double d) {
