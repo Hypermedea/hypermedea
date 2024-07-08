@@ -9,6 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Utility to manage lists of key-value pairs represented in Jason as <code>[kv(K1, V1), kv(K2, V2), ...]</code>, e.g.
+ * to represent JSON objects.
+ *
+ * @see org.hypermedea.ct.json.JsonHandler
+ */
 public class KVPairs {
 
     public static final String JSON_MEMBER_FUNCTOR = "kv";
