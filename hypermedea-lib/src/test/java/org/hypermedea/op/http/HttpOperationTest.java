@@ -17,6 +17,8 @@ public class HttpOperationTest {
 
     public static final String TARGET_JSON_URI = "https://httpbin.org/put";
 
+    public static final String AUTH_URI = "https://httpbin.org/basic-auth/user/pw";
+
     @Test
     public void testGetRDF() throws IOException {
         HashMap<String, Object> f = new HashMap<>();
@@ -63,6 +65,34 @@ public class HttpOperationTest {
         f.put(Operation.METHOD_NAME_FIELD, Operation.PUT);
 
         HttpOperation op = new HttpOperation(TARGET_JSON_URI, f);
+
+        op.sendRequest();
+        Response res = op.getResponse();
+
+        assert res.getStatus().equals(Response.ResponseStatus.OK);
+    }
+
+    @Test
+    public void testNoAuth() throws IOException {
+        HashMap<String, Object> f = new HashMap<>();
+        f.put(Operation.METHOD_NAME_FIELD, Operation.GET);
+        f.put(HTTP.Authorization, "wrong payload");
+
+        HttpOperation op = new HttpOperation(AUTH_URI, f);
+
+        op.sendRequest();
+        Response res = op.getResponse();
+
+        assert res.getStatus().equals(Response.ResponseStatus.CLIENT_ERROR);
+    }
+
+    @Test
+    public void testAuth() throws IOException {
+        HashMap<String, Object> f = new HashMap<>();
+        f.put(Operation.METHOD_NAME_FIELD, Operation.GET);
+        f.put(HTTP.Authorization, HTTP.getBasicAuthField("user", "pw"));
+
+        HttpOperation op = new HttpOperation(AUTH_URI, f);
 
         op.sendRequest();
         Response res = op.getResponse();

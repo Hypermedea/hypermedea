@@ -73,7 +73,16 @@ public class HttpOperation extends SynchronousOperation {
     String methodName = getMethod();
     this.request = SimpleHttpRequest.create(methodName, getTargetURI());
 
-    addHeader(HttpHeaders.ACCEPT, ACCEPT_HEADER);
+    boolean acceptHeaderSet = false;
+
+    for (String name : formFields.keySet()) {
+      String h = HTTP.getHeader(name);
+
+      if (h != null) request.addHeader(h, formFields.get(name));
+      if (h == HTTP.Accept) acceptHeaderSet = true;
+    }
+
+    if (!acceptHeaderSet) request.addHeader(HttpHeaders.ACCEPT, ACCEPT_HEADER);
   }
 
   @Override
@@ -97,11 +106,6 @@ public class HttpOperation extends SynchronousOperation {
 
   SimpleHttpRequest getRequest() {
     return this.request;
-  }
-
-  public HttpOperation addHeader(String key, String value) {
-    this.request.addHeader(key, value);
-    return this;
   }
 
 }
