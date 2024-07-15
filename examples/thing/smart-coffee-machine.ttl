@@ -1,0 +1,85 @@
+@prefix saref: <https://saref.etsi.org/core/> .
+@prefix s4bldg: <https://saref.etsi.org/saref4bldg/> .
+@prefix qudt: <> .
+@prefix td: <https://www.w3.org/2019/wot/td#> .
+@prefix hctl: <https://www.w3.org/2019/wot/hypermedia#> .
+@prefix js: <https://www.w3.org/2019/wot/json-schema#> .
+
+<#appliance>
+    a s4bldg:ElectricAppliance, td:Thing ;
+    saref:consistsOf <#bean-tank>, <#water-tank>, <#grinder> ;
+    td:hasPropertyAffordance <#available-resource-level>, <#possible-drinks>, <#maintenance-needed>, <#served-counter> ;
+    td:hasActionAffordance <#make-drink> .
+
+<#water-tank>
+    a s4bldg:Tank ;
+    s4bldg:storageType "water" ;
+    s4bldg:nominalVolumetricCapacity 0 ;
+    saref:hasFeatureOfInterest <#water-tank-level> .
+
+<#water-tank-level>
+    saref:hasPropertyKind qudt:volume .
+
+# milk volume, chocolate mass, mass of beans
+# maintenanceNeeded, servedCounter
+
+# large/small/medium (multi-level state?), possibleDrinks
+
+<#available-resource-level>
+    a td:PropertyAffordance, js:NumberSchema ;
+    td:forProperty <#> ; # TODO enumerate affordances? Write rule for it?
+    js:readOnly true ;
+    td:isObservable false ;
+    td:hasForm [
+        hctl:hasTarget "http://192.168.1.245:8080/smart-coffee-machine/properties/availableResourceLevel{?id}" ;
+        hctl:forContentType "application/json" ;
+        hctl:hasOperationType td:readProperty, td:writeProperty ;
+    ] ;
+    td:hasUriTemplateSchema [
+        a js:ObjectSchema ;
+        js:properties [
+            a js:StringSchema ;
+            js:propertyName "id" ;
+            js:enum "water", "milk", "chocolate", "coffeeBeans" ;
+        ]
+    ] .
+
+<#make-drink>
+    a td:ActionAffordance ;
+    td:hasUriTemplateSchema [
+        a js:ObjectSchema ;
+        js:properties [
+            a js:StringSchema ;
+            js:propertyName "drinkId" ;
+        ], [
+            a js:StringSchema ;
+            js:propertyName "size" ;
+            js:enum ( "s" "m" "l" ) ;
+        ], [
+            a js:IntegerSchema ;
+            js:propertyName "quantity" ;
+            js:minimum 1 ;
+            js:maximum 5 ;
+        ]
+    ] ;
+    td:hasOutputSchema [
+        a js:ObjectSchema ;
+        js:properties [
+            a js:BooleanSchema ;
+            js:propertyName "result" ;
+        ], [
+            a js:StringSchema :
+            js:propertyName "message" ;
+        ]
+    ] .
+
+# action input/output, link between properties
+# actionAffordance td:forInvocation Action and result some Beverage
+# Beverage hasSize only (small/medium/large)
+# Espresso (Q180289), Americano (Q1152551), Cappuccino (Q159774), Latte (Q841774), HotChocolate (Q13261), HotWater (Q6097)
+# see https://www.wikidata.org/wiki/Q19359564 (hot beverage)
+
+# if action ~ writeProperty, result is... some Message and body some PropertyValue? Not really a result.
+# Rather, a StateChangeEvent: Instant and before some (Interval and p=v) and after some (Interval and p!=v)
+
+# CPS model: set of variables + finite domain (Things) / time slicing (interval ~ statement/constraint)
