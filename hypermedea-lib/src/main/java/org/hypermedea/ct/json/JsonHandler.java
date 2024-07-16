@@ -9,8 +9,8 @@ import org.hypermedea.tools.KVPairs;
 
 import javax.json.*;
 import javax.json.stream.JsonGenerator;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -52,11 +52,26 @@ public class JsonHandler extends BaseRepresentationHandler {
 
     @Override
     public Collection<Literal> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException {
-        JsonReader reader = Json.createReader(representation);
-        JsonValue value = reader.readValue();
+        JsonValue value = null;
+
+        try {
+            JsonReader reader = Json.createReader(representation);
+            value = reader.readValue();
+        } catch (JsonException e) {
+            // try to parse input as single-digit number
+            // see https://github.com/Hypermedea/hypermedea/issues/43
+            try {
+                representation.reset();
+                byte[] buf = new BufferedInputStream(representation).readAllBytes();
+                double nb = Double.parseDouble(new String(buf, StandardCharsets.UTF_8));
+
+                value = Json.createValue(nb);
+            } catch (IOException other) {
+                throw new UnsupportedRepresentationException(e);
+            }
+        }
 
         Term t = readJsonValue(value);
-
         return Arrays.asList(ASSyntax.createStructure(JSON_FUNCTOR, t));
     }
 

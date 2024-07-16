@@ -12,10 +12,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 
+import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 
 public class JsonHandlerTest {
@@ -141,6 +143,15 @@ public class JsonHandlerTest {
         String json = out.toString();
 
         assertFalse(json.equals("{}"));
+    }
+
+    @Test
+    public void testDeserializeZero() {
+        ByteArrayInputStream in = new ByteArrayInputStream("0".getBytes(StandardCharsets.UTF_8));
+        Collection<Literal> t = h.deserialize(in, "http://example.org/", "application/json");
+
+        assertEquals(t.size(), 1);
+        assertEquals(t.stream().findAny().get().toString(), "json(0)");
     }
 
     private boolean hasValue(Term t, String key) {
