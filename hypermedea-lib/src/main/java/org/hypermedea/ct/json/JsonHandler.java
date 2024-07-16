@@ -52,7 +52,7 @@ public class JsonHandler extends BaseRepresentationHandler {
 
     @Override
     public Collection<Literal> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException {
-        JsonValue value = null;
+        JsonValue value;
 
         try {
             JsonReader reader = Json.createReader(representation);

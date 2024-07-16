@@ -15,11 +15,14 @@ public class HTTP {
 
     public static final String ContentType = NS + "contentType";
 
+    public static final String Cookie = NS + "cookie";
+
     public static String getHeader(String term) {
         switch (term) {
             case Accept: return HttpHeaders.ACCEPT;
             case Authorization: return HttpHeaders.AUTHORIZATION;
             case ContentType: return HttpHeaders.CONTENT_TYPE;
+            case Cookie: return "Cookie";
             default: return null;
         }
     }
