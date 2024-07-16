@@ -26,7 +26,7 @@ public class JsonHandler extends BaseRepresentationHandler {
      */
     public static final String JSON_MEMBER_FUNCTOR = "kv";
 
-    public static final String APPLICATION_JSON_CT = "application/json";
+    public static final String[] APPLICATION_JSON_CT = { "application/json", "application/[^+]+\\+json" };
 
     public JsonHandler() {
         super(JSON_FUNCTOR, APPLICATION_JSON_CT);
@@ -52,9 +52,6 @@ public class JsonHandler extends BaseRepresentationHandler {
 
     @Override
     public Collection<Literal> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException {
-        if (!contentType.equals(APPLICATION_JSON_CT))
-            throw new UnsupportedRepresentationException("JSON handler does not support Content-Type: " + contentType);
-
         JsonReader reader = Json.createReader(representation);
         JsonValue value = reader.readValue();
 

@@ -19,7 +19,7 @@ public class PlainTextHandler extends BaseRepresentationHandler {
 
     public static final String TXT_FUNCTOR = "text";
 
-    public static final String TXT_CT = "text/plain";
+    public static final String[] TXT_CT = { "text/plain", "text/.+" };
 
     public PlainTextHandler() {
         super(TXT_FUNCTOR, TXT_CT);

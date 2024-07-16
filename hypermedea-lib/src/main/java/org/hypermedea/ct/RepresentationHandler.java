@@ -52,14 +52,18 @@ public interface RepresentationHandler {
     String getFunctor();
 
     /**
-     * Return the Content-Types in which the wrapped representation can alternatively be represented.
-     * The list is returned in order of preference, starting from the preferred Content-Type (index 0).
+     * <p>
+           Return the Content-Types in which the wrapped representation can alternatively be represented.
+           The list is returned in order of preference, starting from the preferred Content-Type (index 0).
+           A Content-Type is equivalent to a
+           <a href="https://www.iana.org/assignments/media-types/media-types.xhtml">Media-Type</a>
+           with optional parameters.
+     * </p>
+     * <p>
+     *     Elements of the returned list may also be regular expressions.
+     * </p>
      *
-     * A Content-Type is equivalent to a
-     * <a href="https://www.iana.org/assignments/media-types/media-types.xhtml">Media-Type</a>
-     * with optional parameters.
-     *
-     * @return a list of supported Content-Types
+     * @return a list of supported Content-Types or of regular expressions matching Content-Types
      */
     List<String> getSupportedContentTypes();
 
