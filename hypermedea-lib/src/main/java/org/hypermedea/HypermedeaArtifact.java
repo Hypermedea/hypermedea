@@ -506,7 +506,7 @@ public class HypermedeaArtifact extends Artifact {
             }
         }
 
-        op.setPayload(ls);
+        if (!ls.isEmpty()) op.setPayload(ls);
     }
 
     private Map<String, Object> parseFormFields(Object[] l) {

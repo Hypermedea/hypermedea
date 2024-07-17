@@ -16,6 +16,12 @@ public class RepresentationHandlers {
     private static final ServiceLoader<RepresentationHandler> loader = ServiceLoader.load(RepresentationHandler.class);
 
     public static void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException, IOException {
+        if (terms.isEmpty()) {
+            // do not write anything
+            out.close();
+            return;
+        }
+
         String fn = getDefaultFunctor(terms);
         Optional<RepresentationHandler> opt = loadFromFunctor(fn);
 

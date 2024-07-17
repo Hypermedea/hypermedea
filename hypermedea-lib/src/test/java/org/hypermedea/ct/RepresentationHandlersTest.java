@@ -15,6 +15,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -68,6 +69,14 @@ public class RepresentationHandlersTest {
         String ct = RepresentationHandlers.getDefaultContentType(t);
 
         assertEquals(ct, PlainTextHandler.TXT_CT[0]);
+    }
+
+    @Test
+    public void testEmptyRepresentation() throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        RepresentationHandlers.serialize(new HashSet<>(), out, "http://example.org/");
+
+        assertTrue(out.size() == 0);
     }
 
 }
