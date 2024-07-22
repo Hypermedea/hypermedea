@@ -19,7 +19,7 @@ repositories {
 
 dependencies {
     implementation('org.jacamo:jacamo:1.2.1')
-    implementation('org.hypermedea:hypermedea:0.4.1')
+    implementation('org.hypermedea:hypermedea:0.4.2')
     implementation('org.hypermedea:ros-binding:0.4.1')
     implementation('org.hypermedea:opcua-binding:0.4.2')
 
