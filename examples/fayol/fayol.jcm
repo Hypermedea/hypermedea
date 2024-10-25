@@ -1,7 +1,6 @@
 mas fayol_mas {
 
     agent spider {
-        goals: start
         join: fayol_workspace
         focus: fayol_workspace.h
     }

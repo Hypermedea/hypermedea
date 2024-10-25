@@ -2,8 +2,13 @@ package org.hypermedea;
 
 import jason.asSyntax.*;
 import jason.environment.Environment;
+import org.hypermedea.ct.RepresentationHandler;
+import org.hypermedea.op.Operation;
+import org.hypermedea.op.ProtocolBindings;
+import org.hypermedea.op.Response;
 import org.hypermedea.tools.Identifiers;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -103,7 +108,7 @@ public class HypermedeaEnvironment extends Environment {
     }
 
     private void checkFirstArg(String actionName, List<Term> args) {
-        if (args.size() < 1)
+        if (args.isEmpty())
             throw new RuntimeException("Action must have at least one argument: " + actionName);
 
         if (!(args.get(0) instanceof StringTerm))
@@ -145,7 +150,10 @@ public class HypermedeaEnvironment extends Environment {
     }
 
     private boolean get(String resourceURI, Map<String, Object> formFields) {
-        return false;
+        formFields.put(Operation.METHOD_NAME_FIELD, Operation.GET);
+        Operation op = ProtocolBindings.bind(resourceURI, formFields);
+
+        return runOperation(op);
     }
 
     private boolean watch(String resourceURI, Map<String, Object> formFields) {
@@ -153,23 +161,82 @@ public class HypermedeaEnvironment extends Environment {
     }
 
     private boolean forget(String resourceURI, Map<String, Object> formFields) {
-        return false;
+        Structure src = ASSyntax.createStructure("source", ASSyntax.createString(resourceURI));
+
+        // TODO do once and keep functors only
+        ServiceLoader<RepresentationHandler> loader = ServiceLoader.load(RepresentationHandler.class);
+
+        loader.forEach(h -> {
+            VarTerm[] vars = new VarTerm[h.getArity()];
+            for (int i = 0; i < vars.length; i++) vars[i] = ASSyntax.createVar();
+
+            Literal l = ASSyntax.createLiteral(h.getFunctor(), vars);
+            l.addAnnot(src);
+
+            removePerceptsByUnif(l);
+        });
+
+        return true;
     }
 
     private boolean put(String resourceURI, Collection<Literal> representation, Map<String, Object> formFields) {
-        return false;
+        formFields.put(Operation.METHOD_NAME_FIELD, Operation.PUT);
+        Operation op = ProtocolBindings.bind(resourceURI, formFields);
+
+        op.setPayload(representation);
+
+        return runOperation(op);
     }
 
     private boolean post(String resourceURI, Collection<Literal> representationPart, Map<String, Object> formFields) {
-        return false;
+        formFields.put(Operation.METHOD_NAME_FIELD, Operation.POST);
+        Operation op = ProtocolBindings.bind(resourceURI, formFields);
+
+        op.setPayload(representationPart);
+
+        return runOperation(op);
     }
 
     private boolean patch(String resourceURI, Collection<Literal> representationDiff, Map<String, Object> formFields) {
-        return false;
+        formFields.put(Operation.METHOD_NAME_FIELD, Operation.PATCH);
+        Operation op = ProtocolBindings.bind(resourceURI, formFields);
+
+        op.setPayload(representationDiff);
+
+        return runOperation(op);
     }
 
     private boolean delete(String resourceURI, Map<String, Object> formFields) {
-        return false;
+        formFields.put(Operation.METHOD_NAME_FIELD, Operation.DELETE);
+        Operation op = ProtocolBindings.bind(resourceURI, formFields);
+
+        return runOperation(op);
+    }
+
+    private boolean runOperation(Operation op) {
+        try {
+            op.sendRequest();
+            getLogger().info(op.toString());
+
+            if (!op.isAsync()) {
+                Response res = op.getResponse();
+                getLogger().info(res.toString());
+
+                if (!res.getStatus().equals(Response.ResponseStatus.OK)) {
+                    // TODO more details
+                    getLogger().warning("The server returned an error: " + res.getStatus());
+                    return false;
+                } else {
+                    forget(op.getTargetURI(), new HashMap<>());
+                    res.getPayload().forEach(this::addPercept);
+                }
+            }
+
+            return true;
+        } catch (IOException e) {
+            getLogger().warning(e.getLocalizedMessage());
+            return false;
+        }
     }
 
 }

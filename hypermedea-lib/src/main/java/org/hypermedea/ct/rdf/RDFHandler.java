@@ -51,30 +51,31 @@ public class RDFHandler extends BaseRepresentationHandler {
         super(RDF_FUNCTOR, RDF_CT);
     }
 
+    @Override
+    public int getArity() {
+        return 3;
+    }
+
     public Statement getTriple(Literal t) throws IllegalArgumentException {
-        try {
-            if (t.getArity() != 3)
-                throw new IllegalArgumentException("RDF term must be ternary: " + t);
+        if (t.getArity() != 3)
+            throw new IllegalArgumentException("RDF term must be ternary: " + t);
 
-            Term s = t.getTerm(0);
-            Term p = t.getTerm(1);
-            Term o = t.getTerm(2);
+        Term s = t.getTerm(0);
+        Term p = t.getTerm(1);
+        Term o = t.getTerm(2);
 
-            // TODO or no type map?
-            Structure typeMap = (Structure) t.getAnnot(RDF_TYPE_MAP_FUNCTOR);
+        // TODO or no type map?
+        Structure typeMap = (Structure) t.getAnnot(RDF_TYPE_MAP_FUNCTOR);
 
-            Term sType = typeMap.getTerm(0);
-            Term pType = typeMap.getTerm(1);
-            Term oType = typeMap.getTerm(2);
+        Term sType = typeMap.getTerm(0);
+        Term pType = typeMap.getTerm(1);
+        Term oType = typeMap.getTerm(2);
 
-                RDFNode subject = getTermRDFNode(s, sType);
-                RDFNode predicate = getTermRDFNode(p, pType);
-                RDFNode object = getTermRDFNode(o, oType);
+        RDFNode subject = getTermRDFNode(s, sType);
+        RDFNode predicate = getTermRDFNode(p, pType);
+        RDFNode object = getTermRDFNode(o, oType);
 
-            return getTripleFromNodes(subject, predicate, object);
-        } catch (IllegalArgumentException e) {
-            throw e;
-        }
+        return getTripleFromNodes(subject, predicate, object);
     }
 
     public Literal getLiteral(Statement triple) {

@@ -26,6 +26,11 @@ abstract public class BaseRepresentationHandler implements RepresentationHandler
     }
 
     @Override
+    public int getArity() {
+        return 1;
+    }
+
+    @Override
     public List<String> getSupportedContentTypes() {
         return supportedContentTypes;
     }

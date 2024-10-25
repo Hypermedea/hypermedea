@@ -171,7 +171,7 @@ public class HypermedeaArtifact extends Artifact {
         f.put(Operation.METHOD_NAME_FIELD, Operation.GET);
 
         Operation op = ProtocolBindings.bind(resourceURI, f);
-        initiateOperation(op, Optional.empty());
+        runOperation(op, Optional.empty());
     }
 
     /**
@@ -238,7 +238,7 @@ public class HypermedeaArtifact extends Artifact {
         op.registerResponseCallback(new Subscription(resourceURI));
         activeOperations.put(resourceURI, op);
 
-        initiateOperation(op, Optional.empty());
+        runOperation(op, Optional.empty());
     }
 
     /**
@@ -316,7 +316,7 @@ public class HypermedeaArtifact extends Artifact {
         f.put(Operation.METHOD_NAME_FIELD, Operation.PUT);
 
         Operation op = ProtocolBindings.bind(resourceURI, f);
-        initiateOperation(op, Optional.of(representation));
+        runOperation(op, Optional.of(representation));
     }
 
     /**
@@ -328,7 +328,7 @@ public class HypermedeaArtifact extends Artifact {
         f.put(Operation.METHOD_NAME_FIELD, Operation.POST);
 
         Operation op = ProtocolBindings.bind(resourceURI, f);
-        initiateOperation(op, Optional.empty());
+        runOperation(op, Optional.empty());
     }
 
     /**
@@ -388,7 +388,7 @@ public class HypermedeaArtifact extends Artifact {
         f.put(Operation.METHOD_NAME_FIELD, Operation.POST);
 
         Operation op = ProtocolBindings.bind(resourceURI, f);
-        initiateOperation(op, Optional.of(representationPart));
+        runOperation(op, Optional.of(representationPart));
     }
 
     /**
@@ -420,7 +420,7 @@ public class HypermedeaArtifact extends Artifact {
         f.put(Operation.METHOD_NAME_FIELD, Operation.PATCH);
 
         Operation op = ProtocolBindings.bind(resourceURI, f);
-        initiateOperation(op, Optional.of(representationDiff));
+        runOperation(op, Optional.of(representationDiff));
     }
 
     /**
@@ -450,7 +450,7 @@ public class HypermedeaArtifact extends Artifact {
         f.put(Operation.METHOD_NAME_FIELD, Operation.DELETE);
 
         Operation op = ProtocolBindings.bind(resourceURI, f);
-        initiateOperation(op, Optional.empty());
+        runOperation(op, Optional.empty());
     }
 
     /**
@@ -463,7 +463,7 @@ public class HypermedeaArtifact extends Artifact {
      * @param requestPayloadOpt an optional paylaod to add to the request
      * @return the input operation, for call chaining
      */
-    private Operation initiateOperation(Operation op, Optional<Object[]> requestPayloadOpt) {
+    private Operation runOperation(Operation op, Optional<Object[]> requestPayloadOpt) {
         try {
             if (requestPayloadOpt.isPresent()) {
                 Object[] requestPayload = requestPayloadOpt.get();
@@ -501,7 +501,7 @@ public class HypermedeaArtifact extends Artifact {
                 Literal t = ASSyntax.parseLiteral(l.toString());
                 ls.add(t);
             } catch (ParseException e2) {
-                String msg = "The provided request payload include a non-predicate term: " + l;
+                String msg = "The provided request payload includes a non-predicate term: " + l;
                 throw new IllegalArgumentException(msg);
             }
         }
