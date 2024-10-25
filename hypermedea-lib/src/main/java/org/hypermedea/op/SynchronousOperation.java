@@ -7,11 +7,16 @@ public abstract class SynchronousOperation extends BaseOperation {
 
     public SynchronousOperation(String targetURI, Map<String, Object> formFields) {
         super(targetURI, formFields);
+    }
 
+    @Override
+    public void sendRequest() throws OperationAlreadyStartedException, IOException {
         if (isAsync()) {
-            String msg = String.format("operation cannot be synchronous: %s %s", getMethod(), targetURI);
+            String msg = String.format("operation cannot be synchronous: %s %s", getMethod(), getTargetURI());
             throw new InvalidFormException(msg);
         }
+
+        super.sendRequest();
     }
 
     /**

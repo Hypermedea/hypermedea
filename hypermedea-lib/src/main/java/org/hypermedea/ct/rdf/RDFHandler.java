@@ -1,10 +1,14 @@
 package org.hypermedea.ct.rdf;
 
-import jason.asSyntax.*;
+import jason.NoValueException;
 import jason.asSyntax.Literal;
+import jason.asSyntax.*;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.rdf.model.*;
+import org.apache.jena.rdf.model.impl.ResourceImpl;
 import org.hypermedea.ct.BaseRepresentationHandler;
 import org.hypermedea.ct.UnsupportedRepresentationException;
+import org.hypermedea.tools.Identifiers;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -63,9 +67,9 @@ public class RDFHandler extends BaseRepresentationHandler {
             Term pType = typeMap.getTerm(1);
             Term oType = typeMap.getTerm(2);
 
-            RDFNode subject = getNode(s, sType);
-            RDFNode predicate = getNode(p, pType);
-            RDFNode object = getNode(o, oType);
+                RDFNode subject = getTermRDFNode(s, sType);
+                RDFNode predicate = getTermRDFNode(p, pType);
+                RDFNode object = getTermRDFNode(o, oType);
 
             return getTripleFromNodes(subject, predicate, object);
         } catch (IllegalArgumentException e) {
@@ -133,23 +137,42 @@ public class RDFHandler extends BaseRepresentationHandler {
         return ResourceFactory.createStatement(s.asResource(), pp, o);
     }
 
-    private RDFNode getNode(Term term, Term type) {
+    private RDFNode getTermRDFNode(Term term, Term type) {
         if (type.equals(RDF_TYPE_URI_ATOM)) {
             if (!term.isString() && !term.isAtom())
                 throw new IllegalArgumentException("URI term isn't represented as a string: " + term);
 
-            return ResourceFactory.createResource(((StringTerm) term).getString());
+            return ResourceFactory.createResource(Identifiers.getLexicalForm(term));
         } else if (type.equals(RDF_TYPE_BNODE_ATOM)) {
             if (!term.isAtom())
-                throw new IllegalArgumentException("Bnode term: " + term);
+                throw new IllegalArgumentException("Bnode term isn't an atom: " + term);
 
-            return ResourceFactory.createResource(); // FIXME should have a nodeID
+            return new ResourceImpl(AnonId.create(Identifiers.getLexicalForm(term)));
         } else if (type.equals(RDF_TYPE_LITERAL_ATOM)) {
-            // TODO proper datatype
-            return ResourceFactory.createPlainLiteral(term.toString());
+            return getTermRDFLiteral(term);
         } else {
             throw new IllegalArgumentException("Term is of unknown RDF type (" + type + "): " + term);
         }
+    }
+
+    private RDFNode getTermRDFLiteral(Term t) {
+        String lex = Identifiers.getLexicalForm(t);
+
+        if (t.isNumeric()) {
+            try {
+                double nb = ((NumberTerm) t).solve();
+                int i = (int) nb;
+
+                if (i == nb) return ResourceFactory.createTypedLiteral(lex, XSDDatatype.XSDinteger);
+                else return ResourceFactory.createTypedLiteral(lex, XSDDatatype.XSDdouble);
+            } catch (NoValueException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // TODO if structure, check if known type (e.g. WKT literal)
+
+        return ResourceFactory.createPlainLiteral(lex);
     }
 
     private Term getRDFNodeTerm(RDFNode n) {

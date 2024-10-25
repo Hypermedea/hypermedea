@@ -16,7 +16,6 @@ import org.hypermedea.tools.Identifiers;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -47,9 +46,9 @@ import java.util.stream.Collectors;
  *   {@link #get(String, Object[]) get},
  *   {@link #watch(String, Object[]) watch},
  *   {@link #forget(String, Object[]) forget},
- *   {@link #put(String, String, Object[]) put},
- *   {@link #post(String, String, Object[]) post},
- *   {@link #patch(String, String, Object[]) patch} and
+ *   {@link #put(String, Object[], Object[]) put},
+ *   {@link #post(String, Object[], Object[]) post},
+ *   {@link #patch(String, Object[], Object[]) patch} and
  *   {@link #delete(String, Object[]) delete}.
  * </p>
  * <p>
@@ -141,7 +140,7 @@ public class HypermedeaArtifact extends Artifact {
      * <pre><code>+!retrieve_then_query(URI) &lt;-
     h.target(URI, TargetURI) ;
     get(URI) ;
-    for (rdf(URI, P, O)[source(TargetURI)) {
+    for (rdf(URI, P, O)[source(TargetURI)]) {
       .print("Found: ", P, O)
     } ;
   .</code></pre>
@@ -271,10 +270,10 @@ public class HypermedeaArtifact extends Artifact {
     }
 
     /**
-     * Executes {@link #put(String, String, Object[])} with an empty form.
+     * Executes {@link #put(String, Object[], Object[])} with an empty form.
      */
     @OPERATION
-    public void put(String resourceURI, String representation) {
+    public void put(String resourceURI, Object[] representation) {
         put(resourceURI, representation, emptyForm);
     }
 
@@ -292,11 +291,11 @@ public class HypermedeaArtifact extends Artifact {
      *   metadata (modification date, author, etc.). This is why the Hypermedea artifact makes no assumption
      *   about what the new representation is. If the caller agent wants to cache the new representation, it
      *   should execute a {@link #get(String, Object[]) get} operation right after the {@link #put(String,
-     *   String, Object[]) put}, as follows:
+     *   Object[], Object[]) put}, as follows:
      * </p>
      * <pre><code>+!put_then_get(URI) &lt;-
     h.target(URI, TargetURI) ;
-    put(URI, json(5)) ;
+    put(URI, [json(5)]) ;
     get(URI) ;
     // the artifact may then expose json(5)[source(TargetURI)]
     // or, for instance, json([kv("value", 5), kv("modified", 1700304346)])[source(TargetURI)]
@@ -307,12 +306,12 @@ public class HypermedeaArtifact extends Artifact {
      * </p>
      *
      * @param resourceURI the URI of a resource
-     * @param representation a resource representation to send to the server, in the form of a Jason literal
+     * @param representation a resource representation to send to the server, in the form of Jason literals
      * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the
      *                   protocol binding or the payload binding
      */
     @OPERATION
-    public void put(String resourceURI, String representation, Object[] formFields) {
+    public void put(String resourceURI, Object[] representation, Object[] formFields) {
         Map<String, Object> f = parseFormFields(formFields);
         f.put(Operation.METHOD_NAME_FIELD, Operation.PUT);
 
@@ -321,17 +320,29 @@ public class HypermedeaArtifact extends Artifact {
     }
 
     /**
-     * Executes {@link #post(String, String, Object[])} with an empty form.
+     * Executes {@link #post(String, Object[], Object[])} with an empty payload and an empty form.
      */
     @OPERATION
-    public void post(String resourceURI, String representationPart) {
+    public void post(String resourceURI) {
+        Map<String, Object> f = new HashMap<>();
+        f.put(Operation.METHOD_NAME_FIELD, Operation.POST);
+
+        Operation op = ProtocolBindings.bind(resourceURI, f);
+        initiateOperation(op, Optional.empty());
+    }
+
+    /**
+     * Executes {@link #post(String, Object[], Object[])} with an empty form.
+     */
+    @OPERATION
+    public void post(String resourceURI, Object[] representationPart) {
         post(resourceURI, representationPart, emptyForm);
     }
 
     /**
      * <p>
      *   Asks the server to append the provided {@code representationPart} to the current representation
-     *   of {@code resourceURI}. As for {@link #put(String, String, Object[]) put}, it is not guaranteed
+     *   of {@code resourceURI}. As for {@link #put(String, Object[], Object[]) put}, it is not guaranteed
      *   that the server does exactly what the agent asked. It may remove other parts of the representation
      *   to maintain consistency or add more information to it.
      * </p>
@@ -347,7 +358,7 @@ public class HypermedeaArtifact extends Artifact {
      * </p>
      * <pre><code>+!post_then_follow_link(URI) &lt;-
     h.target(URI, TargetURI) ;
-    post(URI, json(5)) ;
+    post(URI, [json(5)]) ;
     ?(rdf(TargetURI, "related", CreatedResourceURI)) ;
     .print("Created resource: ", CreatedResourceURI) ;
     h.target(CreatedResourceURI, CreatedTargetURI) ;
@@ -361,18 +372,18 @@ public class HypermedeaArtifact extends Artifact {
      *   <a href="http://purl.org/dc/terms/hasPart"><code>dct:hasPart</code></a>).
      * </p>
      * <p>
-     *   Note that, as for {@link #put(String, String, Object[]) put}, if the Hypermedea artifact had
+     *   Note that, as for {@link #put(String, Object[], Object[]) put}, if the Hypermedea artifact had
      *   a representation of {@code resourceURI} before the operation, this representation is deleted
      *   when the call returns.
      * </p>
      *
      * @param resourceURI the URI of a resource
-     * @param representationPart part of a resource representation to send to the server, in the form of a Jason literal
+     * @param representationPart part of a resource representation to send to the server, in the form of Jason literals
      * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the
      *                   protocol binding or the payload binding
      */
     @OPERATION
-    public void post(String resourceURI, String representationPart, Object[] formFields) {
+    public void post(String resourceURI, Object[] representationPart, Object[] formFields) {
         Map<String, Object> f = parseFormFields(formFields);
         f.put(Operation.METHOD_NAME_FIELD, Operation.POST);
 
@@ -381,10 +392,10 @@ public class HypermedeaArtifact extends Artifact {
     }
 
     /**
-     * Executes {@link #patch(String, String, Object[])} with an empty form.
+     * Executes {@link #patch(String, Object[], Object[])} with an empty form.
      */
     @OPERATION
-    public void patch(String resourceURI, String representationDiff) {
+    public void patch(String resourceURI, Object[] representationDiff) {
         patch(resourceURI, representationDiff, emptyForm);
     }
 
@@ -404,7 +415,7 @@ public class HypermedeaArtifact extends Artifact {
      *                   protocol binding or the payload binding
      */
     @OPERATION
-    public void patch(String resourceURI, String representationDiff, Object[] formFields) {
+    public void patch(String resourceURI, Object[] representationDiff, Object[] formFields) {
         Map<String, Object> f = parseFormFields(formFields);
         f.put(Operation.METHOD_NAME_FIELD, Operation.PATCH);
 
@@ -450,12 +461,12 @@ public class HypermedeaArtifact extends Artifact {
      *
      * @param op an operation bound to a protocol binding
      * @param requestPayloadOpt an optional paylaod to add to the request
-     * @return the input operation, for further
+     * @return the input operation, for call chaining
      */
-    private Operation initiateOperation(Operation op, Optional<String> requestPayloadOpt) {
+    private Operation initiateOperation(Operation op, Optional<Object[]> requestPayloadOpt) {
         try {
             if (requestPayloadOpt.isPresent()) {
-                String requestPayload = requestPayloadOpt.get();
+                Object[] requestPayload = requestPayloadOpt.get();
                 setPayload(op, requestPayload);
             }
 
@@ -482,29 +493,20 @@ public class HypermedeaArtifact extends Artifact {
         return op;
     }
 
-    private void setPayload(Operation op, String requestPayload) {
-        try {
-            Literal t = ASSyntax.parseLiteral(requestPayload);
-            op.setPayload(t);
-        } catch (ParseException e) {
+    private void setPayload(Operation op, Object[] requestPayload) {
+        Collection<Literal> ls = new HashSet<>();
+
+        for (Object l : requestPayload) {
             try {
-                // FIXME will never work: payload given as String, not String[]
-                List<Term> l = ASSyntax.parseList(requestPayload).getAsList();
-
-                Optional<Term> nonStructureOpt = l.stream().filter(t -> !t.isStructure()).findAny();
-                if (nonStructureOpt.isPresent()) {
-                    String msg = "The provided request payload include a non-predicate term: " + nonStructureOpt.get();
-                    throw new IllegalArgumentException();
-                }
-
-                List<Literal> ls = l.stream().map(t -> (Literal) t).collect(Collectors.toList());
-
-                op.setPayload(ls);
+                Literal t = ASSyntax.parseLiteral(l.toString());
+                ls.add(t);
             } catch (ParseException e2) {
-                String msg = "The provided request payload isn't a proper (list of) Jason predicate(s): " + requestPayload;
-                throw new IllegalArgumentException(msg, e2);
+                String msg = "The provided request payload include a non-predicate term: " + l;
+                throw new IllegalArgumentException(msg);
             }
         }
+
+        if (!ls.isEmpty()) op.setPayload(ls);
     }
 
     private Map<String, Object> parseFormFields(Object[] l) {

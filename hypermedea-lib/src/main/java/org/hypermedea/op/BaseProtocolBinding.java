@@ -1,5 +1,7 @@
 package org.hypermedea.op;
 
+import org.hypermedea.tools.URITemplate;
+
 import java.util.Map;
 
 /**

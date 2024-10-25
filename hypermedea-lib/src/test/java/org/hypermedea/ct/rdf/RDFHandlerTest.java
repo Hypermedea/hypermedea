@@ -1,6 +1,9 @@
 package org.hypermedea.ct.rdf;
 
-import jason.asSyntax.*;
+import jason.asSyntax.ASSyntax;
+import jason.asSyntax.ListTerm;
+import jason.asSyntax.Literal;
+import jason.asSyntax.Term;
 import jason.asSyntax.parser.ParseException;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -8,9 +11,13 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.HashSet;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class RDFHandlerTest {
 
@@ -41,20 +48,31 @@ public class RDFHandlerTest {
         Model m = ModelFactory.createDefaultModel();
         m.read(in, "http://example.org/", "text/turtle");
 
-        assert m.size() == 4;
+        assertEquals(4, m.size());
 
-        // TODO further test
+        Model expected = ModelFactory.createDefaultModel();
+        expected.read(new StringReader(TEST_RDF_GRAPH), null, "TTL");
+
+        assertTrue(m.getGraph().isIsomorphicWith(expected.getGraph()));
     }
 
     @Test
-    public void testDeserialize() throws UnsupportedEncodingException {
+    public void testDeserialize() throws UnsupportedEncodingException, ParseException {
         ByteArrayInputStream in = new ByteArrayInputStream(TEST_RDF_GRAPH.getBytes("UTF-8"));
 
         Collection<Literal> terms = h.deserialize(in, "http://example.org/", "text/turtle");
 
-        assert terms.size() == 4;
+        assertEquals(4, terms.size());
 
-        // TODO further test
+        ListTerm expected = ASSyntax.parseList(TEST_RDF_TERM);
+
+        Collection<Term> termsWithoutAnnot = new HashSet<>();
+        termsWithoutAnnot.addAll(terms);
+        ListTerm actual = ASSyntax.createList(termsWithoutAnnot);
+
+        // note: only the bnode differs between expected/actual
+        assertEquals(1, expected.difference(actual).size());
+        assertEquals(1, actual.difference(expected).size());
     }
 
 }

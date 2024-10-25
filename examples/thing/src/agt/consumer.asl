@@ -1,48 +1,52 @@
-hasForm(AffordanceName, Form) :-
-    rdf(Aff, "https://www.w3.org/2019/wot/td#name", AffordanceName) &
-    rdf(Aff, "https://www.w3.org/2019/wot/td#hasForm", Form)
-  .
+presenceProperty("mqtt://test.mosquitto.org/PresenceSensor/events/presenceDetected") .
 
-hasTarget(Form, Target) :-
-    rdf(Form, "https://www.w3.org/2019/wot/hypermedia#hasTarget", Target)
-  .
+// TODO from Plugfest instead?
+coffeeMachineState("http://localhost:8080/smart-coffee-machine/properties/allAvailableResources") .
+coffeeMachineAction("http://localhost:8080/smart-coffee-machine/actions/makeDrink{?drinkId,size,quantity}") .
 
-hasOperationType(Form, OpType) :-
-    rdf(Form, "https://www.w3.org/2019/wot/hypermedia#hasOperationType", OpType)
-  .
+preferredCoffee("espresso") .
 
-+!start :
-    true
++!start
     <-
-    get("http://localhost:8080/td") ;
-    !toggle ;
+    // !detectPresence ;
+    !monitorCoffeeMachineState ;
+    !makeCoffee ;
   .
 
-+!toggle :
-    true
++!detectPresence : presenceProperty(P)
     <-
-    !readProperty("status", Status) ;
-    .print("light status: ", Status) ;
-    !invokeAction("toggle") ;
-    !readProperty("status", NewStatus) ;
-    .print("light status: ", NewStatus) .
-
-+!readProperty(PropertyName, Val) :
-    hasForm(PropertyName, Form) &
-    hasTarget(Form, Target) &
-    hasOperationType(Form, "https://www.w3.org/2019/wot/td#readProperty")
-    <-
-    get(Target) ;
-    ?(json(Val)[source(Target)]) ;
+    watch(P) ;
+    +watching(P) ;
+    // FIXME no notification received... (simulator is down?)
   .
 
-+!invokeAction(ActionName) :
-    hasForm(ActionName, Form) &
-    hasTarget(Form, Target) &
-    hasOperationType(Form, "https://www.w3.org/2019/wot/td#invokeAction")
++!monitorCoffeeMachineState : coffeeMachineState(S)
     <-
-    // TODO POST without payload (payload below not taken into account)
-    post(Target, json(null)) ;
+    if (not watching(S)) { +watching(S) } ;
+    get(S) ;
+    .wait(5000) ;
+    !!monitorCoffeeMachineState ;
+  .
+
++!makeCoffee : coffeeMachineAction(A) & not preferredCoffee(_)
+    <-
+    h.expand_template(A, [], Ap);
+    post(Ap) ;
+    .wait({ +json(Out)[source(A)] }) ;
+    .print(Out) ;
+  .
+
++!makeCoffee : coffeeMachineAction(A) & preferredCoffee(Type)
+    <-
+    h.expand_template(A, [kv(drinkId, Type), kv(size, s)], Ap);
+    post(Ap) ;
+    ?(json(Out)[source(Ap)]) ;
+    .print(Out) ;
+  .
+
++json(Val)[source(P)] : watching(P)
+    <-
+    .print(Val) ;
   .
 
 { include("$jacamoJar/templates/common-cartago.asl") }

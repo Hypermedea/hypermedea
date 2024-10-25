@@ -1,0 +1,13 @@
+mas siram_mas {
+
+   agent controller {
+          goals: start
+          join: siram_workspace
+          focus: siram_workspace.h
+    }
+
+    workspace siram_workspace  {
+        artifact h: org.hypermedea.HypermedeaArtifact()
+    }
+
+}

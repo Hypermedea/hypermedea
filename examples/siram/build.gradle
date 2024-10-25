@@ -1,31 +1,28 @@
-/**
- * Example project using the ThingArtifact class to ease interaction with WoT devices described by Thing Descriptions.
- *
- */
-
 defaultTasks 'run'
 
 apply plugin: 'java'
 
-version '0.1'
-group   'org.jacamo'
+version '1.0'
+group   'org.hypermedea'
 
 repositories {
     mavenCentral()
-
+    mavenLocal() // favors dev artifacts over prod
+    
     // artifact repository for JaCaMo-related project
     maven { url "https://raw.githubusercontent.com/jacamo-lang/mvn-repo/master" }
     maven { url "https://repo.gradle.org/gradle/libs-releases" }
     // artifact repository for Hypermedea dependencies
     maven { url 'https://hypermedea.github.io/maven' }
-
-    mavenLocal()
 }
 
 dependencies {
     implementation('org.jacamo:jacamo:1.2.1')
     implementation('org.hypermedea:hypermedea:0.4.2')
-    implementation('org.hypermedea:mqtt-binding:0.4.1')
+    implementation('org.hypermedea:ros-binding:0.4.1')
+    implementation('org.hypermedea:opcua-binding:0.4.2')
+
+    runtimeOnly('org.slf4j:slf4j-reload4j:2.0.6')
 }
 
 sourceSets {
@@ -43,13 +40,13 @@ sourceSets {
 }
 
 task run (type: JavaExec, dependsOn: 'classes') {
-    group ' JaCaMo'
+    group       ' JaCaMo'
     description 'runs the JaCaMo application'
     doFirst {
         mkdir 'log'
     }
     main 'jacamo.infra.JaCaMoLauncher'
-    args 'thing.jcm'
+    args 'siram.jcm'
     classpath sourceSets.main.runtimeClasspath
 }
 

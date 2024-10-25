@@ -1,4 +1,4 @@
-package org.hypermedea.op;
+package org.hypermedea.tools;
 
 import java.util.*;
 
@@ -68,11 +68,13 @@ public class URITemplate {
             int n = variables.size();
             for (int i = 0; i < n; i++) {
                 String variable = variables.get(i);
-                Object object = values.get(variable);
-                String value = getValue(object);
-                s = s + variable + "=" + value;
-                if (i != n - 1) {
-                    s = s + "&";
+                if (values.containsKey(variable)) {
+                    Object object = values.get(variable);
+                    String value = getValue(object);
+                    s = s + variable + "=" + value;
+                    if (i != n - 1) {
+                        s = s + "&";
+                    }
                 }
             }
         } else {

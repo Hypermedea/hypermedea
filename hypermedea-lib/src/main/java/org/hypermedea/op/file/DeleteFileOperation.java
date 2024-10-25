@@ -10,6 +10,8 @@ public class DeleteFileOperation extends FileOperation {
 
     public DeleteFileOperation(String targetURI, Map<String, Object> formFields) {
         super(targetURI, formFields);
+
+        if (!formFields.containsKey(METHOD_NAME_FIELD)) formFields.put(METHOD_NAME_FIELD, DELETE);
     }
 
     @Override

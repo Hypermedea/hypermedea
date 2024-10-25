@@ -5,11 +5,12 @@ import jason.asSyntax.*;
 import org.hypermedea.ct.BaseRepresentationHandler;
 import org.hypermedea.ct.UnsupportedRepresentationException;
 import org.hypermedea.tools.Identifiers;
+import org.hypermedea.tools.KVPairs;
 
 import javax.json.*;
 import javax.json.stream.JsonGenerator;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,7 @@ public class JsonHandler extends BaseRepresentationHandler {
      */
     public static final String JSON_MEMBER_FUNCTOR = "kv";
 
-    public static final String APPLICATION_JSON_CT = "application/json";
+    public static final String[] APPLICATION_JSON_CT = { "application/json", "application/[^+]+\\+json" };
 
     public JsonHandler() {
         super(JSON_FUNCTOR, APPLICATION_JSON_CT);
@@ -51,14 +52,26 @@ public class JsonHandler extends BaseRepresentationHandler {
 
     @Override
     public Collection<Literal> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException {
-        if (!contentType.equals(APPLICATION_JSON_CT))
-            throw new UnsupportedRepresentationException("JSON handler does not support Content-Type: " + contentType);
+        JsonValue value;
 
-        JsonReader reader = Json.createReader(representation);
-        JsonValue value = reader.readValue();
+        try {
+            JsonReader reader = Json.createReader(representation);
+            value = reader.readValue();
+        } catch (JsonException e) {
+            // try to parse input as single-digit number
+            // see https://github.com/Hypermedea/hypermedea/issues/43
+            try {
+                representation.reset();
+                byte[] buf = new BufferedInputStream(representation).readAllBytes();
+                double nb = Double.parseDouble(new String(buf, StandardCharsets.UTF_8));
+
+                value = Json.createValue(nb);
+            } catch (IOException other) {
+                throw new UnsupportedRepresentationException(e);
+            }
+        }
 
         Term t = readJsonValue(value);
-
         return Arrays.asList(ASSyntax.createStructure(JSON_FUNCTOR, t));
     }
 
@@ -170,30 +183,11 @@ public class JsonHandler extends BaseRepresentationHandler {
                 v.visit(s);
             }
         } else if (t.isList()) {
-            List<Term> l = ((ListTerm) t).getAsList();
-            List<Term> objectMembers = l.stream().filter(m -> isObjectMember(m)).collect(Collectors.toList());
+            ListTerm l = (ListTerm) t;
+            Map<String, Term> obj = KVPairs.getAsMap(l);
 
-            if (objectMembers.isEmpty()) {
-                v.visit(l);
-            } else {
-                // TODO warn if some non-kv members were found
-
-                Map<String, Term> obj = new HashMap<>();
-
-                for (Term m : objectMembers) {
-                    Structure kv = (Structure) m;
-
-                    // TODO warn if invalid kv was found
-                    if (kv.getArity() == 2 && isObjectMemberKey(kv.getTerm(0))) {
-                        String key = Identifiers.getLexicalForm(kv.getTerm(0));
-                        Term val = kv.getTerm(1);
-
-                        obj.put(key, val);
-                    }
-                }
-
-                v.visit(obj);
-            }
+            if (obj.isEmpty()) v.visit(l.getAsList());
+            else v.visit(obj);
         }
     }
 
@@ -233,14 +227,6 @@ public class JsonHandler extends BaseRepresentationHandler {
 
     private boolean isJsonTerm(Literal t) {
         return t.getFunctor().equals(JSON_FUNCTOR) && t.getArity() == 1 && !t.negated();
-    }
-
-    private boolean isObjectMember(Term t) {
-        return t.isStructure() && ( (Structure) t).getFunctor().equals(JSON_MEMBER_FUNCTOR);
-    }
-
-    private boolean isObjectMemberKey(Term t) {
-        return t.isAtom() || t.isString();
     }
 
     private boolean isIntegral(double d) {

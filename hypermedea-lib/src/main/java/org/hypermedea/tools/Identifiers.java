@@ -46,7 +46,7 @@ public class Identifiers {
         if (t.isAtom()) return t.toString();
         else if (t.isString()) return ((StringTerm) t).getString();
 
-        return null;
+        return t.toString();
     }
 
     public static URI getFileIRI(String filename) {

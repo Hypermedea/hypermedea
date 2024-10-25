@@ -15,12 +15,10 @@
         td:name "status" ;
         td:title "Light status" ;
         td:hasForm [
-            htv:methodName "GET" ;
             hctl:hasTarget <status> ;
             hctl:forContentType "application/json" ;
             hctl:hasOperationType td:readProperty ;
         ], [
-            htv:methodName "PUT" ;
             hctl:hasTarget <status> ;
             hctl:forContentType "application/json" ;
             hctl:hasOperationType td:writeProperty ;
@@ -31,7 +29,6 @@
         td:name "toggle" ;
         td:title "Toggle action" ;
         td:hasForm [
-            htv:methodName "PUT" ;
             hctl:hasTarget <toggle> ;
             hctl:forContentType "application/json" ;
             hctl:hasOperationType td:invokeAction ;

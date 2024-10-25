@@ -16,6 +16,12 @@ public class RepresentationHandlers {
     private static final ServiceLoader<RepresentationHandler> loader = ServiceLoader.load(RepresentationHandler.class);
 
     public static void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException, IOException {
+        if (terms.isEmpty()) {
+            // do not write anything
+            out.close();
+            return;
+        }
+
         String fn = getDefaultFunctor(terms);
         Optional<RepresentationHandler> opt = loadFromFunctor(fn);
 
@@ -69,12 +75,29 @@ public class RepresentationHandlers {
     }
 
     private static Optional<RepresentationHandler> loadFromContentType(String ct) {
+        Map<Integer, RepresentationHandler> exactMatches = new HashMap<>();
+        Collection<RepresentationHandler> closeMatches = new ArrayList<>();
+
         for (RepresentationHandler h : loader) {
-            // TODO hierarchy of Content-Types: take handler with highest rank for ct
-            if (h.getSupportedContentTypes().contains(ct)) return Optional.of(h);
+            List<String> supportedCTs = h.getSupportedContentTypes();
+
+            for (int i = 0; i < supportedCTs.size(); i++) {
+                String supportedCT = supportedCTs.get(i);
+
+                if (supportedCT.equals(ct)) {
+                    // record index of CT for handler (0: favorite)
+                    exactMatches.put(i, h);
+                    break;
+                } else if (ct.matches(supportedCT)) {
+                    closeMatches.add(h);
+                }
+            }
         }
 
-        return Optional.empty();
+        Optional<Integer> rankOpt = exactMatches.keySet().stream().sorted().findFirst();
+
+        if (rankOpt.isPresent()) return Optional.of(exactMatches.get(rankOpt.get()));
+        else return closeMatches.stream().findFirst();
     }
 
     private RepresentationHandlers() {}
