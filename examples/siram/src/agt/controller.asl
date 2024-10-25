@@ -79,8 +79,8 @@ mir_move_base_payload(Tag, json([
 
 +!sendTo(Loc) : mir_move_base_payload(Loc, P)
     <-
-    post("ros+ws://10.1.0.65:9090/move_base", [P], ["https://github.com/RobotWebTools/rosbridge_suite/blob/ros1/ROSBRIDGE_PROTOCOL.md#messageType", "mir_actions/MirMoveBaseActionGoal"]) ;
-    ?rdf(A, "https://github.com/RobotWebTools/rosbridge_suite/blob/ros1/ROSBRIDGE_PROTOCOL.md#goalId", Id) ;
+    post("ros+ws://10.1.0.65:9090/move_base", [P], ["urn:hypermedea:ros:messageType", "mir_actions/MirMoveBaseActionGoal"]) ;
+    ?rdf(A, "urn:hypermedea:ros:goalId", Id) ;
     watch(Id) ;
     +watching(Loc, Id) ;
     .wait({ +sentTo(Loc) }) ;

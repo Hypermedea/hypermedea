@@ -7,14 +7,13 @@ group   'org.hypermedea'
 
 repositories {
     mavenCentral()
+    mavenLocal() // favors dev artifacts over prod
     
     // artifact repository for JaCaMo-related project
     maven { url "https://raw.githubusercontent.com/jacamo-lang/mvn-repo/master" }
     maven { url "https://repo.gradle.org/gradle/libs-releases" }
     // artifact repository for Hypermedea dependencies
     maven { url 'https://hypermedea.github.io/maven' }
-
-    mavenLocal()
 }
 
 dependencies {
