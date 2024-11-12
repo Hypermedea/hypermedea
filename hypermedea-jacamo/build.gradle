@@ -5,10 +5,17 @@ plugins {
     id 'application'
 }
 
-version '0.4.1'
+version '0.4.2'
 group   'org.hypermedea'
 
 startScripts.applicationName 'hypermedea'
+
+java {
+    toolchain {
+        // ensures compatibility with JaCaMo 1.2
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
 
 repositories {
     mavenCentral()
