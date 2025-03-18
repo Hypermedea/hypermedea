@@ -1,0 +1,9 @@
+MAS fayol {
+
+  environment: org.hypermedea.HypermedeaEnvironment
+
+  agents: spider;
+
+  aslSourcePath: "src/agt";
+
+}

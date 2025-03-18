@@ -229,6 +229,8 @@ public class HypermedeaEnvironment extends Environment {
                 } else {
                     forget(op.getTargetURI(), new HashMap<>());
                     res.getPayload().forEach(this::addPercept);
+
+                    // TODO addAnnot source(URI); should be done in Response object?
                 }
             }
 
