@@ -9,7 +9,7 @@ knownResource(URI) :- rdf(_, _, _)[source(URI)] .
     true
     <-
     // crawl the building's topology
-    !crawl("https://territoire.emse.fr/kg/emse/fayol/")
+    !crawl("https://ci.mines-stetienne.fr/emse/fayol/")
   .
 
 +!crawl(URI) :

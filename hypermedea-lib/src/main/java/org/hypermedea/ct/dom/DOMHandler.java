@@ -57,8 +57,8 @@ public class DOMHandler extends BaseRepresentationHandler {
         MapTerm m = new MapTermImpl();
 
         m.put(ASSyntax.createAtom("tag"), ASSyntax.createAtom(e.tagName()));
-        // TODO text slows down printing; optimize
-        // m.put(ASSyntax.createAtom("text"), ASSyntax.createString(e.text()));
+        // TODO text might be duplicated many times: expose node hierarchy instead?
+        m.put(ASSyntax.createAtom("text"), ASSyntax.createString(e.text()));
 
         m.put(ASSyntax.createAtom("attributes"), getAsMap(e.attributes()));
         m.put(ASSyntax.createAtom("children"), getAsList(e.children()));

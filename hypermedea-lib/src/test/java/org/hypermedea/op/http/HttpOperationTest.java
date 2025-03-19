@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public class HttpOperationTest {
 
-    public static final String SOURCE_RDF_URI = "https://territoire.emse.fr/kg/emse/fayol/4ET";
+    public static final String SOURCE_RDF_URI = "https://ci.mines-stetienne.fr/emse/fayol/4ET";
 
     public static final String SOURCE_JSON_URI = "https://httpbin.org/get";
 
@@ -31,7 +31,7 @@ public class HttpOperationTest {
 
         assert res.getStatus().equals(Response.ResponseStatus.OK);
 
-        assert res.getPayload().size() == 45;
+        assert res.getPayload().size() == 471;
     }
 
     @Test

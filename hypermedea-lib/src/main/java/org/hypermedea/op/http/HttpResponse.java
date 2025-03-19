@@ -36,6 +36,8 @@ public class HttpResponse extends BaseResponse {
 
   private final SimpleHttpResponse response;
 
+  private Collection<Literal> payload = null;
+
   public HttpResponse(SimpleHttpResponse response, Operation op) {
     super(op);
 
@@ -52,23 +54,27 @@ public class HttpResponse extends BaseResponse {
 
   @Override
   public Collection<Literal> getPayload() {
-    Collection<Literal> terms = new HashSet<>();
-    byte[] bytes = response.getBodyBytes();
+    if (payload == null) {
+      payload = new HashSet<>();
+      byte[] bytes = response.getBodyBytes();
 
-    if (bytes == null) return terms;
+      if (bytes == null) return payload;
 
-    InputStream in = new ByteArrayInputStream(bytes);
-    String ct = getContentType();
+      InputStream in = new ByteArrayInputStream(bytes);
+      String ct = getContentType();
 
-    try {
-      terms.addAll(RepresentationHandlers.deserialize(in, operation.getTargetURI(), ct));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+      try {
+        payload.addAll(RepresentationHandlers.deserialize(in, operation.getTargetURI(), ct));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+
+      payload.addAll(getLinks());
     }
 
-    terms.addAll(getLinks());
+    // if payload had already been deserialized, return it immediately
 
-    return terms;
+    return payload;
   }
 
   public Collection<Literal> getLinks() {

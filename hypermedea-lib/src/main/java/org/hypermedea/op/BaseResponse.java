@@ -21,10 +21,10 @@ public abstract class BaseResponse implements Response {
 
     builder.append(String.format("[%s] %s", this.getClass().getSimpleName(), getStatus()));
 
-    builder.append(String.format(", Payload: "));
+    builder.append(", Payload: ");
 
     if (!getPayload().isEmpty()) {
-      String str = Terms.getOneLineString(getPayload());
+      String str = Terms.getSummary(getPayload());
       builder.append(str);
     } else {
       builder.append("<none>");
