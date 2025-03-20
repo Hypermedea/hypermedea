@@ -4,11 +4,7 @@ import jason.asSyntax.*;
 import org.hypermedea.ct.BaseRepresentationHandler;
 import org.hypermedea.ct.UnsupportedRepresentationException;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Attributes;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.nodes.FormElement;
-import org.jsoup.select.Elements;
+import org.jsoup.nodes.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,11 +53,9 @@ public class DOMHandler extends BaseRepresentationHandler {
         MapTerm m = new MapTermImpl();
 
         m.put(ASSyntax.createAtom("tag"), ASSyntax.createAtom(e.tagName()));
-        // TODO text might be duplicated many times: expose node hierarchy instead?
-        m.put(ASSyntax.createAtom("text"), ASSyntax.createString(e.text()));
 
         m.put(ASSyntax.createAtom("attributes"), getAsMap(e.attributes()));
-        m.put(ASSyntax.createAtom("children"), getAsList(e.children()));
+        m.put(ASSyntax.createAtom("child_nodes"), getAsList(e.childNodes()));
 
         // TODO add prefix, localName if XML?
 
@@ -80,18 +74,17 @@ public class DOMHandler extends BaseRepresentationHandler {
         return m;
     }
 
-    private ListTerm getAsList(List<FormElement> forms) {
+    private ListTerm getAsList(List<? extends Node> forms) {
         ListTerm list = ASSyntax.createList();
 
-        forms.forEach(e -> list.append(getAsMap(e)));
-
-        return list;
-    }
-
-    private ListTerm getAsList(Elements elements) {
-        ListTerm list = ASSyntax.createList();
-
-        elements.forEach(e -> list.append(getAsMap(e)));
+        forms.forEach(n -> {
+            if (n instanceof Element) {
+                list.append(getAsMap((Element) n));
+            } else if (n instanceof TextNode) {
+                TextNode tn = (TextNode) n;
+                if (!tn.isBlank()) list.append(ASSyntax.createString(tn.getWholeText()));
+            }
+        });
 
         return list;
     }

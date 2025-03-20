@@ -14,17 +14,15 @@ import static org.junit.Assert.assertTrue;
 
 public class DOMHandlerTest {
 
-    public static final String HTML_DOC = "<html lang=\"en\" class=\"e\">\n" +
-            "  <head>\n" +
-            "    <title>Test page</title>\n" +
-            "  </head>\n" +
-            "  <body>\n" +
-            "    Hi!\n" +
-            "  </body>\n" +
+    public static final String HTML_DOC = "<html lang=\"en\" class=\"e\">" +
+            "<head><title>Test page</title></head>" +
+            "<body>Hi <a href=\"https://jason-lang.github.io/\">Jason</a>!</body>" +
             "</html>\n";
 
+    public static final String XML_DOC = "";
+
     @Test
-    public void testRoundTrip() throws IOException {
+    public void testDeserializeHTML() throws IOException {
         DOMHandler h = new DOMHandler();
         InputStream in = new ByteArrayInputStream(HTML_DOC.getBytes());
 
@@ -38,19 +36,23 @@ public class DOMHandlerTest {
 
         MapTerm domMap = (MapTerm) dom.getTerm(0);
 
+        ListTerm links = (ListTerm) domMap.get(ASSyntax.createAtom("links"));
+        assertEquals(1, links.size());
+
         MapTerm root = (MapTerm) domMap.get(ASSyntax.createAtom("document_element"));
 
         Term tag = root.get(ASSyntax.createAtom("tag"));
         assertEquals("html", Identifiers.getLexicalForm(tag));
 
-        ListTerm list = (ListTerm) root.get(ASSyntax.createAtom("children"));
+        ListTerm list = (ListTerm) root.get(ASSyntax.createAtom("child_nodes"));
         MapTerm body = (MapTerm) list.get(1);
 
         tag = body.get(ASSyntax.createAtom("tag"));
         assertEquals("body", Identifiers.getLexicalForm(tag));
 
-        Term text = body.get(ASSyntax.createAtom("text"));
-        assertEquals("Hi!", Identifiers.getLexicalForm(text));
+        ListTerm bodyNodes = (ListTerm) body.get(ASSyntax.createAtom("child_nodes"));
+        Term text = bodyNodes.get(0);
+        assertTrue(Identifiers.getLexicalForm(text).contains("Hi"));
     }
 
 }
