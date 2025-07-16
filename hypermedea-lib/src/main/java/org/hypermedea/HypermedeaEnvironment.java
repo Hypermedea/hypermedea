@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * <i>Not yet implemented.</i>
+ * <i>Not yet fully implemented.</i>
  */
 public class HypermedeaEnvironment extends Environment {
 
@@ -31,7 +31,10 @@ public class HypermedeaEnvironment extends Environment {
 
         if (lastArg.isMap()) { // assumed to be a form
             MapTerm formArg = (MapTerm) lastArg;
-            for (Term k : formArg.keys()) form.put(Identifiers.getLexicalForm(k), formArg.get(k));
+            for (Term k : formArg.keys()) {
+                Term v = formArg.get(k);
+                form.put(Identifiers.getLexicalForm(k), Identifiers.getLexicalForm(v));
+            }
         }
 
         Optional<Term> payloadOpt = args.stream().filter(t -> t.isStructure()).findFirst();

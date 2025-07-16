@@ -8,13 +8,13 @@ plugins {
     id 'maven-publish'
 }
 
-version '0.4.2'
+version '0.5'
 group   'org.hypermedea'
 
 java {
     toolchain {
-        // ensures compatibility with JaCaMo 1.2
-        languageVersion = JavaLanguageVersion.of(17)
+        // ensures compatibility with JaCaMo 1.3.0
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
@@ -23,13 +23,12 @@ repositories {
     // artifact repository for JaCaMo-related project
     maven { url 'https://repo.gradle.org/gradle/libs-releases' }
     maven { url 'https://raw.github.com/jacamo-lang/mvn-repo/master' }
-    // maven { url "https://jitpack.io" }
 }
 
 dependencies {
-    compileOnly group: 'org.jacamo', name: 'jacamo', version: '1.2'
+    compileOnly group: 'org.jacamo', name: 'jacamo', version: '1.3.0'
 
-    testImplementation group: 'org.jacamo', name: 'jacamo', version: '1.2'
+    testImplementation group: 'org.jacamo', name: 'jacamo', version: '1.3.0'
     testImplementation 'junit:junit:4.13.1'
 
     // RDF dependencies

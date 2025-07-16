@@ -1,5 +1,6 @@
 package org.hypermedea.jason;
 
+import jason.JasonException;
 import jason.asSemantics.Unifier;
 import jason.asSyntax.Literal;
 import jason.bb.DefaultBeliefBase;
@@ -28,7 +29,14 @@ public class RDFBeliefBase extends DefaultBeliefBase {
 
     @Override
     public boolean add(Literal l) {
-        if (!isRDFLiteral(l)) return super.add(l);
+        if (!isRDFLiteral(l)) {
+            try {
+                return super.add(l);
+            } catch (JasonException e) {
+                // TODO log
+                return false;
+            }
+        }
 
         try {
             rdfGraph.add(rdfHandler.getTriple(l));

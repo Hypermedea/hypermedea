@@ -112,7 +112,7 @@ public class JsonHandlerTest {
 
         Term m0 = ((ListTerm) val).get(0);
 
-        assert m0.isStructure() && ((Structure) m0).getFunctor().equals(JsonHandler.JSON_MEMBER_FUNCTOR);
+        assert m0.isStructure() && ((Structure) m0).getFunctor().equals("kv");
         assert ((Structure) m0).getTerm(0).isAtom();
 
         Optional<Term> m1 = ((ListTerm) val).stream().filter(m -> hasValue(m, "name")).findAny();
@@ -155,7 +155,7 @@ public class JsonHandlerTest {
     }
 
     private boolean hasValue(Term t, String key) {
-        if (t.isStructure() && ( (Structure) t).getFunctor().equals(JsonHandler.JSON_MEMBER_FUNCTOR)) {
+        if (t.isStructure() && ( (Structure) t).getFunctor().equals("kv")) {
             Structure st = (Structure) t;
 
             if (st.getArity() == 2) {

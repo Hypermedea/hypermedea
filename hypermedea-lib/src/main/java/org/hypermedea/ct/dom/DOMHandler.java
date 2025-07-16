@@ -9,7 +9,6 @@ import org.jsoup.nodes.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 
@@ -21,11 +20,10 @@ public class DOMHandler extends BaseRepresentationHandler {
 
     @Override
     public void serialize(Collection<Literal> terms, OutputStream out, String resourceURI) throws UnsupportedRepresentationException, IOException {
-        Document doc = Document.createShell(resourceURI);
+        // Document doc = Document.createShell(resourceURI);
+        // out.write(doc.outerHtml().getBytes(StandardCharsets.UTF_8));
 
-        // TODO build Document
-
-        out.write(doc.outerHtml().getBytes(StandardCharsets.UTF_8));
+        throw new UnsupportedRepresentationException("HTML/XML serialization not supported");
     }
 
     @Override
