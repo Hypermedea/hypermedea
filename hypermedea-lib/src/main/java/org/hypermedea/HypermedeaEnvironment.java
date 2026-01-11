@@ -56,6 +56,158 @@ import java.util.logging.Logger;
  *   or a ROS message type. All operations also have an alternative signature
  *   without form, which is equivalent to executing the operation with an empty form.
  * </p>
+ * <h2>get(resourceURI, formFields)</h2>
+ * <p>
+ *   Asks the server for a representation of {@code resourceURI}. Once a response is
+ *   received from the server, its payload is exposed as a (list of) AgentSpeak literal(s)
+ *   before returning. The calling agent can thus safely query the resource's
+ *   representation after the call returns, as follows:
+ * </p>
+ * <pre><code>+!retrieve_then_query(URI) &lt;-
+  h.target(URI, TargetURI) ;
+  get(URI) ;
+  for (rdf(URI, P, O)[source_uri(TargetURI)]) {
+    .print("Found: ", P, O)
+  } .</code></pre>
+ * <p>
+ *   Any piece of representation found in the server's response will be turned into a
+ *   literal with a {@code source_uri} annotation. In some cases, the URI provided by the
+ *   agent may not be the exact target used to request the server (URI fragments are
+ *   stripped away). This is why Hypermedea also provides the {@link h.target} internal
+ *   action to extract the corresponding target from any URI.
+ * </p>
+ * <p>
+ *   Note that a resource representation may correspond to one or more literals,
+ *   depending on the response payload's Content-Type. In RDF, it is indeed more
+ *   convenient for programmers to have access to RDF triples individually rather than
+ *   as members of a list, whereas in JSON, there is a single literal with a
+ *   tree-shaped structure. See {@link org.hypermedea.ct ct} for details on
+ *   representation handlers.
+ * </p>
+ * <h2>watch(resourceURI, formFields)</h2>
+ * <p>
+ *   Subscribes to any change in the representation of {@code resourceURI}, to be sent asynchronously
+ *   by the server. Not all protocols may support this operation type. Plain HTTP, for instance, doesn't.
+ * </p>
+ * <p>
+ *   In contrast to a {@link #get(String, Map) get} operation, the call may return before having
+ *   received any representation from the server. The call returns as soon as the server confirms the
+ *   request has been processed (or, if the underlying protocol has no acknowledgement mechanism, it
+ *   returns immediately). The caller agent should therefore wait for events corresponding to
+ *   server notifications, as follows:
+ * </p>
+ * <pre><code>+!watch_only(URI) &lt;-
+  h.target(URI, TargetURI) ;
+  watch(URI) ;
+  +watching(TargetURI) .
+
++rdf(S, P, O)[source_uri(TargetURI)] : watching(TargetURI) &lt;-
+  .print("Received: ", S, P, O) .</code></pre>
+ * <p>
+ *   or, if a single notification is enough:
+ * </p>
+ * <pre><code>+!watch_then_wait(URI) &lt;-
+  h.target(URI, TargetURI) ;
+  watch(URI) ;
+  .wait({ +(json(Val)[source_uri(TargetURI)] }) ;
+  .print("Received: ", Val) .</code></pre>
+ * <p>
+ *   In the above example, the agent must know in advance what Content-Type to expect. Certain
+ *   protocol bindings have limitations as to what Content-Type can be exchanged with the server.
+ *   In case the server supports it, though, the agent may leverage
+ *   <a href="https://en.wikipedia.org/wiki/Content_negotiation">content negotiation</a>
+ *   to request the server to return a specific Content-Type.
+ * </p>
+ * <p>
+ *   {@link h.target} is a Hypermedea internal action, {@link jason.stdlib.wait wait} is part of the
+ *   <a href="https://jason-lang.github.io/api/jason/stdlib/package-summary.html">Jason standard library</a>.
+ * </p>
+ * <h2>forget(resourceURI, formFields)</h2>
+ * <p>
+ *   Deletes the local representation of {@code resourceURI} and, if the resource is being watched,
+ *   unsubscribes from server notification. No future change on {@code resourceURI} will be notified
+ *   to agents.
+ * </p>
+ * <h2>put(resourceURI, representation, formFields)</h2>
+ * <p>
+ *   Asks the server to replace the current representation(s) it has of {@code resourceURI} with
+ *   the provided {@code representation}. This parameter must be provided as a (list of) Jason
+ *   literal(s), in order to be serialized in a standard format by the proper representation
+ *   handler (see package {@link org.hypermedea.ct ct}).
+ * </p>
+ * <p>
+ *   After the call returns, the caller agent may assume the new representation of {@code resourceURI}
+ *   on server side is the provided one. There is however no strict guarantee. The server may also
+ *   alter this representation, e.g. to maintain consistency with other resources it manages or to add
+ *   metadata (modification date, author, etc.). This is why Hypermedea makes no assumption about what
+ *   the new representation is. If the caller agent wants to cache the new representation, it
+ *   should execute a {@link #get(String, Map) get} operation right after {@code put}, as follows:
+ * </p>
+ * <pre><code>+!put_then_get(URI) &lt;-
+  h.target(URI, TargetURI) ;
+  put(URI, [json(5)]) ;
+  get(URI) ;
+  // the artifact then exposes json(5)[source_uri(TargetURI)]
+  // or, for instance, json({ value -> 5, modified -> 1700304346 })[source_uri(TargetURI)]
+  .</code></pre>
+ * <p>
+ *   By default, the Hypermedea artifact deletes the outdated representation of {@code resourceURI}
+ *   when the call returns.
+ * </p>
+ * <h2>post(resourceURI, representationPart, formFields)</h2>
+ * <p>
+ *   Asks the server to append the provided {@code representationPart} to the current representation
+ *   of {@code resourceURI}. As for {@link #put(String, Collection, Map) put}, it is not guaranteed
+ *   that the server does exactly what the agent asked. It may remove other parts of the representation
+ *   to maintain consistency or add more information to it.
+ * </p>
+ * <p>
+ *   Notably, a server may also create a new resource as a side effect of the operation. This new
+ *   resource should either be linked from the (new) representation of {@code resourceURI}, if its
+ *   Content-Type supports hypermedia, or be exposed in a message header, hidden by the protocol binding.
+ *   For instance, in response to a POST request, an HTTP server may return a {@code 201 Created}
+ *   response that includes a Location header pointing to the new resource. To expose this
+ *   information to the caller agent, Hypermedea builds an RDF triple from the location header and
+ *   adds it to the representation of {@code resourceURI}. The agent may then query that RDF triple,
+ *   as follows:
+ * </p>
+ * <pre><code>+!post_then_follow_link(URI) &lt;-
+  h.target(URI, TargetURI) ;
+  post(URI, [json(5)]) ;
+  ?(rdf(TargetURI, "related", CreatedResourceURI)) ;
+  .print("Created resource: ", CreatedResourceURI) ;
+  h.target(CreatedResourceURI, CreatedTargetURI) ;
+  get(CreatedResourceURI) ;
+  ?(json(Val)[source(CreatedTargetURI)]) ;
+  .print(Val) . // should include "5"</code></pre>
+ * <p>
+ *   In the above example, the {@code related} predicate is set by default. However, in some cases,
+ *   protocol bindings may choose a more precise predicate, if the context permits it (for instance
+ *   <a href="http://purl.org/dc/terms/hasPart"><code>dct:hasPart</code></a>).
+ * </p>
+ * <p>
+ *   Note that, as for {@link #put(String, Collection, Map) put}, if Hypermedea had
+ *   a representation of {@code resourceURI} before the operation, this representation is deleted
+ *   when the call returns.
+ * </p>
+ * <h2>patch(resourceURI, representationDiff, formFields)</h2>
+ * <p>
+ *   Asks the server to apply a diff on the current representation of {@code resourceURI}, as specified
+ *   in {@code representationDiff}. A diff should specify what parts to remove and what parts to add
+ *   to the representation. Examples of diff formats include SPARQL Update and Git diff (for text files).
+ * </p>
+ * <p>
+ *   <em>Not fully implemented yet</em>.
+ * </p>
+ * <h2>delete(resourceURI, formFields)</h2>
+ * <p>
+ *   Asks the server to delete all known representations of {@code resourceURI}. Hypermedea
+ *   also deletes all representations locally (if the operation succeeds), as there is no
+ *   ambiguity as to what should happen on the server. However, other resources may have
+ *   altered representations after the operation, which agents are unaware of. For instance,
+ *   the server might delete all references of the resource in the representation of other
+ *   resources it manages.
+ * </p>
  */
 public class HypermedeaEnvironment extends Environment {
 
@@ -243,34 +395,6 @@ public class HypermedeaEnvironment extends Environment {
     }
 
     /**
-     * <p>
-     *   Asks the server for a representation of {@code resourceURI}. Once a response is
-     *   received from the server, its payload is exposed as a (list of) AgentSpeak literal(s)
-     *   before returning. The calling agent can thus safely query the resource's
-     *   representation after the call returns, as follows:
-     * </p>
-     * <pre><code>+!retrieve_then_query(URI) &lt;-
-  h.target(URI, TargetURI) ;
-  get(URI) ;
-  for (rdf(URI, P, O)[source_uri(TargetURI)]) {
-    .print("Found: ", P, O)
-  } .</code></pre>
-     * <p>
-     *   Any piece of representation found in the server's response will be turned into a
-     *   literal with a {@code source_uri} annotation. In some cases, the URI provided by the
-     *   agent may not be the exact target used to request the server (URI fragments are
-     *   stripped away). This is why Hypermedea also provides the {@link h.target} internal
-     *   action to extract the corresponding target from any URI.
-     * </p>
-     * <p>
-     *   Note that a resource representation may correspond to one or more literals,
-     *   depending on the response payload's Content-Type. In RDF, it is indeed more
-     *   convenient for programmers to have access to RDF triples individually rather than
-     *   as members of a list, whereas in JSON, there is a single literal with a
-     *   tree-shaped structure. See {@link org.hypermedea.ct ct} for details on
-     *   representation handlers.
-     * </p>
-     *
      * @param resourceURI the URI of a resource
      * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the
      *                   protocol binding or the payload binding
@@ -283,44 +407,6 @@ public class HypermedeaEnvironment extends Environment {
     }
 
     /**
-     * <p>
-     *   Subscribes to any change in the representation of {@code resourceURI}, to be sent asynchronously
-     *   by the server. Not all protocols may support this operation type. Plain HTTP, for instance, doesn't.
-     * </p>
-     * <p>
-     *   In contrast to a {@link #get(String, Map) get} operation, the call may return before having
-     *   received any representation from the server. The call returns as soon as the server confirms the
-     *   request has been processed (or, if the underlying protocol has no acknowledgement mechanism, it
-     *   returns immediately). The caller agent should therefore wait for events corresponding to
-     *   server notifications, as follows:
-     * </p>
-     * <pre><code>+!watch_only(URI) &lt;-
-  h.target(URI, TargetURI) ;
-  watch(URI) ;
-  +watching(TargetURI) .
-
-+rdf(S, P, O)[source_uri(TargetURI)] : watching(TargetURI) &lt;-
-  .print("Received: ", S, P, O) .</code></pre>
-     * <p>
-     *   or, if a single notification is enough:
-     * </p>
-     * <pre><code>+!watch_then_wait(URI) &lt;-
-  h.target(URI, TargetURI) ;
-  watch(URI) ;
-  .wait({ +(json(Val)[source_uri(TargetURI)] }) ;
-  .print("Received: ", Val) .</code></pre>
-     * <p>
-     *   In the above example, the agent must know in advance what Content-Type to expect. Certain
-     *   protocol bindings have limitations as to what Content-Type can be exchanged with the server.
-     *   In case the server supports it, though, the agent may leverage
-     *   <a href="https://en.wikipedia.org/wiki/Content_negotiation">content negotiation</a>
-     *   to request the server to return a specific Content-Type.
-     * </p>
-     * <p>
-     *   {@link h.target} is a Hypermedea internal action, {@link jason.stdlib.wait wait} is part of the
-     *   <a href="https://jason-lang.github.io/api/jason/stdlib/package-summary.html">Jason standard library</a>.
-     * </p>
-     *
      * @param resourceURI the URI of a resource
      * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the
      *                   protocol binding or the payload binding
@@ -336,10 +422,6 @@ public class HypermedeaEnvironment extends Environment {
     }
 
     /**
-     * Deletes the local representation of {@code resourceURI} and, if the resource is being watched,
-     * unsubscribes from server notification. No future change on {@code resourceURI} will be notified
-     * to agents.
-     *
      * @param resourceURI the URI of a resource
      * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the
      *                   protocol binding or the payload binding
@@ -352,32 +434,6 @@ public class HypermedeaEnvironment extends Environment {
     }
 
     /**
-     * <p>
-     *   Asks the server to replace the current representation(s) it has of {@code resourceURI} with
-     *   the provided {@code representation}. This parameter must be provided as a (list of) Jason
-     *   literal(s), in order to be serialized in a standard format by the proper representation
-     *   handler (see package {@link org.hypermedea.ct ct}).
-     * </p>
-     * <p>
-     *   After the call returns, the caller agent may assume the new representation of {@code resourceURI}
-     *   on server side is the provided one. There is however no strict guarantee. The server may also
-     *   alter this representation, e.g. to maintain consistency with other resources it manages or to add
-     *   metadata (modification date, author, etc.). This is why Hypermedea makes no assumption about what
-     *   the new representation is. If the caller agent wants to cache the new representation, it
-     *   should execute a {@link #get(String, Map) get} operation right after {@code put}, as follows:
-     * </p>
-     * <pre><code>+!put_then_get(URI) &lt;-
-  h.target(URI, TargetURI) ;
-  put(URI, [json(5)]) ;
-  get(URI) ;
-  // the artifact then exposes json(5)[source_uri(TargetURI)]
-  // or, for instance, json({ value -> 5, modified -> 1700304346 })[source_uri(TargetURI)]
-  .</code></pre>
-     * <p>
-     *   By default, the Hypermedea artifact deletes the outdated representation of {@code resourceURI}
-     *   when the call returns.
-     * </p>
-     *
      * @param resourceURI the URI of a resource
      * @param representation a resource representation to send to the server, in the form of Jason literals
      * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the
@@ -393,42 +449,6 @@ public class HypermedeaEnvironment extends Environment {
     }
 
     /**
-     * <p>
-     *   Asks the server to append the provided {@code representationPart} to the current representation
-     *   of {@code resourceURI}. As for {@link #put(String, Collection, Map) put}, it is not guaranteed
-     *   that the server does exactly what the agent asked. It may remove other parts of the representation
-     *   to maintain consistency or add more information to it.
-     * </p>
-     * <p>
-     *   Notably, a server may also create a new resource as a side effect of the operation. This new
-     *   resource should either be linked from the (new) representation of {@code resourceURI}, if its
-     *   Content-Type supports hypermedia, or be exposed in a message header, hidden by the protocol binding.
-     *   For instance, in response to a POST request, an HTTP server may return a {@code 201 Created}
-     *   response that includes a Location header pointing to the new resource. To expose this
-     *   information to the caller agent, Hypermedea builds an RDF triple from the location header and
-     *   adds it to the representation of {@code resourceURI}. The agent may then query that RDF triple,
-     *   as follows:
-     * </p>
-     * <pre><code>+!post_then_follow_link(URI) &lt;-
-  h.target(URI, TargetURI) ;
-  post(URI, [json(5)]) ;
-  ?(rdf(TargetURI, "related", CreatedResourceURI)) ;
-  .print("Created resource: ", CreatedResourceURI) ;
-  h.target(CreatedResourceURI, CreatedTargetURI) ;
-  get(CreatedResourceURI) ;
-  ?(json(Val)[source(CreatedTargetURI)]) ;
-  .print(Val) . // should include "5"</code></pre>
-     * <p>
-     *   In the above example, the {@code related} predicate is set by default. However, in some cases,
-     *   protocol bindings may choose a more precise predicate, if the context permits it (for instance
-     *   <a href="http://purl.org/dc/terms/hasPart"><code>dct:hasPart</code></a>).
-     * </p>
-     * <p>
-     *   Note that, as for {@link #put(String, Collection, Map) put}, if Hypermedea had
-     *   a representation of {@code resourceURI} before the operation, this representation is deleted
-     *   when the call returns.
-     * </p>
-     *
      * @param resourceURI the URI of a resource
      * @param representationPart part of a resource representation to send to the server, in the form of Jason literals
      * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the
@@ -444,15 +464,6 @@ public class HypermedeaEnvironment extends Environment {
     }
 
     /**
-     * <p>
-     *   Asks the server to apply a diff on the current representation of {@code resourceURI}, as specified
-     *   in {@code representationDiff}. A diff should specify what parts to remove and what parts to add
-     *   to the representation. Examples of diff formats include SPARQL Update and Git diff (for text files).
-     * </p>
-     * <p>
-     *   <em>Not fully implemented yet</em>.
-     * </p>
-     *
      * @param resourceURI the URI of a resource
      * @param representationDiff a diff to apply to the resource's representation, in the form a Jason literal
      * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the
@@ -468,15 +479,6 @@ public class HypermedeaEnvironment extends Environment {
     }
 
     /**
-     * <p>
-     *   Asks the server to delete all known representations of {@code resourceURI}. Hypermedea
-     *   also deletes all representations locally (if the operation succeeds), as there is no
-     *   ambiguity as to what should happen on the server. However, other resources may have
-     *   altered representations after the operation, which agents are unaware of. For instance,
-     *   the server might delete all references of the resource in the representation of other
-     *   resources it manages.
-     * </p>
-     *
      * @param resourceURI the URI of a resource
      * @param formFields a collection of form fields (key/value pairs), to parameterize the operation, the
      *                   protocol binding or the payload binding
