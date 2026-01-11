@@ -1,3 +1,4 @@
 org.hypermedea.ct.txt.PlainTextHandler
 org.hypermedea.ct.rdf.RDFHandler
 org.hypermedea.ct.json.JsonHandler
+org.hypermedea.ct.dom.DOMHandler

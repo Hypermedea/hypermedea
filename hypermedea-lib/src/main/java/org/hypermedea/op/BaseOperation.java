@@ -185,7 +185,7 @@ public abstract class BaseOperation implements Operation {
 
     builder.append(String.format("[%s] Method: %s", getClass().getSimpleName(), method));
     builder.append(String.format(", Target: %s", getTargetURI()));
-    builder.append(String.format(", Payload: %s", Terms.getOneLineString(getPayload())));
+    builder.append(String.format(", Payload: %s", Terms.getSummary(getPayload())));
 
     return builder.toString();
   }

@@ -5,7 +5,7 @@ import jason.asSyntax.Literal;
 import org.hypermedea.ct.json.JsonHandler;
 import org.hypermedea.ct.txt.PlainTextHandler;
 import org.hypermedea.op.Response;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;

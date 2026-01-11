@@ -2,7 +2,7 @@ package org.hypermedea.ct.json;
 
 import jason.asSyntax.*;
 import jason.asSyntax.parser.ParseException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -13,20 +13,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Optional;
+import java.util.*;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class JsonHandlerTest {
 
-    public static final String TEST_JSON_TERM = "json([ kv(name, \"Demo term\"),\n" +
-            "       kv(created, [kv(day, null), kv(month, \"December\"), kv(year, 2007)]),\n" +
-            "       kv(confirmed, true),\n" +
-            "       kv(members, [1, 1.5, 2])\n" +
-            "     ])";
+    public static final Literal TEST_JSON_TERM = getTestJsonTerm();
 
     public static final String TEST_JSON_OBJECT = "{" +
             "   \"name\": \"Demo term\"," +
@@ -39,35 +32,15 @@ public class JsonHandlerTest {
             "   \"members\": [1, 1.5, 2]" +
             "}";
 
-    public static final String TEST_ROS_MSG = "json([\n" +
-            "        kv(\"target_pose\", [\n" +
-            "            kv(\"header\", [\n" +
-            "                kv(\"frame_id\", \"map\")\n" +
-            "            ]),\n" +
-            "            kv(\"pose\", [\n" +
-            "                kv(\"position\", [\n" +
-            "                        kv(\"x\", -0.80),\n" +
-            "                        kv(\"y\", -1.68),\n" +
-            "                        kv(\"z\", 0.0)\n" +
-            "                ]),\n" +
-            "                kv(\"orientation\", [\n" +
-            "                        kv(\"x\", 0.0),\n" +
-            "                        kv(\"y\", 0.0),\n" +
-            "                        kv(\"z\", -0.51),\n" +
-            "                        kv(\"w\", 0.86)\n" +
-            "                ])\n" +
-            "            ])\n" +
-            "        ])\n" +
-            "    ])";
+    public static final Literal TEST_ROS_MSG = getTestROSMsg();
 
     private final JsonHandler h = new JsonHandler();
 
     @Test
     public void testSerialize() throws ParseException {
-        Literal t = ASSyntax.parseLiteral(TEST_JSON_TERM);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        h.serialize(Arrays.asList(t), out, "http://example.org/");
+        h.serialize(List.of(TEST_JSON_TERM), out, "http://example.org/");
         ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
 
         JsonObject obj = Json.createReader(in).readObject();
@@ -107,42 +80,32 @@ public class JsonHandlerTest {
 
         Term val = t.getTerm(0);
 
-        assert val.isList();
-        assert ((ListTerm) val).size() == 4;
+        assert val.isMap();
 
-        Term m0 = ((ListTerm) val).get(0);
+        Set<Term> keys = ((MapTerm) val).keys();
 
-        assert m0.isStructure() && ((Structure) m0).getFunctor().equals(JsonHandler.JSON_MEMBER_FUNCTOR);
-        assert ((Structure) m0).getTerm(0).isAtom();
+        assert keys.size() == 4;
 
-        Optional<Term> m1 = ((ListTerm) val).stream().filter(m -> hasValue(m, "name")).findAny();
-        Optional<Term> m2 = ((ListTerm) val).stream().filter(m -> hasValue(m, "created")).findAny();
-        Optional<Term> m3 = ((ListTerm) val).stream().filter(m -> hasValue(m, "confirmed")).findAny();
-        Optional<Term> m4 = ((ListTerm) val).stream().filter(m -> hasValue(m, "members")).findAny();
-
-        assert m1.isPresent() && m2.isPresent() && m3.isPresent() && m4.isPresent();
-
-        Term t1 = ((Structure) m1.get()).getTerm(1);
-        Term t2 = ((Structure) m2.get()).getTerm(1);
-        Term t3 = ((Structure) m3.get()).getTerm(1);
-        Term t4 = ((Structure) m4.get()).getTerm(1);
+        Term t1 = ((MapTerm) val).get(ASSyntax.createAtom("name"));
+        Term t2 = ((MapTerm) val).get(ASSyntax.createAtom("created"));
+        Term t3 = ((MapTerm) val).get(ASSyntax.createAtom("confirmed"));
+        Term t4 = ((MapTerm) val).get(ASSyntax.createAtom("members"));
 
         assert t1.isString() && t1.toString().equals("\"Demo term\"");
-        assert t2.isList() && ((ListTerm) t2).size() == 3;
+        assert t2.isMap() && ((MapTerm) t2).size() == 3;
         assert t3.equals(Atom.LTrue);
-        assert t4.isList() && ((ListTerm) t2).size() == 3;
+        assert t4.isList() && ((ListTerm) t4).size() == 3;
     }
 
     @Test
     public void testStringKeys() throws ParseException {
-        Literal t = ASSyntax.parseLiteral(TEST_ROS_MSG);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-        h.serialize(Arrays.asList(t), out, "http://example.org/");
+        h.serialize(List.of(TEST_ROS_MSG), out, "http://example.org/");
 
         String json = out.toString();
 
-        assertFalse(json.equals("{}"));
+        assertNotEquals("{}", json);
     }
 
     @Test
@@ -150,12 +113,12 @@ public class JsonHandlerTest {
         ByteArrayInputStream in = new ByteArrayInputStream("0".getBytes(StandardCharsets.UTF_8));
         Collection<Literal> t = h.deserialize(in, "http://example.org/", "application/json");
 
-        assertEquals(t.size(), 1);
-        assertEquals(t.stream().findAny().get().toString(), "json(0)");
+        assertEquals(1, t.size());
+        assertEquals("json(0)", t.stream().findAny().get().toString());
     }
 
     private boolean hasValue(Term t, String key) {
-        if (t.isStructure() && ( (Structure) t).getFunctor().equals(JsonHandler.JSON_MEMBER_FUNCTOR)) {
+        if (t.isStructure() && ( (Structure) t).getFunctor().equals("kv")) {
             Structure st = (Structure) t;
 
             if (st.getArity() == 2) {
@@ -165,6 +128,57 @@ public class JsonHandlerTest {
         }
 
         return false;
+    }
+    
+    private static Literal getTestJsonTerm() {
+        MapTerm t = new MapTermImpl();
+
+        try {
+            MapTerm t2 = new MapTermImpl();
+
+            t2.put(ASSyntax.createAtom("day"), ASSyntax.createAtom("null"));
+            t2.put(ASSyntax.createAtom("month"), ASSyntax.createString("December"));
+            t2.put(ASSyntax.createAtom("year"), ASSyntax.createNumber(2007));
+
+            t.put(ASSyntax.createAtom("name"), ASSyntax.createString("Demo term"));
+            t.put(ASSyntax.createAtom("created"), t2);
+            t.put(ASSyntax.createAtom("confirmed"), ASSyntax.createAtom("true"));
+            t.put(ASSyntax.createAtom("members"), ASSyntax.parseList("[1, 1.5, 2]"));
+        } catch (ParseException e) {
+            // do nothing
+        }
+
+        return ASSyntax.createStructure("json", t);
+    }
+
+    private static Literal getTestROSMsg() {
+        MapTerm t = new MapTermImpl();
+        MapTerm targetPose = new MapTermImpl();
+        MapTerm header = new MapTermImpl();
+        MapTerm pose = new MapTermImpl();
+        MapTerm position = new MapTermImpl();
+        MapTerm orientation = new MapTermImpl();
+
+        t.put(ASSyntax.createAtom("target_pose"), targetPose);
+
+        targetPose.put(ASSyntax.createAtom("header"), header);
+        targetPose.put(ASSyntax.createAtom("pose"), pose);
+
+        header.put(ASSyntax.createAtom("frame_id"), ASSyntax.createString("map"));
+
+        pose.put(ASSyntax.createAtom("position"), position);
+        pose.put(ASSyntax.createAtom("orientation"), orientation);
+
+        position.put(ASSyntax.createAtom("x"), ASSyntax.createNumber(-0.8));
+        position.put(ASSyntax.createAtom("y"), ASSyntax.createNumber(-1.68));
+        position.put(ASSyntax.createAtom("z"), ASSyntax.createNumber(0.0));
+
+        position.put(ASSyntax.createAtom("x"), ASSyntax.createNumber(0.0));
+        position.put(ASSyntax.createAtom("y"), ASSyntax.createNumber(0.0));
+        position.put(ASSyntax.createAtom("z"), ASSyntax.createNumber(-0.51));
+        position.put(ASSyntax.createAtom("w"), ASSyntax.createNumber(0.86));
+
+        return ASSyntax.createStructure("json", t);
     }
 
 }

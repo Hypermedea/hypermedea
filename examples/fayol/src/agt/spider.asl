@@ -3,11 +3,13 @@ knownVocab("https://w3id.org/bot") .
 
 knownResource(URI) :- rdf(_, _, _)[source(URI)] .
 
+!start .
+
 +!start :
     true
     <-
     // crawl the building's topology
-    !crawl("https://territoire.emse.fr/kg/emse/fayol/")
+    !crawl("https://ci.mines-stetienne.fr/emse/fayol/")
   .
 
 +!crawl(URI) :
@@ -75,5 +77,7 @@ knownResource(URI) :- rdf(_, _, _)[source(URI)] .
     .print("found ", Count, " zones in Espace Fauriel.") ;
   .
 
+
+// TODO remove if jason
 { include("$jacamoJar/templates/common-cartago.asl") }
 { include("$jacamoJar/templates/common-moise.asl") }

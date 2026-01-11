@@ -44,7 +44,7 @@ task jacamo (type: JavaExec, dependsOn: 'classes') {
         mkdir 'log'
     }
     main 'jacamo.infra.JaCaMoLauncher'
-    args 'fayol.jcm'
+    args 'json-html.jcm'
     classpath sourceSets.main.runtimeClasspath
 }
 
@@ -55,7 +55,7 @@ task jason (type: JavaExec, dependsOn: 'classes') {
         mkdir 'log'
     }
     main 'jason.infra.local.RunLocalMAS'
-    args 'fayol.mas2j'
+    args 'json-html.mas2j'
     classpath sourceSets.main.runtimeClasspath
 }
 

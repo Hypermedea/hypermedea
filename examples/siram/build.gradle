@@ -46,7 +46,7 @@ task run (type: JavaExec, dependsOn: 'classes') {
         mkdir 'log'
     }
     main 'jacamo.infra.JaCaMoLauncher'
-    args 'siram.jcm'
+    args 'ai4industry.jcm'
     classpath sourceSets.main.runtimeClasspath
 }
 

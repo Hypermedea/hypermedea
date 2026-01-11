@@ -52,6 +52,14 @@ public interface RepresentationHandler {
     String getFunctor();
 
     /**
+     * Return the arity of the Jason structure(s) returned by {@link #deserialize(InputStream, String, String)}
+     * and accepted as input of {@link #serialize(Collection, OutputStream, String)}.
+     *
+     * @return a positive integer, possibly 0.
+     */
+    int getArity();
+
+    /**
      * <p>
            Return the Content-Types in which the wrapped representation can alternatively be represented.
            The list is returned in order of preference, starting from the preferred Content-Type (index 0).
