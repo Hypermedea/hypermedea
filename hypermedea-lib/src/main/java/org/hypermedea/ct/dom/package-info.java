@@ -11,12 +11,15 @@
  * </p>
  * <p>
  *     The example HTML document below:
- *     <pre><code><html lang="en" class="e">
-  <head><title>Test page</title></head>
-  <body>Hi <a href="https://jason-lang.github.io/">Jason</a>!</body>
-</html></code></pre>
+ * </p>
+ * <pre><code>&lt;html lang="en" class="e"&gt;
+  &lt;head>&lt;title>Test page&lt;/title&gt;&lt;/head&gt;
+  &lt;body&gt;Hi &lt;a href="https://jason-lang.github.io/"&gt;Jason&lt;/a&gt;!&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+ * <p>
  *      is represented in Jason as follows:
- *     <pre><code>dom({
+ * </p>
+ * <pre><code>dom({
   links->[
     {
       attributes -> { href -> "https://jason-lang.github.io/" },
@@ -56,6 +59,5 @@
     tag -> html
   }
 })</code></pre>
- * </p>
  */
 package org.hypermedea.ct.dom;

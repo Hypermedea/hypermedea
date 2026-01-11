@@ -3,6 +3,7 @@ package org.hypermedea.ct.json;
 import jason.asSyntax.*;
 import org.hypermedea.ct.BaseRepresentationHandler;
 import org.hypermedea.ct.UnsupportedRepresentationException;
+import org.hypermedea.tools.Identifiers;
 
 import javax.json.*;
 import javax.json.stream.JsonGenerator;
@@ -11,10 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -42,7 +40,7 @@ public class JsonHandler extends BaseRepresentationHandler {
         boolean wrappedInArray = jsonTerms.size() > 1;
 
         if (wrappedInArray) g.writeStartArray();
-        for (Literal t : jsonTerms) g.write(t.getTerm(0).getAsJson());;
+        for (Literal t : jsonTerms) g.write(getJsonValue(t.getTerm(0)));
         if (wrappedInArray) g.writeEnd();
 
         g.close();
@@ -70,7 +68,7 @@ public class JsonHandler extends BaseRepresentationHandler {
         }
 
         Term t = readJsonValue(value);
-        return Arrays.asList(ASSyntax.createStructure(JSON_FUNCTOR, t));
+        return Collections.singletonList(ASSyntax.createLiteral(JSON_FUNCTOR, t));
     }
 
     private Term readJsonValue(JsonValue value) {
@@ -105,6 +103,36 @@ public class JsonHandler extends BaseRepresentationHandler {
         } else {
             throw new IllegalArgumentException("JSON value not recognized by handler: " + value);
         }
+    }
+
+    private JsonValue getJsonValue(Term t) {
+        if (t.isAtom()) {
+            Atom a = (Atom) t;
+
+            switch (a.getFunctor()) {
+                case "true": return JsonValue.TRUE;
+                case "false": return JsonValue.FALSE;
+                case "null": return JsonValue.NULL;
+            }
+        } else if (t.isString() || t.isNumeric()) {
+            return t.getAsJson();
+        } else if (t.isList()) {
+            ListTerm l = (ListTerm) t;
+
+            JsonArrayBuilder builder = Json.createArrayBuilder();
+            for (Term element : l.getAsList()) builder.add(getJsonValue(element));
+
+            return builder.build();
+        } else if (t.isMap()) {
+            MapTerm m = (MapTerm) t;
+
+            JsonObjectBuilder builder = Json.createObjectBuilder();
+            for (Term k : m.keys()) builder.add(Identifiers.getLexicalForm(k), getJsonValue(m.get(k)));
+
+            return builder.build();
+        }
+
+        throw new IllegalArgumentException("Term not supported by handler: " + t);
     }
 
     private boolean isJsonTerm(Literal t) {

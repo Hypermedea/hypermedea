@@ -9,7 +9,7 @@ import org.hypermedea.ct.json.JsonHandlerTest;
 import org.hypermedea.ct.rdf.RDFHandler;
 import org.hypermedea.ct.rdf.RDFHandlerTest;
 import org.hypermedea.ct.txt.PlainTextHandler;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,8 +18,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class RepresentationHandlersTest {
 

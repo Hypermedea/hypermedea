@@ -2,7 +2,6 @@ package org.hypermedea.op.http;
 
 import jason.asSyntax.ASSyntax;
 import jason.asSyntax.Literal;
-import jason.asSyntax.Structure;
 import jason.asSyntax.Term;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.core5.http.ContentType;
@@ -86,7 +85,7 @@ public class HttpResponse extends BaseResponse {
         Term p = ASSyntax.createAtom("related"); // FIXME proper predicate
         Term o = ASSyntax.createString(h.getValue());
 
-        Structure t = ASSyntax.createStructure("rdf", s, p, o);
+        Literal t = ASSyntax.createLiteral("rdf", s, p, o);
         links.add(t);
       } else if (h.getName().equals("Link")) {
         Matcher m = LINK_HEADER_PATTERN.matcher(h.getValue());
@@ -96,7 +95,7 @@ public class HttpResponse extends BaseResponse {
           Term p = ASSyntax.createAtom(m.group("rel")); // FIXME only if URI
           Term o = ASSyntax.createString(m.group("target"));
 
-          Structure t = ASSyntax.createStructure("rdf", s, p, o);
+          Literal t = ASSyntax.createLiteral("rdf", s, p, o);
           links.add(t);
         }
       }

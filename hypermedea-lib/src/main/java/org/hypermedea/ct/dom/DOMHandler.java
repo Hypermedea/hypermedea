@@ -5,6 +5,7 @@ import org.hypermedea.ct.BaseRepresentationHandler;
 import org.hypermedea.ct.UnsupportedRepresentationException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.*;
+import org.jsoup.parser.Parser;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,7 +29,8 @@ public class DOMHandler extends BaseRepresentationHandler {
 
     @Override
     public Collection<Literal> deserialize(InputStream representation, String resourceURI, String contentType) throws UnsupportedRepresentationException, IOException {
-        Document doc = Jsoup.parse(representation, "utf-8", resourceURI);
+        Parser p = (contentType.equals("text/html")) ? Parser.htmlParser() : Parser.xmlParser();
+        Document doc = Jsoup.parse(representation, "utf-8", resourceURI, p);
 
         MapTerm m = getAsMap(doc);
 

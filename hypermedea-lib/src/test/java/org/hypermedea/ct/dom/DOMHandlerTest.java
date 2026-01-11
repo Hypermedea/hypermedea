@@ -2,15 +2,15 @@ package org.hypermedea.ct.dom;
 
 import jason.asSyntax.*;
 import org.hypermedea.tools.Identifiers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DOMHandlerTest {
 
@@ -114,7 +114,7 @@ public class DOMHandlerTest {
         MapTerm root = (MapTerm) domMap.get(ASSyntax.createAtom("document_element"));
 
         Term tag = root.get(ASSyntax.createAtom("tag"));
-        assertEquals("http://www.w3.org/1999/XSL/Transform/stylesheet", Identifiers.getLexicalForm(tag));
+        assertEquals("xsl:stylesheet", Identifiers.getLexicalForm(tag));
     }
 
 }

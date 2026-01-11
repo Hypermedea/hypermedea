@@ -3,7 +3,7 @@ package org.hypermedea.op.http;
 import jason.asSyntax.*;
 import org.hypermedea.op.Operation;
 import org.hypermedea.op.Response;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -50,13 +50,13 @@ public class HttpOperationTest {
 
         assert termOpt.isPresent();
 
-        ListTerm pairs = (ListTerm) termOpt.get().getTerm(0);
+        MapTerm term = (MapTerm) termOpt.get().getTerm(0);
         Atom k = ASSyntax.createAtom("url");
-        Optional<Term> url = pairs.getAsList().stream().filter(kv -> ((Structure) kv).getTerm(0).equals(k)).findAny();
+        Term url = term.get(k);
 
-        assert url.isPresent();
+        assert url != null;
 
-        assert ((Structure) url.get()).getTerm(1).equals(ASSyntax.createString(SOURCE_JSON_URI));
+        assert url.equals(ASSyntax.createString(SOURCE_JSON_URI));
     }
 
     @Test
